@@ -52,3 +52,6 @@ supabase/.temp/
 # Environment
 .env
 .env.production
+
+# Design
+/design
