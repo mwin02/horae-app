@@ -107,7 +107,7 @@ export const TYPOGRAPHY = {
     fontSize: 56,
     lineHeight: 56,
     letterSpacing: -2,
-    fontVariant: ['tabular-nums'] as const,
+    fontVariant: ['tabular-nums'] as ('tabular-nums')[],
   },
   /** Page/section title — 28px Manrope ExtraBold */
   headingXl: {
