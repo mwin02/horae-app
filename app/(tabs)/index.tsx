@@ -3,7 +3,8 @@ import { QuickSwitchSection } from "@/components/timer/quick-switch-section";
 import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { useTimer } from "@/hooks/useTimer";
 import { useCategoriesWithActivities } from "@/hooks/useCategoriesWithActivities";
-import React, { useCallback } from "react";
+import { NewSessionModal } from "@/components/timer/new-session-modal";
+import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -23,6 +24,7 @@ export default function HomeScreen(): React.ReactElement {
   } = useTimer();
   const { categories, isLoading: categoriesLoading } =
     useCategoriesWithActivities();
+  const [modalVisible, setModalVisible] = useState(false);
 
   const handleActivityPress = useCallback(
     async (activityId: string): Promise<void> => {
@@ -33,6 +35,18 @@ export default function HomeScreen(): React.ReactElement {
       } else {
         await startActivity(activityId);
       }
+    },
+    [runningEntry, switchActivity, startActivity],
+  );
+
+  const handleStartFromModal = useCallback(
+    async (activityId: string): Promise<void> => {
+      if (runningEntry) {
+        await switchActivity(activityId);
+      } else {
+        await startActivity(activityId);
+      }
+      setModalVisible(false);
     },
     [runningEntry, switchActivity, startActivity],
   );
@@ -61,9 +75,7 @@ export default function HomeScreen(): React.ReactElement {
           <TimerCard
             runningEntry={runningEntry}
             onStop={stopActivity}
-            onStartPress={() => {
-              // Will open New Session modal in a future step
-            }}
+            onStartPress={() => setModalVisible(true)}
           />
         </View>
 
@@ -74,6 +86,14 @@ export default function HomeScreen(): React.ReactElement {
           onActivityPress={handleActivityPress}
         />
       </ScrollView>
+
+      {/* New Session Modal */}
+      <NewSessionModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onStartActivity={handleStartFromModal}
+        categories={categories}
+      />
     </SafeAreaView>
   );
 }
