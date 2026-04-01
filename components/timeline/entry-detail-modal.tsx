@@ -1,10 +1,10 @@
 import { CategoryChip } from "@/components/common/category-chip";
-import { GradientButton } from "@/components/common/gradient-button";
 import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { deleteEntry, updateEntryTimes } from "@/db/queries";
 import type { TimelineEntryData } from "@/hooks/useTimelineData";
 import { formatDuration, formatTimeInTimezone } from "@/lib/timezone";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import React, { useCallback, useEffect, useState } from "react";
 import {
@@ -269,28 +269,56 @@ export function EntryDetailModal({
             </View>
           )}
 
-          {/* Actions */}
+          {/* Actions — fixed-height row to avoid modal resize */}
           <View style={styles.actions}>
-            {timesDirty && isValid && editedEnd !== null && (
-              <GradientButton
-                shape="pill"
-                label={saving ? "Saving..." : "Save Changes"}
-                onPress={handleSaveTimes}
-              >
-                <Feather name="check" size={18} color={COLORS.onPrimary} />
-              </GradientButton>
+            {timesDirty && isValid && editedEnd !== null ? (
+              <>
+                <Pressable
+                  onPress={handleSaveTimes}
+                  style={({ pressed }) => [
+                    styles.saveButtonWrapper,
+                    { opacity: pressed ? 0.85 : 1 },
+                  ]}
+                >
+                  <LinearGradient
+                    colors={[COLORS.gradientStart, COLORS.gradientEnd]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.saveButton}
+                  >
+                    <Feather name="check" size={16} color={COLORS.onPrimary} />
+                    <Text style={styles.saveButtonText}>
+                      {saving ? "Saving..." : "Save Changes"}
+                    </Text>
+                  </LinearGradient>
+                </Pressable>
+                <Pressable
+                  style={styles.deleteIconButton}
+                  onPress={handleDelete}
+                  hitSlop={8}
+                >
+                  <Feather name="trash-2" size={18} color={COLORS.error} />
+                </Pressable>
+              </>
+            ) : timesDirty && !isValid ? (
+              <>
+                <Text style={styles.validationError}>
+                  Start must be before end
+                </Text>
+                <Pressable
+                  style={styles.deleteIconButton}
+                  onPress={handleDelete}
+                  hitSlop={8}
+                >
+                  <Feather name="trash-2" size={18} color={COLORS.error} />
+                </Pressable>
+              </>
+            ) : (
+              <Pressable style={styles.deleteButton} onPress={handleDelete}>
+                <Feather name="trash-2" size={16} color={COLORS.error} />
+                <Text style={styles.deleteButtonText}>Delete entry</Text>
+              </Pressable>
             )}
-
-            {timesDirty && !isValid && (
-              <Text style={styles.validationError}>
-                Start time must be before end time
-              </Text>
-            )}
-
-            <Pressable style={styles.deleteButton} onPress={handleDelete}>
-              <Feather name="trash-2" size={16} color={COLORS.error} />
-              <Text style={styles.deleteButtonText}>Delete entry</Text>
-            </Pressable>
           </View>
         </View>
       </View>
@@ -403,12 +431,40 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.lg,
   },
   actions: {
-    gap: SPACING.md,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    height: 48,
+    gap: SPACING.md,
+  },
+  saveButtonWrapper: {
+    flex: 1,
+    height: 48,
+  },
+  saveButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    height: 48,
+    borderRadius: RADIUS.full,
+    gap: SPACING.sm,
+  },
+  saveButtonText: {
+    ...TYPOGRAPHY.button,
+    color: COLORS.onPrimary,
   },
   validationError: {
     ...TYPOGRAPHY.body,
     color: COLORS.error,
+    flex: 1,
+  },
+  deleteIconButton: {
+    width: 48,
+    height: 48,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.surfaceContainerLow,
+    alignItems: "center",
+    justifyContent: "center",
   },
   deleteButton: {
     flexDirection: "row",
