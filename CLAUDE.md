@@ -9,6 +9,7 @@ Full implementation plan: `/Users/myozawwin/.claude/plans/ethereal-percolating-c
 ## Development Workflow
 
 ### Feature Development Process
+
 1. Discuss and scope the feature
 2. Create a feature branch from `main` (e.g., `feat/home-timer`)
 3. Implement the feature
@@ -17,14 +18,16 @@ Full implementation plan: `/Users/myozawwin/.claude/plans/ethereal-percolating-c
 6. User merges the PR, then switch to `main` and pull
 
 ### Git Branching Strategy
+
 - **`main`** — stable, only merged PRs
 - **Feature branches** — `feat/<feature-name>` for each implementation step
 - **PRs for all feature work** — squash merge to keep main history clean
 - **Direct commits to main** only for trivial changes (typos, config tweaks)
 
 ### Conversation Strategy
+
 - **One conversation per feature** to manage context window size
-- Start each conversation with: *"Working on [Phase X, Step Y]: [feature]. Read the plan at /Users/myozawwin/.claude/plans/ethereal-percolating-chipmunk.md for context."*
+- Start each conversation with: _"Working on [Phase X, Step Y]: [feature]. Read the plan at /Users/myozawwin/.claude/plans/ethereal-percolating-chipmunk.md for context."_
 - CLAUDE.md and the plan file persist across conversations
 
 ## Tech Stack
@@ -130,54 +133,101 @@ npx expo start --clear
 ## Common Patterns
 
 ### Starting/stopping timer
+
 ```typescript
 // Always use the useTimer hook — never manipulate time_entries directly from screens
-const { startActivity, stopActivity, switchActivity, runningEntry } = useTimer();
+const { startActivity, stopActivity, switchActivity, runningEntry } =
+  useTimer();
 ```
 
 ### Quick-switch
+
 One tap stops current activity and starts new one. No confirmation modal. Show toast.
 
 ### Forgotten stop detection
+
 On app foreground, check for `time_entries` where `ended_at IS NULL`. If found and stale (>2h or different day), show bottom sheet.
 
 ### Reusable UI Components (`components/common/`)
+
 - **`GlassCard`** — Glassmorphism card wrapper (BlurView on iOS, rgba fallback on Android)
-- **`GradientButton`** — Primary CTA with linear gradient. `shape="pill"` for text buttons, `shape="circle"` for icon buttons (e.g., stop button)
-- **`CategoryChip`** — Colored pill showing category name with dot indicator
+- **`GradientButton`** — Primary CTA with linear gradient. `shape="pill"` for text buttons, `shape="circle"` for icon buttons (e.g., stop button). **Note:** pill shape has `paddingVertical: 16` making it ~54px tall — if you need exact height control (e.g., fixed-height action rows), use inline `LinearGradient` + `Pressable` instead.
+- **`CategoryChip`** — Colored pill showing category name with dot indicator. Does NOT accept a `selected` prop — wrap in a styled `Pressable` with a border for selection state.
 - **`CategoryIcon`** — Maps preset icon strings (e.g., `'briefcase'`, `'heart'`) to Feather icons with fallbacks
 - **`PulsingDots`** — Animated dots indicator for active timer state
 
 ### Reactive queries
+
 ```typescript
-import { useQuery } from '@powersync/react';
+import { useQuery } from "@powersync/react";
 // Auto-updates when the categories table changes
-const { data: categories, isLoading } = useQuery('SELECT * FROM categories WHERE ...');
+const { data: categories, isLoading } = useQuery(
+  "SELECT * FROM categories WHERE ...",
+);
 ```
+
+### Reusable Hooks
+
+- **`useCategoriesWithActivities()`** — Returns `{ categories }` with each category containing its activities array. Used in any activity picker (NewSessionModal, GapFillModal, etc.)
+- **`useTimelineData(selectedDate)`** — Returns entries + gaps for a day. Useful reference for timezone-aware day boundary queries.
+- **`useTimer()`** — Core timer hook (start/stop/switch)
+- **`useElapsedTime(startedAt)`** — Live-ticking seconds from a start time
+- **`useForgottenTimer()`** — Detects stale timers on app foreground
+
+### Available Query Functions (`db/queries.ts`)
+
+- **`createRetroactiveEntry({ activityId, startedAt, endedAt, timezone })`** — Creates a completed entry with `source: 'retroactive'`
+- **`updateEntryTimes(entryId, startedAt, endedAt)`** — Updates start/end times and recomputes `duration_seconds`
+- **`updateEntryNote(entryId, note)`** — Updates the note on an entry
+- **`deleteEntry(entryId)`** — Soft deletes an entry (sets `deleted_at`)
+
+### Timezone Patterns
+
+**Critical:** All times are stored in UTC. Each `time_entry` stores an IANA timezone. Always display in the entry's original timezone.
+
+**Gotcha — Never add local minutes to UTC dates directly:**
+
+```typescript
+// ❌ WRONG — gives incorrect results when timezone offset ≠ 0
+const date = new Date(dayStartUTC.getTime() + localMinutes * 60_000);
+
+// ✅ CORRECT — compute the offset first
+function localMinutesToDate(
+  localMinutes: number,
+  dayStartUTC: Date,
+  timezone: string,
+): Date {
+  const utcMidnightAsLocalMinutes = minutesSinceMidnight(dayStartUTC, timezone);
+  return new Date(
+    dayStartUTC.getTime() + (localMinutes - utcMidnightAsLocalMinutes) * 60_000,
+  );
+}
+```
+
+**Key timezone helpers in `lib/timezone.ts`:**
+
+- `getCurrentTimezone()` — Returns current IANA timezone string
+- `getTodayDate(timezone)` — Returns `YYYY-MM-DD` for today in the given timezone
+- `formatTimeInTimezone(isoString, timezone)` — Formats time for display (e.g., "9:30 AM")
+- `formatDuration(seconds)` — Human-readable duration (e.g., "1h 30m")
+- `minutesSinceMidnight(date, timezone)` — Minutes since midnight for a Date in a timezone (in `useTimelineData.ts`)
+
+**Day boundary queries:** Use naive UTC boundaries (`${date}T00:00:00.000Z` / `T23:59:59.999Z`) as query params with overlap logic (`started_at <= dayEnd AND (ended_at IS NULL OR ended_at >= dayStart)`). This captures entries near midnight even with timezone offsets.
 
 ## Implementation Progress
 
 ### Completed
+
 - **Phase 1, Step 1:** Expo scaffold with tabs template, EAS dev build configured
 - **Phase 1, Step 2:** PowerSync database layer (schema, models, queries, seed)
 - **Timer hooks:** useTimer, useElapsedTime, useForgottenTimer, timezone utils, Zustand UI store
 - **Phase 1, Step 3:** Home/Timer tab — TimerCard (active/idle with consistent height), QuickSwitchSection (horizontal carousel), NewSessionModal (category filter, search, activity picker), tab layout with Feather icons
+- **Phase 1, Step 4:** Forgotten stop modal (bottom sheet with time picker)
+- **Phase 2, Step 5:** Timeline tab — vertical day timeline with time axis, entry blocks, gap blocks, clustering of short entries, overlap detection (side-by-side layout), current time indicator, date navigation (DateHeader + WeekStrip), EntryDetailModal (time editing + delete), GapFillModal (activity picker with adjustable times)
 
 ### Next Up
-- **Phase 1, Step 4:** Forgotten stop modal (bottom sheet with time picker)
 
-## Debugging
-
-### Inspect the SQLite database
-```bash
-# Find the DB file (path changes on reinstall)
-find ~/Library/Developer/CoreSimulator/Devices -name "habits.db" 2>/dev/null
-
-# Query entries via CLI
-sqlite3 "/path/to/habits.db" ".mode column" ".headers on" \
-  "SELECT te.id, a.name, c.name, te.started_at, te.ended_at FROM time_entries te JOIN activities a ON a.id = te.activity_id JOIN categories c ON c.id = a.category_id ORDER BY te.started_at DESC LIMIT 10;"
-```
-Or open with **DB Browser for SQLite** (GUI): File → Open → Cmd+Shift+G to paste the path.
+- **Phase 2, Step 6:** Insights tab — daily/weekly/monthly charts, actual vs ideal comparison
 
 ## Important Constraints
 
