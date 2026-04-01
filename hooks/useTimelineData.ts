@@ -14,9 +14,21 @@ import {
 // Types
 // ──────────────────────────────────────────────
 
+/** An entry with extra fields for timeline display */
+export type TimelineEntryData = TimelineEntry & { activityId: string; categoryIcon: string | null };
+
+/** A cluster of consecutive short entries */
+export interface TimelineCluster {
+  entries: TimelineEntryData[];
+  startedAt: Date;
+  endedAt: Date;
+  totalDurationSeconds: number;
+}
+
 export type TimelineItem =
-  | { type: 'entry'; data: TimelineEntry & { activityId: string; categoryIcon: string | null } }
-  | { type: 'gap'; data: TimelineGap };
+  | { type: 'entry'; data: TimelineEntryData }
+  | { type: 'gap'; data: TimelineGap }
+  | { type: 'cluster'; data: TimelineCluster };
 
 export interface UseTimelineDataResult {
   /** Sorted items (entries + gaps) for the selected day */
@@ -38,6 +50,12 @@ export interface UseTimelineDataResult {
 /** Minimum gap duration (in seconds) to show as an "Untracked" block */
 const MIN_GAP_SECONDS = 60;
 
+/** Entries shorter than this (in seconds) are candidates for clustering */
+const SHORT_ENTRY_THRESHOLD_SECONDS = 15 * 60; // 15 minutes
+
+/** Minimum number of consecutive short entries to form a cluster */
+const MIN_CLUSTER_SIZE = 2;
+
 /** Default axis range when there are no entries */
 const DEFAULT_RANGE_START_HOUR = 6; // 6 AM
 const DEFAULT_RANGE_END_HOUR = 22;  // 10 PM
@@ -47,7 +65,7 @@ const DEFAULT_RANGE_END_HOUR = 22;  // 10 PM
 // ──────────────────────────────────────────────
 
 /** Get minutes since midnight for a Date in a given timezone */
-function minutesSinceMidnight(date: Date, timezone: string): number {
+export function minutesSinceMidnight(date: Date, timezone: string): number {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: timezone,
     hour: 'numeric',
@@ -76,6 +94,66 @@ function floorToHour(minutes: number): number {
 /** Round minutes up to the nearest hour */
 function ceilToHour(minutes: number): number {
   return Math.ceil(minutes / 60) * 60;
+}
+
+// ──────────────────────────────────────────────
+// Clustering
+// ──────────────────────────────────────────────
+
+/**
+ * Groups consecutive short entries into cluster items.
+ * Gaps and long entries pass through unchanged.
+ * A "short" entry is one with duration < SHORT_ENTRY_THRESHOLD_SECONDS.
+ */
+function clusterShortEntries(items: TimelineItem[]): TimelineItem[] {
+  const result: TimelineItem[] = [];
+  let pendingShort: TimelineEntryData[] = [];
+
+  const flushPending = (): void => {
+    if (pendingShort.length >= MIN_CLUSTER_SIZE) {
+      const first = pendingShort[0];
+      const last = pendingShort[pendingShort.length - 1];
+      const totalDuration = pendingShort.reduce(
+        (sum, e) => sum + (e.durationSeconds ?? 0),
+        0,
+      );
+      result.push({
+        type: 'cluster',
+        data: {
+          entries: pendingShort,
+          startedAt: first.startedAt,
+          endedAt: last.endedAt ?? last.startedAt,
+          totalDurationSeconds: totalDuration,
+        },
+      });
+    } else {
+      // Not enough to cluster — emit individually
+      for (const entry of pendingShort) {
+        result.push({ type: 'entry', data: entry });
+      }
+    }
+    pendingShort = [];
+  };
+
+  for (const item of items) {
+    if (item.type === 'entry') {
+      const duration = item.data.durationSeconds ?? 0;
+      if (duration < SHORT_ENTRY_THRESHOLD_SECONDS) {
+        pendingShort.push(item.data);
+        continue;
+      }
+      // Long entry — flush any pending short entries first
+      flushPending();
+      result.push(item);
+    } else {
+      // Gap — flush pending, then pass through
+      flushPending();
+      result.push(item);
+    }
+  }
+  flushPending();
+
+  return result;
 }
 
 // ──────────────────────────────────────────────
@@ -179,6 +257,9 @@ export function useTimelineData(selectedDate: string): UseTimelineDataResult {
       items.push({ type: 'entry', data: entryData });
     }
 
+    // Cluster consecutive short entries to prevent overlap
+    const clusteredItems = clusterShortEntries(items);
+
     // Compute axis range
     let rangeStartMinutes: number;
     let rangeEndMinutes: number;
@@ -207,7 +288,7 @@ export function useTimelineData(selectedDate: string): UseTimelineDataResult {
       }
     }
 
-    return { items, rangeStartMinutes, rangeEndMinutes };
+    return { items: clusteredItems, rangeStartMinutes, rangeEndMinutes };
   }, [rows, startOfDayUTC, endOfDayUTC, selectedDate, timezone]);
 
   return {
