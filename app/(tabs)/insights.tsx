@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { CategoryBreakdown } from '@/components/insights/category-breakdown';
 import { PeriodToggle } from '@/components/insights/period-toggle';
 import { useInsightsData, type InsightsPeriod } from '@/hooks/useInsightsData';
 import { useUIStore } from '@/store/uiStore';
@@ -36,13 +37,10 @@ export default function InsightsScreen(): React.ReactElement {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Placeholder for cards — will be added in Steps 3-5 */}
-          <View style={styles.placeholderCard}>
-            <Text style={styles.placeholderLabel}>CATEGORY BREAKDOWN</Text>
-            <Text style={styles.placeholderValue}>
-              {categoryInsights.length} categories tracked
-            </Text>
-          </View>
+          <CategoryBreakdown
+            categoryInsights={categoryInsights}
+            totalTrackedMinutes={totalTrackedMinutes}
+          />
 
           <View style={styles.placeholderCard}>
             <Text style={styles.placeholderLabel}>ACTUAL VS IDEAL</Text>
