@@ -6,6 +6,7 @@ import {
 import { getCurrentTimezone, getTodayDate } from "@/lib/timezone";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Dimensions, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ACTIVE_CHIP_HEIGHT, ActiveSessionChip } from "./active-session-chip";
 import { ClusterBlock } from "./cluster-block";
 import { CurrentTimeIndicator } from "./current-time-indicator";
 import { GapBlock } from "./gap-block";
@@ -278,6 +279,18 @@ export function TimelineCanvas({
   const showNowIndicator =
     isToday && nowTop >= 0 && nowTop <= resolvedCanvasHeight;
 
+  // Find the running entry (if any) — surfaced as an ActiveSessionChip pinned
+  // to the now-indicator instead of as a regular timeline block.
+  const runningEntry = useMemo(() => {
+    if (!isToday) return null;
+    for (const item of items) {
+      if (item.type === "entry" && item.data.isRunning) {
+        return item.data;
+      }
+    }
+    return null;
+  }, [items, isToday]);
+
   return (
     <ScrollView
       contentContainerStyle={[
@@ -307,6 +320,9 @@ export function TimelineCanvas({
 
         if (item.type === "entry") {
           const e = item.data;
+          // Running entries are surfaced as an ActiveSessionChip pinned to the
+          // now-indicator below — skip rendering them as a regular block.
+          if (e.isRunning) return null;
           const entryStyle =
             totalColumns > 1
               ? getColumnStyle(totalColumns, columnIndex)
@@ -390,6 +406,32 @@ export function TimelineCanvas({
           <CurrentTimeIndicator timezone={timezone} />
         </View>
       )}
+
+      {/* Active session chip — attached to the now-indicator line. Starts
+          below the line, and flips above once the running session has
+          accumulated enough elapsed pixels to fit without overlap. */}
+      {showNowIndicator && runningEntry && (() => {
+        const elapsedPixels =
+          ((liveNow.getTime() - runningEntry.startedAt.getTime()) / 60_000) *
+          PIXELS_PER_MINUTE;
+        const fitsAbove = elapsedPixels >= ACTIVE_CHIP_HEIGHT;
+        const chipTop = fitsAbove
+          ? nowTop - ACTIVE_CHIP_HEIGHT
+          : nowTop;
+        return (
+          <View style={[styles.activeChipWrapper, { top: chipTop }]}>
+            <ActiveSessionChip
+              activityName={runningEntry.activityName}
+              categoryName={runningEntry.categoryName}
+              categoryColor={runningEntry.categoryColor}
+              categoryIcon={runningEntry.categoryIcon}
+              startedAt={runningEntry.startedAt}
+              liveNow={liveNow}
+              onPress={() => onEntryPress(runningEntry.id)}
+            />
+          </View>
+        );
+      })()}
     </ScrollView>
   );
 }
@@ -424,5 +466,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 10,
+  },
+  activeChipWrapper: {
+    position: "absolute",
+    left: BLOCK_LEFT,
+    right: SPACING.lg,
+    zIndex: 11,
   },
 });
