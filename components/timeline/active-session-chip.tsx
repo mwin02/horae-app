@@ -25,6 +25,7 @@ interface ActiveSessionChipProps {
   categoryName: string;
   categoryColor: string;
   categoryIcon: string | null;
+  elapsedPixels: number;
   startedAt: Date;
   liveNow: Date;
   attachment: ActiveChipAttachment;
@@ -43,6 +44,7 @@ export function ActiveSessionChip({
   categoryColor,
   categoryIcon,
   startedAt,
+  elapsedPixels,
   liveNow,
   attachment,
   onPress,
@@ -60,11 +62,13 @@ export function ActiveSessionChip({
           borderTopLeftRadius: 0,
           borderTopRightRadius: 0,
           borderTopWidth: 0,
+          height: ACTIVE_CHIP_HEIGHT,
         }
       : {
           borderBottomLeftRadius: 0,
           borderBottomRightRadius: 0,
           borderBottomWidth: 0,
+          height: elapsedPixels,
         };
 
   return (
@@ -102,7 +106,6 @@ export function ActiveSessionChip({
 
 const styles = StyleSheet.create({
   container: {
-    height: ACTIVE_CHIP_HEIGHT,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -112,6 +115,8 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.lg,
     borderWidth: 2,
     borderColor: COLORS.primary,
+    alignSelf: "flex-start",
+    width: "95%",
     gap: SPACING.sm,
     overflow: "hidden",
     ...SHADOWS.ambient,

@@ -428,7 +428,7 @@ export function TimelineCanvas({
             ((liveNow.getTime() - runningEntry.startedAt.getTime()) / 60_000) *
             PIXELS_PER_MINUTE;
           const fitsAbove = elapsedPixels >= ACTIVE_CHIP_HEIGHT;
-          const chipTop = fitsAbove ? nowTop - ACTIVE_CHIP_HEIGHT : nowTop;
+          const chipTop = fitsAbove ? nowTop - elapsedPixels : nowTop;
           return (
             <View style={[styles.activeChipWrapper, { top: chipTop }]}>
               <ActiveSessionChip
@@ -437,6 +437,7 @@ export function TimelineCanvas({
                 categoryColor={runningEntry.categoryColor}
                 categoryIcon={runningEntry.categoryIcon}
                 startedAt={runningEntry.startedAt}
+                elapsedPixels={elapsedPixels}
                 liveNow={liveNow}
                 attachment={fitsAbove ? "bottom" : "top"}
                 onPress={() => onEntryPress(runningEntry.id)}
