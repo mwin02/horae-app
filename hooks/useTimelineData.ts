@@ -246,6 +246,13 @@ export function useTimelineData(selectedDate: string): UseTimelineDataResult {
         ? row.duration_seconds
         : Math.round((clampedEnd.getTime() - clampedStart.getTime()) / 1000);
 
+      // The real moment the entry occupies up to (finish time or "now" for
+      // running entries). Used to detect cross-midnight clipping regardless
+      // of whether the running entry belongs to a different local day.
+      const realOrNow = realEndedAt ?? now;
+      const continuesBefore = startedAt < dayStart;
+      const continuesAfter = realOrNow > dayEnd;
+
       return {
         id: row.entry_id,
         activityId: row.activity_id,
@@ -260,6 +267,8 @@ export function useTimelineData(selectedDate: string): UseTimelineDataResult {
         note: row.note,
         source: row.source as TimeEntrySource,
         timezone: row.timezone,
+        continuesBefore,
+        continuesAfter,
         clampedStart,
         clampedEnd,
       };

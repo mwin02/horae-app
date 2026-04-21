@@ -351,6 +351,8 @@ export function TimelineCanvas({
                 durationSeconds={e.durationSeconds}
                 note={e.note}
                 isRunning={e.isRunning}
+                continuesBefore={e.continuesBefore}
+                continuesAfter={e.continuesAfter}
                 height={height}
                 onPress={() => onEntryPress(e.id)}
               />
