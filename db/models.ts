@@ -61,6 +61,10 @@ export interface TimelineEntry {
   note: string | null;
   source: TimeEntrySource;
   timezone: string;
+  /** True if the real entry started before this day's local midnight (clipped at top) */
+  continuesBefore: boolean;
+  /** True if the real entry extends past this day's local midnight (clipped at bottom) */
+  continuesAfter: boolean;
 }
 
 /** A gap in the timeline (untracked time) */

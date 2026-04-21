@@ -14,6 +14,8 @@ interface TimelineBlockProps {
   durationSeconds: number | null;
   note: string | null;
   isRunning: boolean;
+  continuesBefore?: boolean;
+  continuesAfter?: boolean;
   height: number;
   onPress: () => void;
 }
@@ -26,6 +28,8 @@ export function TimelineBlock({
   durationSeconds,
   note,
   isRunning,
+  continuesBefore = false,
+  continuesAfter = false,
   height,
   onPress,
 }: TimelineBlockProps): React.ReactElement {
@@ -44,6 +48,16 @@ export function TimelineBlock({
         pressed && styles.pressed,
       ]}
     >
+      {continuesBefore && (
+        <View style={styles.continuesTop} pointerEvents="none">
+          <Feather name="chevron-up" size={14} color={categoryColor} />
+        </View>
+      )}
+      {continuesAfter && (
+        <View style={styles.continuesBottom} pointerEvents="none">
+          <Feather name="chevron-down" size={14} color={categoryColor} />
+        </View>
+      )}
       {isCompact ? (
         // Compact: single row with icon, name, duration
         <View style={styles.compactRow}>
@@ -154,5 +168,19 @@ const styles = StyleSheet.create({
   duration: {
     ...TYPOGRAPHY.bodySmall,
     color: COLORS.onSurfaceVariant,
+  },
+  continuesTop: {
+    position: 'absolute',
+    top: 2,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  continuesBottom: {
+    position: 'absolute',
+    bottom: 2,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
   },
 });
