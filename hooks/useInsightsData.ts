@@ -1,19 +1,19 @@
-import { useMemo } from 'react';
-import { useQuery } from '@powersync/react';
+import type { CategoryInsight, DayCoverage } from "@/db/models";
 import {
-  INSIGHTS_CATEGORY_QUERY,
   IDEAL_ALLOCATIONS_QUERY,
-  type InsightsCategoryRow,
+  INSIGHTS_CATEGORY_QUERY,
   type IdealAllocationRow,
-} from '@/db/queries';
-import type { CategoryInsight, DayCoverage } from '@/db/models';
-import { getCurrentTimezone, getEndOfDay, getStartOfDay } from '@/lib/timezone';
+  type InsightsCategoryRow,
+} from "@/db/queries";
+import { getCurrentTimezone, getEndOfDay, getStartOfDay } from "@/lib/timezone";
+import { useQuery } from "@powersync/react";
+import { useMemo } from "react";
 
 // ──────────────────────────────────────────────
 // Types
 // ──────────────────────────────────────────────
 
-export type InsightsPeriod = 'daily' | 'weekly';
+export type InsightsPeriod = "daily" | "weekly";
 
 export interface UseInsightsDataResult {
   /** Per-category breakdown with actual vs ideal */
@@ -30,8 +30,8 @@ export interface UseInsightsDataResult {
 // Helpers
 // ──────────────────────────────────────────────
 
-/** Waking hours per day in minutes (16h) */
-const WAKING_MINUTES_PER_DAY = 960;
+/** Minutes per day (24h) */
+export const MINUTES_PER_DAY = 1440;
 
 /**
  * Get the Monday (start) and Sunday (end) of the week containing the given date.
@@ -53,12 +53,18 @@ function getWeekRange(dateStr: string): { weekStart: string; weekEnd: string } {
 /**
  * Count the number of days in a range (inclusive), capped at today.
  */
-function countDaysInRange(startDate: string, endDate: string, todayDate: string): number {
+function countDaysInRange(
+  startDate: string,
+  endDate: string,
+  todayDate: string,
+): number {
   const effectiveEnd = endDate > todayDate ? todayDate : endDate;
   if (effectiveEnd < startDate) return 0;
   const start = new Date(`${startDate}T00:00:00.000Z`);
   const end = new Date(`${effectiveEnd}T00:00:00.000Z`);
-  return Math.round((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+  return (
+    Math.round((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)) + 1
+  );
 }
 
 // ──────────────────────────────────────────────
@@ -81,10 +87,11 @@ export function useInsightsData(
   // Use timezone-aware local-midnight boundaries so the range matches the
   // user's local day rather than naive UTC midnight.
   const { startOfRangeUTC, endOfRangeUTC, numDays } = useMemo(() => {
-    const today = new Intl.DateTimeFormat('en-CA', { timeZone: timezone })
-      .format(new Date()); // YYYY-MM-DD
+    const today = new Intl.DateTimeFormat("en-CA", {
+      timeZone: timezone,
+    }).format(new Date()); // YYYY-MM-DD
 
-    if (period === 'daily') {
+    if (period === "daily") {
       return {
         startOfRangeUTC: getStartOfDay(selectedDate, timezone).toISOString(),
         endOfRangeUTC: getEndOfDay(selectedDate, timezone).toISOString(),
@@ -144,15 +151,15 @@ export function useInsightsData(
       };
     });
 
-    const wakingMinutes = WAKING_MINUTES_PER_DAY * numDays;
-    const coveragePercent = wakingMinutes > 0
-      ? Math.min(100, Math.round((totalTrackedMinutes / wakingMinutes) * 100))
-      : 0;
+    const totalMinutes = MINUTES_PER_DAY * numDays;
+    const coveragePercent =
+      totalMinutes > 0
+        ? Math.min(100, Math.round((totalTrackedMinutes / totalMinutes) * 100))
+        : 0;
 
     const coverage: DayCoverage = {
       date: selectedDate,
       trackedMinutes: totalTrackedMinutes,
-      wakingMinutes,
       coveragePercent,
     };
 

@@ -5,15 +5,15 @@
 
 // Re-export raw record types for query results
 export type {
-  CategoryRecord,
   ActivityRecord,
-  TimeEntryRecord,
-  IdealAllocationRecord,
+  CategoryRecord,
   DailySummaryRecord,
-} from './schema';
+  IdealAllocationRecord,
+  TimeEntryRecord,
+} from "./schema";
 
 /** Source of a time entry */
-export type TimeEntrySource = 'timer' | 'manual' | 'retroactive' | 'import';
+export type TimeEntrySource = "timer" | "manual" | "retroactive" | "import";
 
 /** A category with its activities (for the activity picker) */
 export interface CategoryWithActivities {
@@ -88,6 +88,5 @@ export interface CategoryInsight {
 export interface DayCoverage {
   date: string;
   trackedMinutes: number;
-  wakingMinutes: number; // assumes ~16h waking day (960 min)
   coveragePercent: number;
 }

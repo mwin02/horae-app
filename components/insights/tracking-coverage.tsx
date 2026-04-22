@@ -1,22 +1,21 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
-import type { DayCoverage } from '@/db/models';
-import { formatDuration } from '@/lib/timezone';
-import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from '@/constants/theme';
+import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import type { DayCoverage } from "@/db/models";
+import { formatDuration } from "@/lib/timezone";
+import React, { useEffect, useRef } from "react";
+import { Animated, StyleSheet, Text, View } from "react-native";
 
 interface TrackingCoverageProps {
   coverage: DayCoverage;
-  period: 'daily' | 'weekly';
+  period: "daily" | "weekly";
 }
 
 export function TrackingCoverage({
   coverage,
   period,
 }: TrackingCoverageProps): React.ReactElement {
-  const { trackedMinutes, wakingMinutes, coveragePercent } = coverage;
+  const { trackedMinutes, coveragePercent } = coverage;
 
   const trackedHours = formatDuration(trackedMinutes * 60);
-  const wakingHours = formatDuration(wakingMinutes * 60);
 
   const animatedWidth = useRef(new Animated.Value(0)).current;
 
@@ -43,9 +42,7 @@ export function TrackingCoverage({
       </View>
 
       {/* Subtitle */}
-      <Text style={styles.subtitle}>
-        {trackedHours} of {wakingHours} waking hours
-      </Text>
+      <Text style={styles.subtitle}>{trackedHours} hours tracked today</Text>
 
       {/* Progress bar */}
       <View style={styles.progressTrack}>
@@ -55,7 +52,7 @@ export function TrackingCoverage({
             {
               width: animatedWidth.interpolate({
                 inputRange: [0, 100],
-                outputRange: ['0%', '100%'],
+                outputRange: ["0%", "100%"],
               }),
             },
           ]}
@@ -70,13 +67,20 @@ export function TrackingCoverage({
 
 // ──────────────────────────────────────────────
 
-function getCoverageMessage(percent: number, period: 'daily' | 'weekly'): string {
-  const periodLabel = period === 'daily' ? 'today' : 'this week';
+function getCoverageMessage(
+  percent: number,
+  period: "daily" | "weekly",
+): string {
+  const periodLabel = period === "daily" ? "today" : "this week";
 
-  if (percent >= 90) return `Amazing! You've tracked almost all of ${periodLabel}.`;
-  if (percent >= 70) return `Great job! Most of ${periodLabel} is accounted for.`;
-  if (percent >= 40) return `You're building the habit. Keep tracking ${periodLabel}!`;
-  if (percent > 0) return `Fill in the gaps on the Timeline to improve coverage.`;
+  if (percent >= 90)
+    return `Amazing! You've tracked almost all of ${periodLabel}.`;
+  if (percent >= 70)
+    return `Great job! Most of ${periodLabel} is accounted for.`;
+  if (percent >= 40)
+    return `You're building the habit. Keep tracking ${periodLabel}!`;
+  if (percent > 0)
+    return `Fill in the gaps on the Timeline to improve coverage.`;
   return `Start tracking to see your coverage ${periodLabel}.`;
 }
 
@@ -86,7 +90,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.surfaceContainerLow,
     borderRadius: RADIUS.xl,
-    padding: SPACING['2xl'],
+    padding: SPACING["2xl"],
   },
   sectionLabel: {
     ...TYPOGRAPHY.labelUppercase,
@@ -94,8 +98,8 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.lg,
   },
   percentRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
+    flexDirection: "row",
+    alignItems: "baseline",
   },
   percentValue: {
     fontFamily: FONTS.manropeExtraBold,
@@ -103,7 +107,7 @@ const styles = StyleSheet.create({
     lineHeight: 48,
     letterSpacing: -2,
     color: COLORS.primary,
-    fontVariant: ['tabular-nums'],
+    fontVariant: ["tabular-nums"],
   },
   percentSign: {
     fontFamily: FONTS.manropeBold,
@@ -122,11 +126,11 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
     backgroundColor: COLORS.surfaceContainer,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: SPACING.md,
   },
   progressFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: 5,
     backgroundColor: COLORS.primary,
   },
