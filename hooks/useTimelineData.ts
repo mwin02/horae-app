@@ -64,8 +64,8 @@ const SHORT_ENTRY_THRESHOLD_SECONDS = 30 * 60; // 30 minutes
 const MIN_CLUSTER_SIZE = 2;
 
 /** Default axis range when there are no entries */
-const DEFAULT_RANGE_START_HOUR = 6; // 6 AM
-const DEFAULT_RANGE_END_HOUR = 22; // 10 PM
+const DEFAULT_RANGE_START_HOUR = 0; // 12 AM
+const DEFAULT_RANGE_END_HOUR = 24; // 12 AM
 
 // ──────────────────────────────────────────────
 // Helpers
@@ -282,14 +282,14 @@ export function useTimelineData(selectedDate: string): UseTimelineDataResult {
     // Sort by clamped start time
     entries.sort((a, b) => a.clampedStart.getTime() - b.clampedStart.getTime());
 
-    // Fixed axis range: always 6 AM – midnight (or current time + 1h for today)
+    // Fixed axis range: always 12 AM – 12 AM (or current time + 2h for today)
     // Expand if entries fall outside this range
-    let rangeStartMinutes = DEFAULT_RANGE_START_HOUR * 60; // 6 AM
+    let rangeStartMinutes = DEFAULT_RANGE_START_HOUR * 60; // 0 AM
     let rangeEndMinutes: number;
 
     if (isToday) {
       const nowMinutes = minutesSinceMidnight(now, timezone);
-      rangeEndMinutes = Math.min(24 * 60, ceilToHour(nowMinutes) + 60);
+      rangeEndMinutes = Math.min(24 * 60, ceilToHour(nowMinutes) + 120);
     } else {
       rangeEndMinutes = 24 * 60; // midnight
     }
