@@ -7,7 +7,7 @@ import {
   getTodayDate,
 } from "@/lib/timezone";
 import { useQuery } from "@powersync/react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 // ──────────────────────────────────────────────
 // Types
@@ -219,9 +219,33 @@ export function useTimelineData(selectedDate: string): UseTimelineDataResult {
     [dayEnd.toISOString(), dayStart.toISOString()],
   );
 
+  const isToday = selectedDate === getTodayDate(timezone);
+
+  // Ticking "now" so the axis end, trailing gap, and running-entry clamp
+  // extend as time passes. The axis only grows on hour boundaries, so align
+  // the tick to the next hour (+1s buffer) rather than polling every minute.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    if (!isToday) return;
+    let timeoutId: ReturnType<typeof setTimeout>;
+    const scheduleNext = (): void => {
+      const current = new Date();
+      const msUntilNextHour =
+        (60 - current.getMinutes()) * 60_000 -
+        current.getSeconds() * 1000 -
+        current.getMilliseconds() +
+        1000;
+      timeoutId = setTimeout(() => {
+        setNow(new Date());
+        scheduleNext();
+      }, msUntilNextHour);
+    };
+    setNow(new Date());
+    scheduleNext();
+    return () => clearTimeout(timeoutId);
+  }, [isToday]);
+
   const result = useMemo(() => {
-    const now = new Date();
-    const isToday = selectedDate === getTodayDate(timezone);
 
     // The effective end of the visible day: now (if today) or end of day
     const effectiveDayEnd = isToday && now < dayEnd ? now : dayEnd;
@@ -373,7 +397,7 @@ export function useTimelineData(selectedDate: string): UseTimelineDataResult {
     const clusteredItems = clusterShortEntries(items);
 
     return { items: clusteredItems, rangeStartMinutes, rangeEndMinutes };
-  }, [rows, dayStart, dayEnd, selectedDate, timezone]);
+  }, [rows, dayStart, dayEnd, isToday, now, timezone]);
 
   return {
     items: result.items,
