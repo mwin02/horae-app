@@ -1,36 +1,40 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { PowerSyncContext } from '@powersync/react';
-import { useFonts } from 'expo-font';
 import {
   Manrope_400Regular,
   Manrope_500Medium,
   Manrope_600SemiBold,
   Manrope_700Bold,
   Manrope_800ExtraBold,
-} from '@expo-google-fonts/manrope';
+} from "@expo-google-fonts/manrope";
 import {
   PlusJakartaSans_400Regular,
   PlusJakartaSans_500Medium,
   PlusJakartaSans_600SemiBold,
   PlusJakartaSans_700Bold,
-} from '@expo-google-fonts/plus-jakarta-sans';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useEffect, useState } from 'react';
-import 'react-native-reanimated';
+} from "@expo-google-fonts/plus-jakarta-sans";
+import { PowerSyncContext } from "@powersync/react";
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
+} from "@react-navigation/native";
+import { useFonts } from "expo-font";
+import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect, useState } from "react";
+import "react-native-reanimated";
 
-import { useColorScheme } from '@/components/useColorScheme';
-import { db } from '@/lib/powersync';
-import { seedPresetsIfNeeded } from '@/db/seed';
+import { useColorScheme } from "@/components/useColorScheme";
+import { seedPresetsIfNeeded } from "@/db/seed";
+import { db } from "@/lib/powersync";
 
 export {
   // Catch any errors thrown by the Layout component.
   ErrorBoundary,
-} from 'expo-router';
+} from "expo-router";
 
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
+  initialRouteName: "(tabs)",
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -38,7 +42,7 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
     Manrope_400Regular,
     Manrope_500Medium,
     Manrope_600SemiBold,
@@ -60,18 +64,18 @@ export default function RootLayout() {
   useEffect(() => {
     async function initDB() {
       try {
-        console.log('[Habits] Starting DB init...');
+        console.log("[Habits] Starting DB init...");
         await db.init();
-        console.log('[Habits] DB init complete, seeding...');
+        console.log("[Habits] DB init complete, seeding...");
         await seedPresetsIfNeeded();
-        console.log('[Habits] Seed complete');
+        console.log("[Habits] Seed complete");
       } catch (e) {
-        console.error('[Habits] DB init failed:', e);
+        console.error("[Habits] DB init failed:", e);
       } finally {
         setDbReady(true);
       }
     }
-    console.log('[Habits] useEffect fired');
+    console.log("[Habits] useEffect fired");
     initDB();
   }, []);
 
@@ -93,13 +97,17 @@ function RootLayoutNav() {
 
   return (
     <PowerSyncContext.Provider value={db}>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="modal" options={{ presentation: "modal" }} />
           <Stack.Screen
             name="manage-activities"
-            options={{ title: 'Manage Activities', headerBackTitle: 'Back' }}
+            options={{
+              title: "Manage Activities",
+              headerBackTitle: "Back",
+              headerTitle: "",
+            }}
           />
         </Stack>
       </ThemeProvider>

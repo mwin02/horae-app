@@ -1,3 +1,5 @@
+import { Feather } from "@expo/vector-icons";
+import { Stack } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -10,13 +12,11 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Feather } from "@expo/vector-icons";
-import { Stack } from "expo-router";
 
 import { CategoryIcon } from "@/components/common/category-icon";
 import { GradientButton } from "@/components/common/gradient-button";
-import { CreateActivityModal } from "@/components/timer/create-activity-modal";
 import { ManageActivityRow } from "@/components/manage/manage-activity-row";
+import { CreateActivityModal } from "@/components/timer/create-activity-modal";
 import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import type { ActivityItem, CategoryWithActivities } from "@/db/models";
 import { archiveActivity } from "@/db/queries";
@@ -106,6 +106,10 @@ export default function ManageActivitiesScreen(): React.ReactElement {
     <SafeAreaView style={styles.container} edges={["bottom"]}>
       <Stack.Screen options={{ title: "Manage Activities" }} />
 
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>Manage Activities</Text>
+      </View>
       <View style={styles.content}>
         {/* Category selector — horizontal scroll, 2 rows */}
         <Text style={styles.sectionLabel}>Select Category</Text>
@@ -212,6 +216,15 @@ export default function ManageActivitiesScreen(): React.ReactElement {
 }
 
 const styles = StyleSheet.create({
+  header: {
+    paddingHorizontal: SPACING.xl,
+    paddingTop: SPACING.lg,
+    paddingBottom: SPACING.xs,
+  },
+  title: {
+    ...TYPOGRAPHY.headingXl,
+    color: COLORS.onSurface,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.surface,
