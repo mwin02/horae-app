@@ -9,15 +9,17 @@ import { WeekStrip } from "@/components/timeline/week-strip";
 import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { useInsightsData, type InsightsPeriod } from "@/hooks/useInsightsData";
 import { getCurrentTimezone, getTodayDate } from "@/lib/timezone";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
-  ScrollView,
+  Animated,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+const WEEK_STRIP_HEIGHT = 88;
 
 export default function InsightsScreen(): React.ReactElement {
   const today = getTodayDate(getCurrentTimezone());
@@ -29,15 +31,24 @@ export default function InsightsScreen(): React.ReactElement {
   const { categoryInsights, coverage, totalTrackedMinutes, isLoading } =
     useInsightsData(activeDate, period);
 
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const weekStripHeight = scrollY.interpolate({
+    inputRange: [0, WEEK_STRIP_HEIGHT],
+    outputRange: [WEEK_STRIP_HEIGHT, 0],
+    extrapolate: "clamp",
+  });
+  const weekStripOpacity = scrollY.interpolate({
+    inputRange: [0, WEEK_STRIP_HEIGHT * 0.6],
+    outputRange: [1, 0],
+    extrapolate: "clamp",
+  });
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <PeriodToggle period={period} onPeriodChange={setPeriod} />
 
       {period === "daily" ? (
-        <>
-          <DateHeader selectedDate={dailyDate} onDateChange={setDailyDate} />
-          <WeekStrip selectedDate={dailyDate} onDateChange={setDailyDate} />
-        </>
+        <DateHeader selectedDate={dailyDate} onDateChange={setDailyDate} />
       ) : (
         <WeekNavHeader selectedDate={weeklyDate} onDateChange={setWeeklyDate} />
       )}
@@ -45,18 +56,39 @@ export default function InsightsScreen(): React.ReactElement {
       {isLoading ? (
         <ActivityIndicator style={styles.loader} color={COLORS.primary} />
       ) : categoryInsights.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyTitle}>No data yet</Text>
-          <Text style={styles.emptyBody}>
-            Start tracking activities to see your insights here.
-          </Text>
-        </View>
+        <>
+          {period === "daily" && (
+            <WeekStrip selectedDate={dailyDate} onDateChange={setDailyDate} />
+          )}
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyTitle}>No data yet</Text>
+            <Text style={styles.emptyBody}>
+              Start tracking activities to see your insights here.
+            </Text>
+          </View>
+        </>
       ) : (
-        <ScrollView
+        <Animated.ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: false },
+          )}
+          scrollEventThrottle={16}
         >
+          {period === "daily" && (
+            <Animated.View
+              style={[
+                styles.weekStripWrapper,
+                { height: weekStripHeight, opacity: weekStripOpacity },
+              ]}
+            >
+              <WeekStrip selectedDate={dailyDate} onDateChange={setDailyDate} />
+            </Animated.View>
+          )}
+
           <CategoryBreakdown
             categoryInsights={categoryInsights}
             totalTrackedMinutes={totalTrackedMinutes}
@@ -71,7 +103,7 @@ export default function InsightsScreen(): React.ReactElement {
           />
 
           <TrackingCoverage coverage={coverage} period={period} />
-        </ScrollView>
+        </Animated.ScrollView>
       )}
     </SafeAreaView>
   );
@@ -81,15 +113,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.surface,
-  },
-  header: {
-    paddingHorizontal: SPACING.xl,
-    paddingTop: SPACING.lg,
-    paddingBottom: SPACING.xs,
-  },
-  title: {
-    ...TYPOGRAPHY.headingXl,
-    color: COLORS.onSurface,
   },
   loader: {
     marginTop: SPACING["3xl"],
@@ -101,6 +124,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xl,
     paddingBottom: SPACING["5xl"],
     gap: SPACING.lg,
+  },
+  weekStripWrapper: {
+    marginHorizontal: -SPACING.xl,
+    overflow: "hidden",
   },
   // Empty state
   emptyContainer: {
