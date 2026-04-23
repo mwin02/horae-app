@@ -24,6 +24,8 @@ interface CreateActivityModalProps {
   categories: CategoryWithActivities[];
   /** When provided, the modal operates in edit mode for this activity */
   initialActivity?: ActivityItem | null;
+  /** Pre-select this category when opening in create mode */
+  initialCategoryId?: string | null;
 }
 
 export function CreateActivityModal({
@@ -31,22 +33,25 @@ export function CreateActivityModal({
   onClose,
   categories,
   initialActivity,
+  initialCategoryId,
 }: CreateActivityModalProps): React.ReactElement {
   const insets = useSafeAreaInsets();
   const isEdit = !!initialActivity;
   const [name, setName] = useState(initialActivity?.name ?? "");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
-    initialActivity?.categoryId ?? null,
+    initialActivity?.categoryId ?? initialCategoryId ?? null,
   );
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (visible) {
       setName(initialActivity?.name ?? "");
-      setSelectedCategoryId(initialActivity?.categoryId ?? null);
+      setSelectedCategoryId(
+        initialActivity?.categoryId ?? initialCategoryId ?? null,
+      );
       setSubmitting(false);
     }
-  }, [visible, initialActivity]);
+  }, [visible, initialActivity, initialCategoryId]);
 
   const reset = useCallback((): void => {
     setName("");
@@ -154,21 +159,23 @@ export function CreateActivityModal({
                       key={category.id}
                       style={[
                         styles.categoryCard,
-                        isSelected && styles.categoryCardSelected,
+                        {
+                          backgroundColor: isSelected
+                            ? category.color + "26"
+                            : category.color + "12",
+                        },
                       ]}
                       onPress={() => setSelectedCategoryId(category.id)}
                     >
                       <CategoryIcon
                         icon={category.icon ?? "circle"}
                         size={22}
-                        color={
-                          isSelected ? COLORS.primary : COLORS.onSurfaceVariant
-                        }
+                        color={category.color}
                       />
                       <Text
                         style={[
                           styles.categoryCardName,
-                          isSelected && styles.categoryCardNameSelected,
+                          { color: category.color },
                         ]}
                         numberOfLines={1}
                       >

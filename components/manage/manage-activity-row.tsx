@@ -52,9 +52,20 @@ export function ManageActivityRow({
 
   return (
     <View style={styles.row}>
-      <Text style={styles.name} numberOfLines={1}>
-        {activity.name}
-      </Text>
+      <View
+        style={[styles.dot, { backgroundColor: activity.categoryColor }]}
+      />
+      <View style={styles.info}>
+        <Text style={styles.name} numberOfLines={1}>
+          {activity.name}
+        </Text>
+        <Text
+          style={[styles.category, { color: activity.categoryColor }]}
+          numberOfLines={1}
+        >
+          {activity.categoryName}
+        </Text>
+      </View>
       <Pressable
         onPress={openMenu}
         style={styles.menuButton}
@@ -76,17 +87,27 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: SPACING.md,
     backgroundColor: COLORS.surfaceContainerLowest,
     borderRadius: RADIUS.lg,
-    paddingVertical: SPACING.lg,
+    paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.lg,
+  },
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  info: {
+    flex: 1,
   },
   name: {
     ...TYPOGRAPHY.titleMd,
     color: COLORS.onSurface,
-    flex: 1,
-    marginRight: SPACING.md,
+  },
+  category: {
+    ...TYPOGRAPHY.bodySmall,
+    marginTop: 2,
   },
   menuButton: {
     width: 32,

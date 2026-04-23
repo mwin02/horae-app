@@ -124,21 +124,23 @@ export default function ManageActivitiesScreen(): React.ReactElement {
                     key={category.id}
                     style={[
                       styles.categoryCard,
-                      isSelected && styles.categoryCardSelected,
+                      {
+                        backgroundColor: isSelected
+                          ? category.color + "26"
+                          : category.color + "12",
+                      },
                     ]}
                     onPress={() => handleCategoryPress(category.id)}
                   >
                     <CategoryIcon
                       icon={category.icon ?? "circle"}
                       size={22}
-                      color={
-                        isSelected ? COLORS.primary : COLORS.onSurfaceVariant
-                      }
+                      color={category.color}
                     />
                     <Text
                       style={[
                         styles.categoryCardName,
-                        isSelected && styles.categoryCardNameSelected,
+                        { color: category.color },
                       ]}
                       numberOfLines={1}
                     >
@@ -196,6 +198,7 @@ export default function ManageActivitiesScreen(): React.ReactElement {
         visible={createVisible}
         onClose={() => setCreateVisible(false)}
         categories={categories}
+        initialCategoryId={selectedCategoryId}
       />
 
       <CreateActivityModal
@@ -243,21 +246,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: SPACING.md,
-    backgroundColor: COLORS.surfaceContainerLow,
     borderRadius: RADIUS.xl,
     paddingVertical: SPACING.lg,
     paddingHorizontal: SPACING.lg,
   },
-  categoryCardSelected: {
-    backgroundColor: COLORS.surfaceContainerHigh,
-  },
   categoryCardName: {
     ...TYPOGRAPHY.titleMd,
-    color: COLORS.onSurface,
     flexShrink: 1,
-  },
-  categoryCardNameSelected: {
-    color: COLORS.primary,
   },
   activitiesHeader: {
     flexDirection: "row",
