@@ -81,6 +81,10 @@ export default function InsightsScreen(): React.ReactElement {
           categoryInsights={categoryInsights}
           coverage={coverage}
           totalTrackedMinutes={totalTrackedMinutes}
+          onDayPress={(d) => {
+            setDailyDate(d);
+            setPeriod("daily");
+          }}
         />
       )}
     </SafeAreaView>

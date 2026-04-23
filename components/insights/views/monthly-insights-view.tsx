@@ -1,5 +1,6 @@
 import { ActivityBreakdown } from "@/components/insights/activity-breakdown";
 import { ActualVsIdeal } from "@/components/insights/actual-vs-ideal";
+import { CalendarHeatmap } from "@/components/insights/calendar-heatmap";
 import { CategoryBreakdown } from "@/components/insights/category-breakdown";
 import { TrackingCoverage } from "@/components/insights/tracking-coverage";
 import { SPACING } from "@/constants/theme";
@@ -12,6 +13,7 @@ interface MonthlyInsightsViewProps {
   categoryInsights: CategoryInsight[];
   coverage: DayCoverage;
   totalTrackedMinutes: number;
+  onDayPress: (date: string) => void;
 }
 
 export function MonthlyInsightsView({
@@ -19,6 +21,7 @@ export function MonthlyInsightsView({
   categoryInsights,
   coverage,
   totalTrackedMinutes,
+  onDayPress,
 }: MonthlyInsightsViewProps): React.ReactElement {
   return (
     <ScrollView
@@ -26,6 +29,8 @@ export function MonthlyInsightsView({
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
+      <CalendarHeatmap monthDate={selectedDate} onDayPress={onDayPress} />
+
       <CategoryBreakdown
         categoryInsights={categoryInsights}
         totalTrackedMinutes={totalTrackedMinutes}
