@@ -6,15 +6,22 @@ import { ActualVsIdeal } from '@/components/insights/actual-vs-ideal';
 import { CategoryBreakdown } from '@/components/insights/category-breakdown';
 import { PeriodToggle } from '@/components/insights/period-toggle';
 import { TrackingCoverage } from '@/components/insights/tracking-coverage';
+import { WeekNavHeader } from '@/components/insights/week-nav-header';
+import { DateHeader } from '@/components/timeline/date-header';
+import { WeekStrip } from '@/components/timeline/week-strip';
 import { COLORS, SPACING, TYPOGRAPHY } from '@/constants/theme';
 import { useInsightsData, type InsightsPeriod } from '@/hooks/useInsightsData';
-import { useUIStore } from '@/store/uiStore';
+import { getCurrentTimezone, getTodayDate } from '@/lib/timezone';
 
 export default function InsightsScreen(): React.ReactElement {
-  const selectedDate = useUIStore((s) => s.selectedDate);
+  const today = getTodayDate(getCurrentTimezone());
   const [period, setPeriod] = useState<InsightsPeriod>("daily");
+  const [dailyDate, setDailyDate] = useState<string>(today);
+  const [weeklyDate, setWeeklyDate] = useState<string>(today);
+
+  const activeDate = period === 'daily' ? dailyDate : weeklyDate;
   const { categoryInsights, coverage, totalTrackedMinutes, isLoading } =
-    useInsightsData(selectedDate, period);
+    useInsightsData(activeDate, period);
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -24,6 +31,15 @@ export default function InsightsScreen(): React.ReactElement {
       </View>
 
       <PeriodToggle period={period} onPeriodChange={setPeriod} />
+
+      {period === 'daily' ? (
+        <>
+          <DateHeader selectedDate={dailyDate} onDateChange={setDailyDate} />
+          <WeekStrip selectedDate={dailyDate} onDateChange={setDailyDate} />
+        </>
+      ) : (
+        <WeekNavHeader selectedDate={weeklyDate} onDateChange={setWeeklyDate} />
+      )}
 
       {isLoading ? (
         <ActivityIndicator style={styles.loader} color={COLORS.primary} />
@@ -49,7 +65,7 @@ export default function InsightsScreen(): React.ReactElement {
 
           <ActivityBreakdown
             categoryInsights={categoryInsights}
-            selectedDate={selectedDate}
+            selectedDate={activeDate}
             period={period}
           />
 
