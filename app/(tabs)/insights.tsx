@@ -1,17 +1,23 @@
-import React, { useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { ActivityBreakdown } from '@/components/insights/activity-breakdown';
-import { ActualVsIdeal } from '@/components/insights/actual-vs-ideal';
-import { CategoryBreakdown } from '@/components/insights/category-breakdown';
-import { PeriodToggle } from '@/components/insights/period-toggle';
-import { TrackingCoverage } from '@/components/insights/tracking-coverage';
-import { WeekNavHeader } from '@/components/insights/week-nav-header';
-import { DateHeader } from '@/components/timeline/date-header';
-import { WeekStrip } from '@/components/timeline/week-strip';
-import { COLORS, SPACING, TYPOGRAPHY } from '@/constants/theme';
-import { useInsightsData, type InsightsPeriod } from '@/hooks/useInsightsData';
-import { getCurrentTimezone, getTodayDate } from '@/lib/timezone';
+import { ActivityBreakdown } from "@/components/insights/activity-breakdown";
+import { ActualVsIdeal } from "@/components/insights/actual-vs-ideal";
+import { CategoryBreakdown } from "@/components/insights/category-breakdown";
+import { PeriodToggle } from "@/components/insights/period-toggle";
+import { TrackingCoverage } from "@/components/insights/tracking-coverage";
+import { WeekNavHeader } from "@/components/insights/week-nav-header";
+import { DateHeader } from "@/components/timeline/date-header";
+import { WeekStrip } from "@/components/timeline/week-strip";
+import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { useInsightsData, type InsightsPeriod } from "@/hooks/useInsightsData";
+import { getCurrentTimezone, getTodayDate } from "@/lib/timezone";
+import React, { useState } from "react";
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function InsightsScreen(): React.ReactElement {
   const today = getTodayDate(getCurrentTimezone());
@@ -19,20 +25,15 @@ export default function InsightsScreen(): React.ReactElement {
   const [dailyDate, setDailyDate] = useState<string>(today);
   const [weeklyDate, setWeeklyDate] = useState<string>(today);
 
-  const activeDate = period === 'daily' ? dailyDate : weeklyDate;
+  const activeDate = period === "daily" ? dailyDate : weeklyDate;
   const { categoryInsights, coverage, totalTrackedMinutes, isLoading } =
     useInsightsData(activeDate, period);
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Insights</Text>
-      </View>
-
       <PeriodToggle period={period} onPeriodChange={setPeriod} />
 
-      {period === 'daily' ? (
+      {period === "daily" ? (
         <>
           <DateHeader selectedDate={dailyDate} onDateChange={setDailyDate} />
           <WeekStrip selectedDate={dailyDate} onDateChange={setDailyDate} />
