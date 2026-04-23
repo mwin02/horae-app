@@ -1,6 +1,7 @@
 import { ActivityBreakdown } from "@/components/insights/activity-breakdown";
 import { ActualVsIdeal } from "@/components/insights/actual-vs-ideal";
 import { CategoryBreakdown } from "@/components/insights/category-breakdown";
+import { DayRhythmStrip } from "@/components/insights/day-rhythm-strip";
 import { MonthNavHeader } from "@/components/insights/month-nav-header";
 import { PeriodToggle } from "@/components/insights/period-toggle";
 import { TrackingCoverage } from "@/components/insights/tracking-coverage";
@@ -59,7 +60,10 @@ export default function InsightsScreen(): React.ReactElement {
       ) : period === "weekly" ? (
         <WeekNavHeader selectedDate={weeklyDate} onDateChange={setWeeklyDate} />
       ) : (
-        <MonthNavHeader selectedDate={monthlyDate} onDateChange={setMonthlyDate} />
+        <MonthNavHeader
+          selectedDate={monthlyDate}
+          onDateChange={setMonthlyDate}
+        />
       )}
 
       {isLoading ? (
@@ -97,6 +101,7 @@ export default function InsightsScreen(): React.ReactElement {
               <WeekStrip selectedDate={dailyDate} onDateChange={setDailyDate} />
             </Animated.View>
           )}
+          {period === "daily" && <DayRhythmStrip date={activeDate} />}
 
           <CategoryBreakdown
             categoryInsights={categoryInsights}
