@@ -7,7 +7,7 @@ import {
   getTodayDate,
 } from "@/lib/timezone";
 import { useQuery } from "@powersync/react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 // ──────────────────────────────────────────────
 // Types
@@ -64,8 +64,8 @@ const SHORT_ENTRY_THRESHOLD_SECONDS = 30 * 60; // 30 minutes
 const MIN_CLUSTER_SIZE = 2;
 
 /** Default axis range when there are no entries */
-const DEFAULT_RANGE_START_HOUR = 6; // 6 AM
-const DEFAULT_RANGE_END_HOUR = 22; // 10 PM
+const DEFAULT_RANGE_START_HOUR = 0; // 12 AM
+const DEFAULT_RANGE_END_HOUR = 24; // 12 AM
 
 // ──────────────────────────────────────────────
 // Helpers
@@ -219,9 +219,33 @@ export function useTimelineData(selectedDate: string): UseTimelineDataResult {
     [dayEnd.toISOString(), dayStart.toISOString()],
   );
 
+  const isToday = selectedDate === getTodayDate(timezone);
+
+  // Ticking "now" so the axis end, trailing gap, and running-entry clamp
+  // extend as time passes. The axis only grows on hour boundaries, so align
+  // the tick to the next hour (+1s buffer) rather than polling every minute.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    if (!isToday) return;
+    let timeoutId: ReturnType<typeof setTimeout>;
+    const scheduleNext = (): void => {
+      const current = new Date();
+      const msUntilNextHour =
+        (60 - current.getMinutes()) * 60_000 -
+        current.getSeconds() * 1000 -
+        current.getMilliseconds() +
+        1000;
+      timeoutId = setTimeout(() => {
+        setNow(new Date());
+        scheduleNext();
+      }, msUntilNextHour);
+    };
+    setNow(new Date());
+    scheduleNext();
+    return () => clearTimeout(timeoutId);
+  }, [isToday]);
+
   const result = useMemo(() => {
-    const now = new Date();
-    const isToday = selectedDate === getTodayDate(timezone);
 
     // The effective end of the visible day: now (if today) or end of day
     const effectiveDayEnd = isToday && now < dayEnd ? now : dayEnd;
@@ -282,14 +306,14 @@ export function useTimelineData(selectedDate: string): UseTimelineDataResult {
     // Sort by clamped start time
     entries.sort((a, b) => a.clampedStart.getTime() - b.clampedStart.getTime());
 
-    // Fixed axis range: always 6 AM – midnight (or current time + 1h for today)
+    // Fixed axis range: always 12 AM – 12 AM (or current time + 2h for today)
     // Expand if entries fall outside this range
-    let rangeStartMinutes = DEFAULT_RANGE_START_HOUR * 60; // 6 AM
+    let rangeStartMinutes = DEFAULT_RANGE_START_HOUR * 60; // 0 AM
     let rangeEndMinutes: number;
 
     if (isToday) {
       const nowMinutes = minutesSinceMidnight(now, timezone);
-      rangeEndMinutes = Math.min(24 * 60, ceilToHour(nowMinutes) + 60);
+      rangeEndMinutes = Math.min(24 * 60, ceilToHour(nowMinutes) + 120);
     } else {
       rangeEndMinutes = 24 * 60; // midnight
     }
@@ -373,7 +397,7 @@ export function useTimelineData(selectedDate: string): UseTimelineDataResult {
     const clusteredItems = clusterShortEntries(items);
 
     return { items: clusteredItems, rangeStartMinutes, rangeEndMinutes };
-  }, [rows, dayStart, dayEnd, selectedDate, timezone]);
+  }, [rows, dayStart, dayEnd, isToday, now, timezone]);
 
   return {
     items: result.items,
