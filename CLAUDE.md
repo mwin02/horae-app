@@ -215,3 +215,41 @@ On app foreground, check for `time_entries` where `ended_at IS NULL`. If found a
 - **Zustand for UI state only** — all persistent data goes through PowerSync
 - **No `crypto.randomUUID()`** — use `generateId()` from `@/lib/uuid` instead
 - **PowerSync `OPSqliteOpenFactory`** — must be passed explicitly when creating the database instance
+
+## Security (Public Repo — Phase 3 Sync)
+
+This repo is **public on GitHub**. Assume every committed file is world-readable. Before introducing Supabase sync, keep the following in mind:
+
+### Secrets handling
+
+- **Never commit** service role keys, JWT signing secrets, Postgres connection strings, or any `SUPABASE_SERVICE_ROLE_KEY`. These grant full DB access and bypass RLS.
+- The Supabase **anon key and project URL are safe to ship** in the client bundle (they're designed to be public) — but only if RLS is correctly enforced on every table.
+- Store local dev secrets in `.env` (gitignored). Use Expo's `EXPO_PUBLIC_` prefix only for values that are genuinely public (anon key, project URL). Anything without that prefix stays server-side.
+- Store Edge Function secrets via `supabase secrets set` — never hardcode them in function source, since `supabase/functions/**` is committed and public.
+- Before any commit that touches `.env`, `supabase/`, or config files, double-check the diff for leaked keys. GitHub secret scanning + push protection should be enabled on the repo as a backstop.
+
+### Row-Level Security (non-negotiable)
+
+- **Every synced table must have RLS enabled** with policies scoped to `auth.uid() = user_id`. No exceptions — a public repo means attackers can read the schema and probe for gaps.
+- Write policies for **all four operations** (SELECT, INSERT, UPDATE, DELETE) on every table. A missing policy defaults to deny, but a too-broad one (e.g. `USING (true)`) leaks everything.
+- Add a `user_id uuid references auth.users` column to every synced table. PowerSync sync rules must filter by the authenticated user.
+- Test RLS with a second user account before shipping — confirm user A cannot read, update, or delete user B's rows via the anon key.
+- Soft-deleted rows (`deleted_at IS NOT NULL`) still need RLS — don't assume the client filters them out.
+
+### Edge Functions
+
+- Function source is public. Don't rely on code secrecy for auth logic — assume attackers read it.
+- Always re-validate the caller's JWT inside the function (`supabase.auth.getUser()`) — never trust a `user_id` passed in the request body.
+- Rate-limit any function that can be invoked anonymously.
+
+### Migrations & seed data
+
+- `supabase/migrations/` and `supabase/seed.sql` are public. Don't embed real user data, test emails, or internal identifiers in seed files.
+- Review every migration for `GRANT` statements or `SECURITY DEFINER` functions that could bypass RLS.
+
+### Pre-Phase-3 checklist
+
+- [ ] `.gitignore` covers `.env`, `.env.*` (keep `.env.example` tracked)
+- [ ] GitHub secret scanning + push protection enabled in repo settings
+- [ ] Decide on LICENSE (affects whether forks are permitted)
+- [ ] Document the anon-key-vs-service-role distinction in the Supabase setup step
