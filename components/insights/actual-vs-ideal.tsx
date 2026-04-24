@@ -1,10 +1,10 @@
-import { Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useRef } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
-import type { CategoryInsight } from '@/db/models';
-import { formatDuration } from '@/lib/timezone';
-import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from '@/constants/theme';
+import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import type { CategoryInsight } from "@/db/models";
+import { formatDuration } from "@/lib/timezone";
+import { Feather } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useRef } from "react";
+import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 
 interface ActualVsIdealProps {
   categoryInsights: CategoryInsight[];
@@ -18,7 +18,7 @@ export function ActualVsIdeal({
   const withTargets = categoryInsights.filter((c) => c.targetMinutes != null);
 
   const openSettings = useCallback(() => {
-    router.push('/ideal-allocations');
+    router.push("/ideal-allocations");
   }, [router]);
 
   const Header = (
@@ -109,24 +109,32 @@ function ComparisonRow({ insight }: ComparisonRowProps): React.ReactElement {
     ]).start();
   }, [actualPercent, targetPercent, animatedActual, animatedTarget]);
 
-  // Determine if over or under target
-  const isOver = diff > 0;
-  const diffColor = isOver ? COLORS.tertiary : COLORS.secondary;
-  const diffPrefix = isOver ? '+' : '';
+  // Green when within 10% of target (either direction), red otherwise.
+  // Target of 0 only counts as on-goal when actual is also exactly 0.
+  const tolerance = target > 0 ? target * 0.1 : 0;
+  const withinTolerance = Math.abs(diff) <= tolerance;
+  const diffColor = withinTolerance ? COLORS.secondary : COLORS.error;
+  const diffPrefix = diff > 0 ? "+" : "-";
 
   return (
     <View style={styles.comparisonRow}>
       {/* Category name + difference badge */}
       <View style={styles.comparisonHeader}>
         <View style={styles.categoryLabelRow}>
-          <View style={[styles.colorDot, { backgroundColor: insight.categoryColor }]} />
+          <View
+            style={[
+              styles.colorDot,
+              { backgroundColor: insight.categoryColor },
+            ]}
+          />
           <Text style={styles.categoryName} numberOfLines={1}>
             {insight.categoryName}
           </Text>
         </View>
-        <View style={[styles.diffBadge, { backgroundColor: diffColor + '1A' }]}>
+        <View style={[styles.diffBadge, { backgroundColor: diffColor + "1A" }]}>
           <Text style={[styles.diffText, { color: diffColor }]}>
-            {diffPrefix}{formatDuration(Math.abs(diff) * 60)}
+            {diffPrefix}
+            {formatDuration(Math.abs(diff) * 60)}
           </Text>
         </View>
       </View>
@@ -141,7 +149,7 @@ function ComparisonRow({ insight }: ComparisonRowProps): React.ReactElement {
                 backgroundColor: insight.categoryColor,
                 width: animatedActual.interpolate({
                   inputRange: [0, 100],
-                  outputRange: ['0%', '100%'],
+                  outputRange: ["0%", "100%"],
                 }),
               },
             ]}
@@ -160,7 +168,7 @@ function ComparisonRow({ insight }: ComparisonRowProps): React.ReactElement {
               {
                 width: animatedTarget.interpolate({
                   inputRange: [0, 100],
-                  outputRange: ['0%', '100%'],
+                  outputRange: ["0%", "100%"],
                 }),
               },
             ]}
@@ -178,24 +186,24 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.surfaceContainerLow,
     borderRadius: RADIUS.xl,
-    padding: SPACING['2xl'],
+    padding: SPACING["2xl"],
   },
   sectionLabel: {
     ...TYPOGRAPHY.labelUppercase,
     color: COLORS.onSurfaceVariant,
   },
   headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: SPACING.md,
   },
   gearButton: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   gearButtonPressed: {
     backgroundColor: COLORS.surfaceContainer,
@@ -206,13 +214,13 @@ const styles = StyleSheet.create({
   },
   // Legend
   legendRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: SPACING.lg,
     marginBottom: SPACING.xl,
   },
   legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: SPACING.xs,
   },
   legendDot: {
@@ -238,14 +246,14 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   comparisonHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: SPACING.xs,
   },
   categoryLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: SPACING.sm,
     flex: 1,
   },
@@ -271,8 +279,8 @@ const styles = StyleSheet.create({
   },
   // Bars
   barPair: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: SPACING.sm,
   },
   barTrack: {
@@ -280,10 +288,10 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
     backgroundColor: COLORS.surfaceContainer,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   barFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: 3,
   },
   targetBar: {
@@ -295,6 +303,6 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     color: COLORS.onSurfaceVariant,
     minWidth: 40,
-    textAlign: 'right',
+    textAlign: "right",
   },
 });

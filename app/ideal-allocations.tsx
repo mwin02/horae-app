@@ -1,9 +1,8 @@
 import { Feather } from "@expo/vector-icons";
 import { Stack } from "expo-router";
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Pressable,
   StyleSheet,
@@ -13,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CategoryIcon } from "@/components/common/category-icon";
+import { GoalEditorModal } from "@/components/ideal-allocations/goal-editor-modal";
 import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import type { CategoryWithActivities } from "@/db/models";
 import { useAllCategoryGoalSummaries } from "@/hooks/useAllCategoryGoalSummaries";
@@ -23,14 +23,14 @@ export default function IdealAllocationsScreen(): React.ReactElement {
     useCategoriesWithActivities();
   const { summariesByCategory, isLoading: summariesLoading } =
     useAllCategoryGoalSummaries();
+  const [editing, setEditing] = useState<CategoryWithActivities | null>(null);
 
   const handleCategoryPress = useCallback((category: CategoryWithActivities) => {
-    // TODO(Section 3): open goal editor modal.
-    Alert.alert(
-      category.name,
-      "Goal editor coming in the next step.",
-      [{ text: "OK" }],
-    );
+    setEditing(category);
+  }, []);
+
+  const handleCloseEditor = useCallback(() => {
+    setEditing(null);
   }, []);
 
   const isLoading = categoriesLoading || summariesLoading;
@@ -118,6 +118,12 @@ export default function IdealAllocationsScreen(): React.ReactElement {
             </Text>
           </View>
         }
+      />
+
+      <GoalEditorModal
+        visible={editing !== null}
+        category={editing}
+        onClose={handleCloseEditor}
       />
     </SafeAreaView>
   );
