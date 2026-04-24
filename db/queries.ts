@@ -751,3 +751,17 @@ export async function computeActivityThreshold(
   const m = median(sorted);
   return Math.max(Math.round(1.5 * m), LONG_RUNNING_MIN_THRESHOLD_SECONDS);
 }
+
+/**
+ * Unified long-running threshold used by both the notification scheduler
+ * and the in-app forgotten-timer modal. Honours `threshold_override_seconds`
+ * if set; otherwise falls back to the per-activity median computation.
+ */
+export async function resolveLongRunningThreshold(
+  activityId: string
+): Promise<number> {
+  const prefs = await getNotificationPreferences();
+  const override = prefs?.threshold_override_seconds ?? null;
+  if (override !== null && override > 0) return override;
+  return computeActivityThreshold(activityId);
+}

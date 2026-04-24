@@ -3,9 +3,9 @@ import { useEffect, useRef } from "react";
 import { AppState, type AppStateStatus } from "react-native";
 
 import {
-  computeActivityThreshold,
   IDLE_REMINDER_DELAY_SECONDS,
   NOTIFICATION_PREFERENCES_QUERY,
+  resolveLongRunningThreshold,
   updateNotificationPreferences,
 } from "@/db/queries";
 import type { NotificationPreferencesRecord } from "@/db/schema";
@@ -111,7 +111,7 @@ export function useNotificationScheduler(): void {
       // First observation after mount: only ensure long-running is in place.
       if (prev === undefined) {
         if (running !== null && longRunningEnabled) {
-          await scheduleLongRunningForEntry(running, thresholdOverride);
+          await scheduleLongRunningForEntry(running);
         }
         prevEntryIdRef.current = currId;
         return;
@@ -120,7 +120,7 @@ export function useNotificationScheduler(): void {
       if (prev === null && currId !== null && running !== null) {
         await cancelIdleReminder();
         if (longRunningEnabled) {
-          await scheduleLongRunningForEntry(running, thresholdOverride);
+          await scheduleLongRunningForEntry(running);
         }
       } else if (prev !== null && currId === null) {
         await cancelLongRunningReminder(prev);
@@ -137,7 +137,7 @@ export function useNotificationScheduler(): void {
       ) {
         await cancelLongRunningReminder(prev);
         if (longRunningEnabled) {
-          await scheduleLongRunningForEntry(running, thresholdOverride);
+          await scheduleLongRunningForEntry(running);
         }
       }
 
@@ -186,14 +186,8 @@ export function useNotificationScheduler(): void {
   }, [running?.entry_id]);
 }
 
-async function scheduleLongRunningForEntry(
-  row: RunningRow,
-  thresholdOverride: number | null,
-): Promise<void> {
-  const threshold =
-    thresholdOverride !== null && thresholdOverride > 0
-      ? thresholdOverride
-      : await computeActivityThreshold(row.activity_id);
+async function scheduleLongRunningForEntry(row: RunningRow): Promise<void> {
+  const threshold = await resolveLongRunningThreshold(row.activity_id);
   const startedAt = new Date(row.started_at).getTime();
   const fireAt = new Date(startedAt + threshold * 1000);
   await scheduleLongRunningReminder({
