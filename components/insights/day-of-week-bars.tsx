@@ -3,7 +3,6 @@ import {
   useDayOfWeekBreakdown,
   type DayOfWeekBucket,
 } from "@/hooks/useDayOfWeekBreakdown";
-import { formatDuration } from "@/lib/timezone";
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -31,11 +30,7 @@ export function DayOfWeekBars({
         <View style={styles.titleBlock}>
           <Text style={styles.sectionLabel}>DAY-OF-WEEK PATTERN</Text>
           <Text style={styles.subtitle}>
-            {maxSeconds > 0
-              ? mode === "bars"
-                ? `Busiest day: ${formatDuration(maxSeconds)}`
-                : "Week Recap"
-              : "No tracked time"}
+            {maxSeconds < 0 && "No tracked time"}
           </Text>
         </View>
 
