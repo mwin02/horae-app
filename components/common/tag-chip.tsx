@@ -23,9 +23,10 @@ export function TagChip({
   onRemove,
 }: TagChipProps): React.ReactElement {
   const bg = selected ? color + '40' : color + '1a';
+  const borderColor = selected ? color : 'transparent';
 
   const inner = (
-    <View style={[styles.container, { backgroundColor: bg }]}>
+    <View style={[styles.container, { backgroundColor: bg, borderColor }]}>
       <View style={[styles.dot, { backgroundColor: color }]} />
       <Text style={[styles.label, { color }]} numberOfLines={1}>
         {name}
@@ -56,6 +57,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: RADIUS.full,
+    borderWidth: 1,
     alignSelf: 'flex-start',
   },
   dot: {
