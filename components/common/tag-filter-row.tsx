@@ -41,12 +41,6 @@ export function TagFilterRow({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {hasSelection && (
-          <Pressable onPress={() => onChange([])} style={styles.clearChip}>
-            <Feather name="x" size={12} color={COLORS.onSurfaceVariant} />
-            <Text style={styles.clearLabel}>Clear</Text>
-          </Pressable>
-        )}
         {tags.map((tag) => (
           <TagChip
             key={tag.id}
@@ -56,6 +50,12 @@ export function TagFilterRow({
             onPress={() => toggle(tag.id)}
           />
         ))}
+        {hasSelection && (
+          <Pressable onPress={() => onChange([])} style={styles.clearChip}>
+            <Feather name="x" size={12} color={COLORS.onSurfaceVariant} />
+            <Text style={styles.clearLabel}>Clear</Text>
+          </Pressable>
+        )}
       </ScrollView>
     </View>
   );
