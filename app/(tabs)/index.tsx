@@ -30,7 +30,7 @@ export default function HomeScreen(): React.ReactElement {
   const { categories, isLoading: categoriesLoading } =
     useCategoriesWithActivities();
   const { categories: quickSwitchCategories } = useQuickSwitchData();
-  const { recommendation } = useRecommendedActivity();
+  const { recommendations } = useRecommendedActivity();
   const { forgottenEntry, dismissForgotten } = useForgottenTimer();
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -99,7 +99,7 @@ export default function HomeScreen(): React.ReactElement {
         <View style={styles.timerCardWrapper}>
           <TimerCard
             runningEntry={runningEntry}
-            recommendation={recommendation}
+            recommendations={recommendations}
             onStop={stopActivity}
             onStartPress={() => setModalVisible(true)}
             onRecommendationPress={handleActivityPress}
