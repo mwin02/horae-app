@@ -14,13 +14,14 @@ interface FlatRow {
 }
 
 export interface UseRecommendedActivityResult {
-  recommendation: RecommendedActivity | null;
+  recommendations: RecommendedActivity[];
   isLoading: boolean;
 }
 
 const HOUR_WINDOW = 1;
 const RECENCY_HALF_LIFE_DAYS = 14;
 const MIN_QUALIFYING_ENTRIES = 3;
+const MAX_RECOMMENDATIONS = 2;
 const MS_PER_DAY = 86_400_000;
 
 interface LocalParts {
@@ -80,20 +81,20 @@ interface Score {
 }
 
 /**
- * Reactive hook that recommends a single activity based on the user's
- * historical patterns at the current local hour and weekday. Returns null
- * when there is insufficient history (fewer than MIN_QUALIFYING_ENTRIES
- * matching entries in the last 60 days).
+ * Reactive hook that recommends up to MAX_RECOMMENDATIONS activities
+ * based on the user's historical patterns at the current local hour and
+ * weekday. Returns an empty array when no activity meets the threshold
+ * (fewer than MIN_QUALIFYING_ENTRIES matching entries in the last 60 days).
  *
  * Scoring: each matching entry contributes a recency-decayed weight where
- * weight = 1 / (1 + daysAgo / RECENCY_HALF_LIFE_DAYS). The activity with
- * the highest total weight wins.
+ * weight = 1 / (1 + daysAgo / RECENCY_HALF_LIFE_DAYS). Activities are
+ * ranked by total weight, top N returned.
  */
 export function useRecommendedActivity(): UseRecommendedActivityResult {
   const { data, isLoading } = useQuery<FlatRow>(RECOMMENDATION_QUERY);
 
-  const recommendation = useMemo((): RecommendedActivity | null => {
-    if (!data || data.length === 0) return null;
+  const recommendations = useMemo((): RecommendedActivity[] => {
+    if (!data || data.length === 0) return [];
 
     const tz = getCurrentTimezone();
     const now = new Date();
@@ -130,23 +131,18 @@ export function useRecommendedActivity(): UseRecommendedActivityResult {
       }
     }
 
-    let best: Score | null = null;
-    for (const score of scores.values()) {
-      if (score.count < MIN_QUALIFYING_ENTRIES) continue;
-      if (!best || score.weight > best.weight) {
-        best = score;
-      }
-    }
+    const qualifying = Array.from(scores.values())
+      .filter((s) => s.count >= MIN_QUALIFYING_ENTRIES)
+      .sort((a, b) => b.weight - a.weight)
+      .slice(0, MAX_RECOMMENDATIONS);
 
-    if (!best) return null;
-
-    return {
-      activityId: best.activityId,
-      activityName: best.activityName,
-      categoryName: best.categoryName,
-      categoryColor: best.categoryColor,
-    };
+    return qualifying.map((s) => ({
+      activityId: s.activityId,
+      activityName: s.activityName,
+      categoryName: s.categoryName,
+      categoryColor: s.categoryColor,
+    }));
   }, [data]);
 
-  return { recommendation, isLoading };
+  return { recommendations, isLoading };
 }
