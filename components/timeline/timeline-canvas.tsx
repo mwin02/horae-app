@@ -4,7 +4,7 @@ import {
   minutesSinceMidnight,
 } from "@/hooks/useTimelineData";
 import { getCurrentTimezone, getTodayDate } from "@/lib/timezone";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Dimensions, ScrollView, StyleSheet, Text, View } from "react-native";
 import { ACTIVE_CHIP_HEIGHT, ActiveSessionChip } from "./active-session-chip";
 import { ClusterBlock } from "./cluster-block";
@@ -75,6 +75,9 @@ export function TimelineCanvas({
   onGapPress,
 }: TimelineCanvasProps): React.ReactElement {
   const isToday = selectedDate === getTodayDate(getCurrentTimezone());
+
+  const scrollRef = useRef<ScrollView>(null);
+  const hasAutoScrolledRef = useRef<string | null>(null);
 
   // Only one cluster can be expanded at a time
   const [expandedClusterIndex, setExpandedClusterIndex] = useState<
@@ -348,8 +351,36 @@ export function TimelineCanvas({
     return null;
   }, [items, isToday]);
 
+  const handleContentSizeChange = useCallback(
+    (_w: number, contentHeight: number) => {
+      if (!isToday) return;
+      if (hasAutoScrolledRef.current === selectedDate) return;
+      if (nowTop < 0) return;
+      const viewportHeight = Dimensions.get("window").height;
+      const target = Math.max(
+        0,
+        Math.min(
+          nowTop - viewportHeight / 3,
+          contentHeight - viewportHeight,
+        ),
+      );
+      scrollRef.current?.scrollTo({ y: target, animated: false });
+      hasAutoScrolledRef.current = selectedDate;
+    },
+    [isToday, selectedDate, nowTop],
+  );
+
+  // Reset autoscroll guard when navigating between dates so returning to today re-centers.
+  useEffect(() => {
+    if (hasAutoScrolledRef.current !== selectedDate) {
+      hasAutoScrolledRef.current = null;
+    }
+  }, [selectedDate]);
+
   return (
     <ScrollView
+      ref={scrollRef}
+      onContentSizeChange={handleContentSizeChange}
       contentContainerStyle={[
         styles.scrollContent,
         { height: resolvedCanvasHeight + SPACING["5xl"] },
