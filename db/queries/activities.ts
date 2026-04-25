@@ -28,26 +28,46 @@ export async function getActivity(id: string): Promise<ActivityRecord | null> {
   );
 }
 
-/** Create a custom activity */
+/** Create a custom activity. `color`/`icon` default to NULL (inherit from category). */
 export async function createActivity(params: {
   categoryId: string;
   name: string;
   sortOrder?: number;
+  color?: string | null;
+  icon?: string | null;
 }): Promise<string> {
   const id = generateId();
   const now = nowUTC();
   await db.execute(
-    `INSERT INTO activities (id, user_id, category_id, name, is_preset, sort_order, is_archived, created_at, updated_at)
-     VALUES (?, NULL, ?, ?, 0, ?, 0, ?, ?)`,
-    [id, params.categoryId, params.name, params.sortOrder ?? 0, now, now]
+    `INSERT INTO activities (id, user_id, category_id, name, color, icon, is_preset, sort_order, is_archived, created_at, updated_at)
+     VALUES (?, NULL, ?, ?, ?, ?, 0, ?, 0, ?, ?)`,
+    [
+      id,
+      params.categoryId,
+      params.name,
+      params.color ?? null,
+      params.icon ?? null,
+      params.sortOrder ?? 0,
+      now,
+      now,
+    ]
   );
   return id;
 }
 
-/** Update an activity */
+/**
+ * Update an activity. Pass `color: null` / `icon: null` explicitly to clear an
+ * override and fall back to the parent category's value.
+ */
 export async function updateActivity(
   id: string,
-  params: Partial<{ name: string; categoryId: string; sortOrder: number }>
+  params: Partial<{
+    name: string;
+    categoryId: string;
+    sortOrder: number;
+    color: string | null;
+    icon: string | null;
+  }>
 ): Promise<void> {
   const sets: string[] = [];
   const values: unknown[] = [];
@@ -55,6 +75,8 @@ export async function updateActivity(
   if (params.name !== undefined) { sets.push('name = ?'); values.push(params.name); }
   if (params.categoryId !== undefined) { sets.push('category_id = ?'); values.push(params.categoryId); }
   if (params.sortOrder !== undefined) { sets.push('sort_order = ?'); values.push(params.sortOrder); }
+  if (params.color !== undefined) { sets.push('color = ?'); values.push(params.color); }
+  if (params.icon !== undefined) { sets.push('icon = ?'); values.push(params.icon); }
 
   if (sets.length === 0) return;
 

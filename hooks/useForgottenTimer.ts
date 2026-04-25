@@ -17,7 +17,7 @@ const RUNNING_ENTRY_QUERY = `
     te.timezone    AS timezone,
     a.name         AS activity_name,
     c.name         AS category_name,
-    c.color        AS category_color
+    COALESCE(a.color, c.color) AS category_color
   FROM time_entries te
   JOIN activities a ON a.id = te.activity_id
   JOIN categories c ON c.id = a.category_id

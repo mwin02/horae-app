@@ -21,6 +21,8 @@ const QUICK_SWITCH_QUERY = `
     a.id          AS activity_id,
     a.name        AS activity_name,
     a.is_preset   AS activity_is_preset,
+    a.color       AS activity_color,
+    a.icon        AS activity_icon,
     COALESCE(act_counts.entry_count, 0)     AS activity_entry_count,
     COALESCE(cat_counts.cat_entry_count, 0) AS category_entry_count
   FROM categories c
@@ -56,6 +58,8 @@ interface FlatRow {
   activity_id: string | null;
   activity_name: string | null;
   activity_is_preset: number | null;
+  activity_color: string | null;
+  activity_icon: string | null;
   activity_entry_count: number;
   category_entry_count: number;
 }
@@ -102,6 +106,10 @@ export function useQuickSwitchData(): UseQuickSwitchDataResult {
           categoryColor: row.category_color,
           name: row.activity_name,
           isPreset: row.activity_is_preset === 1,
+          color: row.activity_color ?? row.category_color,
+          icon: row.activity_icon ?? row.category_icon,
+          colorOverride: row.activity_color,
+          iconOverride: row.activity_icon,
         });
       }
     }

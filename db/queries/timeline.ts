@@ -30,8 +30,8 @@ export const TIMELINE_ENTRIES_QUERY = `
     te.source         AS source,
     a.name            AS activity_name,
     c.name            AS category_name,
-    c.color           AS category_color,
-    c.icon            AS category_icon
+    COALESCE(a.color, c.color) AS category_color,
+    COALESCE(a.icon, c.icon)   AS category_icon
   FROM time_entries te
   JOIN activities a ON a.id = te.activity_id
   JOIN categories c ON c.id = a.category_id
