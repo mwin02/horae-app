@@ -58,3 +58,6 @@ supabase/.temp/
 
 # Design
 /design
+
+# Claude Code session worktrees + scratch
+.claude/
