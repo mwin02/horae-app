@@ -67,13 +67,15 @@ habits-app/
 ├── hooks/                  # Custom React hooks
 │   ├── useTimer.ts         # Core timer hook (start/stop/switch via PowerSync useQuery)
 │   ├── useElapsedTime.ts   # Live-ticking elapsed seconds (recalculates from startedAt)
-│   ├── useForgottenTimer.ts # Detects stale timers on app foreground (>2h or different day)
+│   ├── useForgottenTimer.ts # Detects stale timers on app foreground (past activity threshold or different day)
+│   ├── useNotificationScheduler.ts # Root-mounted; schedules/cancels idle + long-running local notifications off the running-entry query
 │   ├── useCategoriesWithActivities.ts # Reactive grouped categories + activities
 │   ├── useInsightsData.ts  # Aggregated insights (category breakdown, coverage, actual vs ideal)
 │   └── useActivityBreakdown.ts # Activity-level drill-down within a category
 ├── lib/                    # Library initializations
 │   ├── powersync.ts        # PowerSync DB instance (OPSqliteOpenFactory, local-only mode)
 │   ├── timezone.ts         # IANA timezone helpers (format, isToday, duration display)
+│   ├── notifications.ts    # expo-notifications wrapper (schedule/cancel/permissions)
 │   └── uuid.ts             # generateId() — React Native-safe UUID generation
 ├── store/                  # Zustand stores (UI state only)
 │   └── uiStore.ts          # Selected date, ephemeral UI state
@@ -100,6 +102,7 @@ habits-app/
 - **activities** — Belongs to a category. E.g., "Deep Work" under "Work"
 - **time_entries** — Core data. `started_at`, `ended_at`, `duration_seconds`, `timezone`, `note`, `source` (timer/manual/retroactive/import)
 - **ideal_allocations** — User's target minutes per day per category
+- **notification_preferences** — Singleton row. `idle_reminder_enabled`, `long_running_enabled`, `threshold_override_seconds` (nullable — null = compute from activity median), `has_asked_permission`
 - **daily_summaries** — Pre-aggregated daily totals (computed, not user-edited)
 
 All tables have `updated_at`, `deleted_at` (soft delete) columns. All tables are `localOnly: true` until Phase 3 (sync).
@@ -215,6 +218,7 @@ On app foreground, check for `time_entries` where `ended_at IS NULL`. If found a
 - **Zustand for UI state only** — all persistent data goes through PowerSync
 - **No `crypto.randomUUID()`** — use `generateId()` from `@/lib/uuid` instead
 - **PowerSync `OPSqliteOpenFactory`** — must be passed explicitly when creating the database instance
+- **Local notifications only** — `expo-notifications` is configured for local-scheduled reminders only. No push/remote notifications, and JS cannot run while the app is backgrounded — every nudge must be scheduled at the OS level ahead of time.
 
 ## Security (Public Repo — Phase 3 Sync)
 

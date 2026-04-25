@@ -1,4 +1,6 @@
+import { NOTIFICATION_PREFERENCES_QUERY, resolveLongRunningThreshold } from "@/db/queries";
 import type { RunningTimer } from "@/db/models";
+import type { NotificationPreferencesRecord } from "@/db/schema";
 import { getCurrentTimezone, isToday } from "@/lib/timezone";
 import { useQuery } from "@powersync/react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -35,9 +37,6 @@ interface RunningEntryRow {
   category_color: string;
 }
 
-/** How many seconds before we consider a timer "forgotten" */
-const FORGOTTEN_THRESHOLD_SECONDS = 2 * 60 * 60; // 2 hours
-
 export interface UseForgottenTimerResult {
   /** The stale/forgotten entry if one is detected, otherwise null */
   forgottenEntry: RunningTimer | null;
@@ -47,19 +46,47 @@ export interface UseForgottenTimerResult {
 
 /**
  * Detects "forgotten" timers — running entries that are either:
- * - More than 2 hours old, OR
- * - Started on a different calendar day
+ * - Past the per-activity long-running threshold (same value the
+ *   notification scheduler uses, so opening the app from a long-running
+ *   notification greets the user with this modal), OR
+ * - Started on a different calendar day (unconditional safety net —
+ *   a timer that spans days is almost certainly forgotten).
+ *
+ * Threshold-based detection is suppressed when the user has turned off
+ * long-running reminders, so the modal follows the same opt-in as the
+ * notification. The different-day check ignores that preference.
  *
  * Checks on app foreground (background → active transition) and on mount.
- * UI can use `forgottenEntry` to show a bottom sheet prompting the user.
  */
 export function useForgottenTimer(): UseForgottenTimerResult {
   const { data } = useQuery<RunningEntryRow>(RUNNING_ENTRY_QUERY);
+  const { data: prefsData } = useQuery<NotificationPreferencesRecord>(
+    NOTIFICATION_PREFERENCES_QUERY
+  );
   const [dismissed, setDismissed] = useState(false);
   const [shouldCheck, setShouldCheck] = useState(true);
+  const [thresholdSeconds, setThresholdSeconds] = useState<number | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 
   const row = data.length > 0 ? data[0] : null;
+  const prefs = prefsData.length > 0 ? prefsData[0] : null;
+  const longRunningEnabled = prefs?.long_running_enabled === 1;
+
+  // Resolve the threshold asynchronously whenever the running activity changes.
+  useEffect(() => {
+    if (row === null) {
+      setThresholdSeconds(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const t = await resolveLongRunningThreshold(row.activity_id);
+      if (!cancelled) setThresholdSeconds(t);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [row?.activity_id, prefs?.threshold_override_seconds]);
 
   // Listen for app state changes (background → active)
   useEffect(() => {
@@ -68,7 +95,6 @@ export function useForgottenTimer(): UseForgottenTimerResult {
         appStateRef.current.match(/inactive|background/) &&
         nextState === "active"
       ) {
-        // App came to foreground — re-check for forgotten timers
         setShouldCheck(true);
         setDismissed(false);
       }
@@ -80,7 +106,6 @@ export function useForgottenTimer(): UseForgottenTimerResult {
     };
   }, []);
 
-  // Determine if the current running entry qualifies as "forgotten"
   const forgottenEntry: RunningTimer | null = (() => {
     if (!shouldCheck || dismissed || row === null) return null;
 
@@ -89,10 +114,13 @@ export function useForgottenTimer(): UseForgottenTimerResult {
     const elapsedSeconds = Math.floor((now - startedAt.getTime()) / 1000);
     const timezone = getCurrentTimezone();
 
-    const isTooOld = elapsedSeconds > FORGOTTEN_THRESHOLD_SECONDS;
     const isDifferentDay = !isToday(row.started_at, timezone);
+    const isPastThreshold =
+      longRunningEnabled &&
+      thresholdSeconds !== null &&
+      elapsedSeconds > thresholdSeconds;
 
-    if (!isTooOld && !isDifferentDay) return null;
+    if (!isPastThreshold && !isDifferentDay) return null;
 
     return {
       entryId: row.entry_id,
