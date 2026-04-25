@@ -7,6 +7,7 @@ import { useTimer } from "@/hooks/useTimer";
 import { useForgottenTimer } from "@/hooks/useForgottenTimer";
 import { useCategoriesWithActivities } from "@/hooks/useCategoriesWithActivities";
 import { useQuickSwitchData } from "@/hooks/useQuickSwitchData";
+import { useRecommendedActivity } from "@/hooks/useRecommendedActivity";
 import { NewSessionModal } from "@/components/timer/new-session-modal";
 import React, { useCallback, useState } from "react";
 import {
@@ -29,6 +30,7 @@ export default function HomeScreen(): React.ReactElement {
   const { categories, isLoading: categoriesLoading } =
     useCategoriesWithActivities();
   const { categories: quickSwitchCategories } = useQuickSwitchData();
+  const { recommendation } = useRecommendedActivity();
   const { forgottenEntry, dismissForgotten } = useForgottenTimer();
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -97,8 +99,10 @@ export default function HomeScreen(): React.ReactElement {
         <View style={styles.timerCardWrapper}>
           <TimerCard
             runningEntry={runningEntry}
+            recommendation={recommendation}
             onStop={stopActivity}
             onStartPress={() => setModalVisible(true)}
+            onRecommendationPress={handleActivityPress}
           />
         </View>
 

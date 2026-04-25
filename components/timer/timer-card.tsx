@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import type { RunningTimer } from '@/db/models';
+import type { RecommendedActivity, RunningTimer } from '@/db/models';
 import { formatTimerDisplay } from '@/lib/timezone';
 import { COLORS, TYPOGRAPHY, SPACING } from '@/constants/theme';
 import { GlassCard } from '@/components/common/glass-card';
@@ -12,12 +12,21 @@ import { StopButton } from '@/components/timer/stop-button';
 
 interface TimerCardProps {
   runningEntry: RunningTimer | null;
+  recommendation: RecommendedActivity | null;
   onStop: () => void;
   onStartPress: () => void;
+  onRecommendationPress: (activityId: string) => void;
 }
 
-export function TimerCard({ runningEntry, onStop, onStartPress }: TimerCardProps): React.ReactElement {
+export function TimerCard({
+  runningEntry,
+  recommendation,
+  onStop,
+  onStartPress,
+  onRecommendationPress,
+}: TimerCardProps): React.ReactElement {
   const isActive = runningEntry !== null;
+  const hasRecommendation = !isActive && recommendation !== null;
 
   return (
     <GlassCard>
@@ -53,7 +62,7 @@ export function TimerCard({ runningEntry, onStop, onStartPress }: TimerCardProps
         </View>
 
         {/* Idle state — absolute overlay, centered on top of active layout */}
-        {!isActive && (
+        {!isActive && !hasRecommendation && (
           <View style={styles.idleOverlay} pointerEvents="auto">
             <Feather name="clock" size={40} color={COLORS.onSurfaceVariant} />
             <Text style={styles.idleTitle}>Ready to focus?</Text>
@@ -62,6 +71,28 @@ export function TimerCard({ runningEntry, onStop, onStartPress }: TimerCardProps
               shape="pill"
               label="Start Activity"
               onPress={onStartPress}
+              style={styles.startButton}
+            >
+              <Feather name="play" size={18} color={COLORS.onPrimary} />
+            </GradientButton>
+          </View>
+        )}
+
+        {/* Idle state with a personalized recommendation */}
+        {hasRecommendation && recommendation && (
+          <View style={styles.idleOverlay} pointerEvents="auto">
+            <Text style={styles.suggestedLabel}>Suggested for you</Text>
+            <Text style={styles.recommendedName} numberOfLines={1}>
+              {recommendation.activityName}
+            </Text>
+            <CategoryChip
+              name={recommendation.categoryName}
+              color={recommendation.categoryColor}
+            />
+            <GradientButton
+              shape="pill"
+              label={`Start ${recommendation.activityName}`}
+              onPress={() => onRecommendationPress(recommendation.activityId)}
               style={styles.startButton}
             >
               <Feather name="play" size={18} color={COLORS.onPrimary} />
@@ -124,5 +155,16 @@ const styles = StyleSheet.create({
   },
   startButton: {
     marginTop: SPACING.lg,
+  },
+  suggestedLabel: {
+    ...TYPOGRAPHY.labelSm,
+    color: COLORS.primary,
+    marginBottom: SPACING.xs,
+  },
+  recommendedName: {
+    ...TYPOGRAPHY.headingXl,
+    color: COLORS.onSurface,
+    textAlign: 'center',
+    paddingHorizontal: SPACING.lg,
   },
 });
