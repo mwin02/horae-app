@@ -32,6 +32,11 @@ const activities = new Table(
     user_id: column.text,         // null = system preset
     category_id: column.text,
     name: column.text,
+    // Per-activity overrides — NULL means inherit from parent category.
+    // Resolve via `resolveActivityVisuals` in `lib/activity-visuals.ts` (or
+    // SQL `COALESCE(a.color, c.color)`) at every display site.
+    color: column.text,
+    icon: column.text,
     is_preset: column.integer,    // 0 or 1
     sort_order: column.integer,
     is_archived: column.integer,  // 0 or 1
