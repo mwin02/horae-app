@@ -4,7 +4,8 @@ import {
   minutesSinceMidnight,
 } from "@/hooks/useTimelineData";
 import { getCurrentTimezone, getTodayDate } from "@/lib/timezone";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Dimensions, ScrollView, StyleSheet, Text, View } from "react-native";
 import { ACTIVE_CHIP_HEIGHT, ActiveSessionChip } from "./active-session-chip";
 import { ClusterBlock } from "./cluster-block";
@@ -75,6 +76,9 @@ export function TimelineCanvas({
   onGapPress,
 }: TimelineCanvasProps): React.ReactElement {
   const isToday = selectedDate === getTodayDate(getCurrentTimezone());
+
+  const scrollRef = useRef<ScrollView>(null);
+  const hasAutoScrolledRef = useRef<string | null>(null);
 
   // Only one cluster can be expanded at a time
   const [expandedClusterIndex, setExpandedClusterIndex] = useState<
@@ -348,8 +352,46 @@ export function TimelineCanvas({
     return null;
   }, [items, isToday]);
 
+  // Reset autoscroll guard when navigating between dates so returning to today re-centers.
+  useEffect(() => {
+    if (hasAutoScrolledRef.current !== selectedDate) {
+      hasAutoScrolledRef.current = null;
+    }
+  }, [selectedDate]);
+
+  // Single autoscroll path: re-center on the now-indicator when the tab gains
+  // focus (covers initial mount and tab switches). Defer to the next frame so
+  // the canvas has laid out before we scroll — otherwise the ScrollView clamps
+  // against a stale content height and the position visibly corrects itself.
+  // Latest nowTop accessed via ref so the focus-effect callback identity stays
+  // stable across the 1s tick — otherwise it would cleanup+rerun every second
+  // while focused and hijack the user's scroll.
+  const nowTopRef = useRef(nowTop);
+  nowTopRef.current = nowTop;
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!isToday) return;
+      if (hasAutoScrolledRef.current === selectedDate) return;
+      const nt = nowTopRef.current;
+      if (nt < 0) return;
+      const viewportHeight = Dimensions.get("window").height;
+      const target = Math.max(0, nt - viewportHeight / 3);
+      const raf = requestAnimationFrame(() => {
+        scrollRef.current?.scrollTo({ y: target, animated: false });
+        hasAutoScrolledRef.current = selectedDate;
+      });
+      return () => {
+        cancelAnimationFrame(raf);
+        // Clear guard on blur so the next focus re-centers on now.
+        hasAutoScrolledRef.current = null;
+      };
+    }, [isToday, selectedDate]),
+  );
+
   return (
     <ScrollView
+      ref={scrollRef}
       contentContainerStyle={[
         styles.scrollContent,
         { height: resolvedCanvasHeight + SPACING["5xl"] },
