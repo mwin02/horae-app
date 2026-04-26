@@ -17,7 +17,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CategoryIcon } from "@/components/common/category-icon";
 import { GradientButton } from "@/components/common/gradient-button";
 import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
-import type { CategoryWithActivities, GoalDirection } from "@/db/models";
+import type {
+  CategoryWithActivities,
+  GoalDirection,
+  GoalPeriodKind,
+} from "@/db/models";
 import {
   clearAllIdealAllocationsForCategory,
   setIdealAllocation,
@@ -37,6 +41,15 @@ const DIRECTION_OPTIONS: {
   { value: "at_most", label: "At most", helper: "Cap — less is fine." },
 ];
 
+const PERIOD_OPTIONS: {
+  value: GoalPeriodKind;
+  label: string;
+}[] = [
+  { value: "daily", label: "Daily" },
+  { value: "weekly", label: "Weekly" },
+  { value: "monthly", label: "Monthly" },
+];
+
 interface GoalEditorModalProps {
   visible: boolean;
   category: CategoryWithActivities | null;
@@ -52,8 +65,11 @@ export function GoalEditorModal({
 }: GoalEditorModalProps): React.ReactElement {
   const insets = useSafeAreaInsets();
   const {
+    periodKind: savedPeriodKind,
     defaultMinutes,
     perDayMinutes,
+    weeklyMinutes,
+    monthlyMinutes,
     goalDirection: savedDirection,
     isLoading,
   } = useIdealAllocationsForCategory(category?.id ?? null);
@@ -67,15 +83,20 @@ export function GoalEditorModal({
     [preferences.weekStartDay],
   );
 
+  const [periodKind, setPeriodKind] = useState<GoalPeriodKind>("daily");
   const [mode, setMode] = useState<Mode>("uniform");
   const [direction, setDirection] = useState<GoalDirection>("around");
   const [uniform, setUniform] = useState<HM>({ h: "0", m: "0" });
   const [perDay, setPerDay] = useState<HM[]>(() => emptyPerDay());
+  const [periodTarget, setPeriodTarget] = useState<HM>({ h: "0", m: "0" });
   const [submitting, setSubmitting] = useState(false);
 
   // Seed state each time the modal (re-)opens for a category.
   useEffect(() => {
     if (!visible || !category) return;
+
+    const initialKind: GoalPeriodKind = savedPeriodKind ?? "daily";
+    setPeriodKind(initialKind);
 
     const hasOverrides = perDayMinutes.some((v) => v != null);
     const nextMode: Mode = hasOverrides ? "perDay" : "uniform";
@@ -87,8 +108,54 @@ export function GoalEditorModal({
         minutesToHM(v != null ? v : defaultMinutes ?? 0),
       ),
     );
+    if (initialKind === "weekly") {
+      setPeriodTarget(minutesToHM(weeklyMinutes ?? 0));
+    } else if (initialKind === "monthly") {
+      setPeriodTarget(minutesToHM(monthlyMinutes ?? 0));
+    } else {
+      setPeriodTarget({ h: "0", m: "0" });
+    }
     setSubmitting(false);
-  }, [visible, category, defaultMinutes, perDayMinutes, savedDirection]);
+  }, [
+    visible,
+    category,
+    savedPeriodKind,
+    defaultMinutes,
+    perDayMinutes,
+    weeklyMinutes,
+    monthlyMinutes,
+    savedDirection,
+  ]);
+
+  // Switching kinds clears the previous shape's rows on save. Confirm so the
+  // user knows they're discarding the other configuration. No-op when no
+  // existing goal of any kind exists.
+  const handlePeriodChange = useCallback(
+    (next: GoalPeriodKind) => {
+      if (next === periodKind) return;
+      const hasExisting =
+        savedPeriodKind != null && savedPeriodKind !== next;
+      if (!hasExisting) {
+        setPeriodKind(next);
+        return;
+      }
+      const fromLabel = labelForKind(savedPeriodKind!);
+      const toLabel = labelForKind(next);
+      Alert.alert(
+        `Switch to ${toLabel.toLowerCase()} goal?`,
+        `Your current ${fromLabel.toLowerCase()} configuration will be cleared when you save.`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Switch",
+            style: "destructive",
+            onPress: () => setPeriodKind(next),
+          },
+        ],
+      );
+    },
+    [periodKind, savedPeriodKind],
+  );
 
   const handleClose = useCallback(() => {
     if (submitting) return;
@@ -124,16 +191,25 @@ export function GoalEditorModal({
     if (!category) return;
     setSubmitting(true);
     try {
-      // Always start from a clean slate so mode switches don't leave stale
-      // rows behind (e.g. switching from per-day back to uniform).
+      // Always start from a clean slate so mode/kind switches don't leave
+      // stale rows behind (e.g. switching from per-day daily back to weekly).
       await clearAllIdealAllocationsForCategory(category.id);
 
-      if (mode === "uniform") {
+      if (periodKind === "weekly" || periodKind === "monthly") {
+        await setIdealAllocation({
+          categoryId: category.id,
+          dayOfWeek: null,
+          targetMinutesPerDay: hmToMinutes(periodTarget),
+          goalDirection: direction,
+          periodKind,
+        });
+      } else if (mode === "uniform") {
         await setIdealAllocation({
           categoryId: category.id,
           dayOfWeek: null,
           targetMinutesPerDay: hmToMinutes(uniform),
           goalDirection: direction,
+          periodKind: "daily",
         });
       } else {
         // Write 7 rows, one per weekday. Absent/0 days still get a row so
@@ -144,6 +220,7 @@ export function GoalEditorModal({
             dayOfWeek: wd,
             targetMinutesPerDay: hmToMinutes(perDay[wd]),
             goalDirection: direction,
+            periodKind: "daily",
           });
         }
       }
@@ -152,7 +229,7 @@ export function GoalEditorModal({
       console.error("Failed to save goal", err);
       setSubmitting(false);
     }
-  }, [category, mode, direction, uniform, perDay, onClose]);
+  }, [category, periodKind, mode, direction, uniform, perDay, periodTarget, onClose]);
 
   const totalWeekMinutes = useMemo(() => {
     if (mode === "uniform") return hmToMinutes(uniform) * 7;
@@ -160,7 +237,10 @@ export function GoalEditorModal({
   }, [mode, uniform, perDay]);
 
   const hasExistingGoal =
-    defaultMinutes != null || perDayMinutes.some((v) => v != null);
+    defaultMinutes != null ||
+    perDayMinutes.some((v) => v != null) ||
+    weeklyMinutes != null ||
+    monthlyMinutes != null;
 
   if (!category) {
     return <Modal visible={false} transparent />;
@@ -202,7 +282,9 @@ export function GoalEditorModal({
                 <Text style={styles.headerTitle} numberOfLines={1}>
                   {category.name}
                 </Text>
-                <Text style={styles.headerSubtitle}>Daily goal</Text>
+                <Text style={styles.headerSubtitle}>
+                  {labelForKind(periodKind)} goal
+                </Text>
               </View>
             </View>
             <Pressable onPress={handleClose} style={styles.closeButton}>
@@ -210,19 +292,34 @@ export function GoalEditorModal({
             </Pressable>
           </View>
 
-          {/* Mode toggle */}
+          {/* Period kind selector */}
+          <Text style={styles.sectionLabel}>GOAL CADENCE</Text>
           <View style={styles.modeRow}>
-            <ModeButton
-              label="Same every day"
-              active={mode === "uniform"}
-              onPress={() => setMode("uniform")}
-            />
-            <ModeButton
-              label="Per day of week"
-              active={mode === "perDay"}
-              onPress={() => setMode("perDay")}
-            />
+            {PERIOD_OPTIONS.map((opt) => (
+              <ModeButton
+                key={opt.value}
+                label={opt.label}
+                active={periodKind === opt.value}
+                onPress={() => handlePeriodChange(opt.value)}
+              />
+            ))}
           </View>
+
+          {/* Daily-only sub-mode toggle */}
+          {periodKind === "daily" && (
+            <View style={styles.modeRow}>
+              <ModeButton
+                label="Same every day"
+                active={mode === "uniform"}
+                onPress={() => setMode("uniform")}
+              />
+              <ModeButton
+                label="Per day of week"
+                active={mode === "perDay"}
+                onPress={() => setMode("perDay")}
+              />
+            </View>
+          )}
 
           {/* Direction selector */}
           <Text style={styles.sectionLabel}>GOAL TYPE</Text>
@@ -246,7 +343,14 @@ export function GoalEditorModal({
             style={styles.scroll}
             contentContainerStyle={styles.scrollContent}
           >
-            {mode === "uniform" ? (
+            {periodKind === "weekly" || periodKind === "monthly" ? (
+              <HMInputRow
+                label={periodKind === "weekly" ? "Per week" : "Per month"}
+                value={periodTarget}
+                onChange={setPeriodTarget}
+                maxHours={periodKind === "weekly" ? 168 : 999}
+              />
+            ) : mode === "uniform" ? (
               <HMInputRow
                 label="Every day"
                 value={uniform}
@@ -269,9 +373,11 @@ export function GoalEditorModal({
               ))
             )}
 
-            <Text style={styles.totalLine}>
-              Weekly total: {formatHM(totalWeekMinutes)}
-            </Text>
+            {periodKind === "daily" && (
+              <Text style={styles.totalLine}>
+                Weekly total: {formatHM(totalWeekMinutes)}
+              </Text>
+            )}
           </ScrollView>
 
           {hasExistingGoal && (
@@ -360,9 +466,17 @@ interface HMInputRowProps {
   label: string;
   value: HM;
   onChange: (next: HM) => void;
+  /** Max hours allowed. Daily rows cap at 23; weekly/monthly need higher. */
+  maxHours?: number;
 }
 
-function HMInputRow({ label, value, onChange }: HMInputRowProps): React.ReactElement {
+function HMInputRow({
+  label,
+  value,
+  onChange,
+  maxHours = 23,
+}: HMInputRowProps): React.ReactElement {
+  const hMaxLength = maxHours >= 100 ? 3 : 2;
   return (
     <View style={styles.hmRow}>
       <Text style={styles.hmLabel}>{label}</Text>
@@ -370,9 +484,11 @@ function HMInputRow({ label, value, onChange }: HMInputRowProps): React.ReactEle
         <TextInput
           style={styles.hmInput}
           value={value.h}
-          onChangeText={(t) => onChange({ ...value, h: clampNumericText(t, 23) })}
+          onChangeText={(t) =>
+            onChange({ ...value, h: clampNumericText(t, maxHours) })
+          }
           keyboardType="number-pad"
-          maxLength={2}
+          maxLength={hMaxLength}
           selectTextOnFocus
         />
         <Text style={styles.hmUnit}>h</Text>
@@ -406,9 +522,15 @@ function minutesToHM(total: number): HM {
 }
 
 function hmToMinutes(v: HM): number {
-  const h = Math.min(23, Math.max(0, parseInt(v.h || "0", 10) || 0));
+  const h = Math.max(0, parseInt(v.h || "0", 10) || 0);
   const m = Math.min(59, Math.max(0, parseInt(v.m || "0", 10) || 0));
   return h * 60 + m;
+}
+
+function labelForKind(kind: GoalPeriodKind): string {
+  if (kind === "weekly") return "Weekly";
+  if (kind === "monthly") return "Monthly";
+  return "Daily";
 }
 
 function clampNumericText(text: string, max: number): string {

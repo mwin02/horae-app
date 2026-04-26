@@ -44,7 +44,7 @@ export function ActualVsIdeal({
       <View style={styles.container}>
         {Header}
         <Text style={styles.emptyText}>
-          Set daily goals for your categories to see how you compare.
+          Set goals for your categories to see how you compare.
         </Text>
       </View>
     );
@@ -116,6 +116,13 @@ function ComparisonRow({ insight }: ComparisonRowProps): React.ReactElement {
   // Target of 0 only counts as on-goal when actual is also exactly 0.
   const tolerance = target > 0 ? target * 0.1 : 0;
   const direction = insight.goalDirection ?? "around";
+  const kind = insight.goalPeriodKind;
+  const cadenceLabel =
+    kind === "weekly"
+      ? "weekly target"
+      : kind === "monthly"
+        ? "monthly target"
+        : "daily target";
   let onGoal: boolean;
   if (direction === "at_least") {
     onGoal = actual >= target - tolerance;
@@ -141,6 +148,7 @@ function ComparisonRow({ insight }: ComparisonRowProps): React.ReactElement {
           <Text style={styles.categoryName} numberOfLines={1}>
             {insight.categoryName}
           </Text>
+          <Text style={styles.cadenceText}>· {cadenceLabel}</Text>
         </View>
         <View style={[styles.diffBadge, { backgroundColor: diffColor + "1A" }]}>
           <Text style={[styles.diffText, { color: diffColor }]}>
@@ -276,7 +284,11 @@ const styles = StyleSheet.create({
   categoryName: {
     ...TYPOGRAPHY.body,
     color: COLORS.onSurface,
-    flex: 1,
+    flexShrink: 1,
+  },
+  cadenceText: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.onSurfaceVariant,
   },
   diffBadge: {
     paddingHorizontal: SPACING.sm,
