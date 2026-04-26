@@ -5,7 +5,11 @@ import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { deleteEntry, setEntryTags, updateEntryTimes } from "@/db/queries";
 import { useEntryTags } from "@/hooks/useEntryTags";
 import type { TimelineEntryData } from "@/hooks/useTimelineData";
-import { formatDuration, formatTimeInTimezone } from "@/lib/timezone";
+import {
+  formatDuration,
+  formatTimeInTimezone,
+  isSameDay,
+} from "@/lib/timezone";
 import { Feather } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { LinearGradient } from "expo-linear-gradient";
@@ -49,14 +53,18 @@ export function EntryDetailModal({
     }
   }, [entry?.id]);
 
-  const timesDirty =
+  const startDirty =
+    entry != null && editedStart.getTime() !== entry.startedAt.getTime();
+  const endDirty =
     entry != null &&
-    (editedStart.getTime() !== entry.startedAt.getTime() ||
-      (editedEnd != null &&
-        entry.endedAt != null &&
-        editedEnd.getTime() !== entry.endedAt.getTime()));
+    editedEnd != null &&
+    entry.endedAt != null &&
+    editedEnd.getTime() !== entry.endedAt.getTime();
+  const timesDirty = startDirty || endDirty;
 
-  const isValid = editedEnd === null || editedStart < editedEnd;
+  const isValid =
+    (editedEnd === null || editedStart < editedEnd) &&
+    editedStart.getTime() <= Date.now();
 
   const handleStartChange = useCallback(
     (_event: unknown, date?: Date): void => {
@@ -74,7 +82,7 @@ export function EntryDetailModal({
   }, []);
 
   const handleSaveTimes = useCallback(async (): Promise<void> => {
-    if (!entry || !timesDirty || !isValid || editedEnd === null) return;
+    if (!entry || !timesDirty || !isValid) return;
     setSaving(true);
     try {
       await updateEntryTimes(entry.id, editedStart, editedEnd);
@@ -116,10 +124,23 @@ export function EntryDetailModal({
     return seconds > 0 ? formatDuration(seconds) : "—";
   })();
 
-  const startTimeLabel = formatTimeInTimezone(editedStart.toISOString(), tz);
-  const endTimeLabel = editedEnd
-    ? formatTimeInTimezone(editedEnd.toISOString(), tz)
-    : "Now";
+  const formatLabel = (d: Date): string => {
+    const time = formatTimeInTimezone(d.toISOString(), tz);
+    const sameAsEntryStart = isSameDay(
+      d.toISOString(),
+      entry.startedAt.toISOString(),
+      tz,
+    );
+    if (sameAsEntryStart) return time;
+    const dateShort = d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      timeZone: tz,
+    });
+    return `${dateShort}, ${time}`;
+  };
+  const startTimeLabel = formatLabel(editedStart);
+  const endTimeLabel = editedEnd ? formatLabel(editedEnd) : "Now";
 
   const sourceLabel =
     entry.source === "timer"
@@ -141,7 +162,9 @@ export function EntryDetailModal({
     activePicker === "start" ? handleStartChange : handleEndChange;
   const pickerMin = activePicker === "end" ? editedStart : undefined;
   const pickerMax =
-    activePicker === "start" ? (editedEnd ?? new Date()) : new Date();
+    activePicker === "start"
+      ? editedEnd ?? new Date()
+      : new Date();
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
@@ -212,7 +235,6 @@ export function EntryDetailModal({
                 activePicker === "start" && styles.timeRowActive,
               ]}
               onPress={() => handleTogglePicker("start")}
-              disabled={entry.endedAt === null} // Disable if entry is running since start time to not allow editing of active entry
             >
               <Text style={styles.timeLabel}>Start</Text>
               <Text
@@ -223,19 +245,15 @@ export function EntryDetailModal({
               >
                 {startTimeLabel}
               </Text>
-              {entry.endedAt !== null && (
-                <Feather
-                  name={
-                    activePicker === "start" ? "chevron-up" : "chevron-down"
-                  }
-                  size={16}
-                  color={
-                    activePicker === "start"
-                      ? COLORS.primary
-                      : COLORS.onSurfaceVariant
-                  }
-                />
-              )}
+              <Feather
+                name={activePicker === "start" ? "chevron-up" : "chevron-down"}
+                size={16}
+                color={
+                  activePicker === "start"
+                    ? COLORS.primary
+                    : COLORS.onSurfaceVariant
+                }
+              />
             </Pressable>
 
             {/* End time row */}
@@ -274,7 +292,7 @@ export function EntryDetailModal({
             <View style={styles.pickerContainer}>
               <DateTimePicker
                 value={pickerValue}
-                mode="time"
+                mode="datetime"
                 display={Platform.OS === "ios" ? "spinner" : "default"}
                 onChange={pickerOnChange}
                 minimumDate={pickerMin}
@@ -286,7 +304,7 @@ export function EntryDetailModal({
 
           {/* Actions — fixed-height row to avoid modal resize */}
           <View style={styles.actions}>
-            {timesDirty && isValid && editedEnd !== null ? (
+            {timesDirty && isValid ? (
               <>
                 <Pressable
                   onPress={handleSaveTimes}
@@ -318,7 +336,9 @@ export function EntryDetailModal({
             ) : timesDirty && !isValid ? (
               <>
                 <Text style={styles.validationError}>
-                  Start must be before end
+                  {editedStart.getTime() > Date.now()
+                    ? "Start can't be in the future"
+                    : "Start must be before end"}
                 </Text>
                 <Pressable
                   style={styles.deleteIconButton}

@@ -8,6 +8,7 @@ import {
   formatDuration,
   formatTimeInTimezone,
   getCurrentTimezone,
+  isSameDay,
 } from "@/lib/timezone";
 import { Feather } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -108,19 +109,35 @@ export function GapFillModal({
   const durationSeconds = Math.round(
     (editedEnd.getTime() - editedStart.getTime()) / 1000,
   );
-  const startLabel = formatTimeInTimezone(editedStart.toISOString(), timezone);
-  const endLabel = formatTimeInTimezone(editedEnd.toISOString(), timezone);
+  const sameDay = isSameDay(
+    editedStart.toISOString(),
+    editedEnd.toISOString(),
+    timezone,
+  );
+  const formatLabel = (d: Date): string => {
+    const time = formatTimeInTimezone(d.toISOString(), timezone);
+    if (sameDay) return time;
+    const dateShort = d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      timeZone: timezone,
+    });
+    return `${dateShort}, ${time}`;
+  };
+  const startLabel = formatLabel(editedStart);
+  const endLabel = formatLabel(editedEnd);
   const isValid = editedStart < editedEnd;
 
   // Picker config based on active picker
   const pickerValue = activePicker === "start" ? editedStart : editedEnd;
   const pickerOnChange =
     activePicker === "start" ? handleStartChange : handleEndChange;
-  // Constrain pickers within the original gap bounds and each other
-  const pickerMin =
-    activePicker === "start" ? gap.startedAt : editedStart;
+  // Constrain pickers relative to each other and "now". Users can extend
+  // across midnight by picking a date earlier than (or later than) the
+  // original gap's day.
+  const pickerMin = activePicker === "end" ? editedStart : undefined;
   const pickerMax =
-    activePicker === "start" ? editedEnd : gap.endedAt;
+    activePicker === "start" ? editedEnd : new Date();
 
   return (
     <Modal
@@ -227,7 +244,7 @@ export function GapFillModal({
             <View style={styles.pickerContainer}>
               <DateTimePicker
                 value={pickerValue}
-                mode="time"
+                mode="datetime"
                 display={Platform.OS === "ios" ? "spinner" : "default"}
                 onChange={pickerOnChange}
                 minimumDate={pickerMin}
