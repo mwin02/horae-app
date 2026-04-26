@@ -8,14 +8,28 @@ import { DateHeader } from "@/components/timeline/date-header";
 import { WeekStrip } from "@/components/timeline/week-strip";
 import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { useInsightsData, type InsightsPeriod } from "@/hooks/useInsightsData";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { getCurrentTimezone, getTodayDate } from "@/lib/timezone";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function InsightsScreen(): React.ReactElement {
   const today = getTodayDate(getCurrentTimezone());
-  const [period, setPeriod] = useState<InsightsPeriod>("daily");
+  const { preferences } = useUserPreferences();
+  const [period, setPeriod] = useState<InsightsPeriod>(
+    preferences.defaultInsightsPeriod,
+  );
+  // Apply the user's default period exactly once after prefs first load,
+  // then leave the user free to flip the toggle without it snapping back.
+  const didSyncDefaultRef = useRef(false);
+  useEffect(() => {
+    if (didSyncDefaultRef.current) return;
+    didSyncDefaultRef.current = true;
+    if (preferences.defaultInsightsPeriod !== period) {
+      setPeriod(preferences.defaultInsightsPeriod);
+    }
+  }, [preferences.defaultInsightsPeriod, period]);
   const [dailyDate, setDailyDate] = useState<string>(today);
   const [weeklyDate, setWeeklyDate] = useState<string>(today);
   const [monthlyDate, setMonthlyDate] = useState<string>(today);

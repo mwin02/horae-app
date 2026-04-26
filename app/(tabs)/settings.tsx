@@ -9,6 +9,23 @@ import { SettingRow } from "@/components/settings/setting-row";
 import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { NOTIFICATION_PREFERENCES_QUERY } from "@/db/queries";
 import type { NotificationPreferencesRecord } from "@/db/schema";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
+
+const WEEK_START_LABELS: Record<number, string> = {
+  0: "Mon",
+  1: "Tue",
+  2: "Wed",
+  3: "Thu",
+  4: "Fri",
+  5: "Sat",
+  6: "Sun",
+};
+
+const PERIOD_LABELS: Record<string, string> = {
+  daily: "Daily",
+  weekly: "Weekly",
+  monthly: "Monthly",
+};
 
 function formatThresholdSummary(seconds: number | null): string {
   if (seconds === null) return "Auto";
@@ -41,6 +58,11 @@ export default function SettingsScreen(): React.ReactElement {
     NOTIFICATION_PREFERENCES_QUERY,
   );
   const prefs = prefsData.length > 0 ? prefsData[0] : null;
+  const { preferences } = useUserPreferences();
+
+  const goToGeneralPreferences = useCallback(() => {
+    router.push("/general-preferences");
+  }, [router]);
 
   const goToIdealAllocations = useCallback(() => {
     router.push("/ideal-allocations");
@@ -80,6 +102,15 @@ export default function SettingsScreen(): React.ReactElement {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       >
+        <SettingRow
+          title="General"
+          description={`Week starts ${WEEK_START_LABELS[preferences.weekStartDay]} · Insights ${PERIOD_LABELS[preferences.defaultInsightsPeriod]}`}
+          onPress={goToGeneralPreferences}
+          iconBackground={COLORS.surfaceContainer}
+          iconChildren={
+            <Feather name="sliders" size={20} color={COLORS.primary} />
+          }
+        />
         <SettingRow
           title="Notifications"
           description={notificationSummary}

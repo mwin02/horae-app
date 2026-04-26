@@ -151,6 +151,14 @@ function RootLayoutNav() {
               headerTitle: "",
             }}
           />
+          <Stack.Screen
+            name="general-preferences"
+            options={{
+              title: "General",
+              headerBackTitle: "Back",
+              headerTitle: "",
+            }}
+          />
         </Stack>
       </ThemeProvider>
     </PowerSyncContext.Provider>

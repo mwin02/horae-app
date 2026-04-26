@@ -8,13 +8,14 @@ import {
 import { useQuery } from "@powersync/react";
 import { useMemo } from "react";
 import { getMonthRange } from "./useInsightsData";
+import { useUserPreferences } from "./useUserPreferences";
 
 export interface DayCoverageCell {
   date: string; // YYYY-MM-DD (in device timezone)
   trackedSeconds: number;
   /** Fraction of 24h covered (0..1). */
   coverage: number;
-  /** Day-of-week for the cell (Mon=0 … Sun=6). */
+  /** Column position in the calendar grid: 0=user's week-start day … 6. */
   dayOfWeek: number;
   /** Day number (1..31) for display. */
   dayNumber: number;
@@ -28,7 +29,7 @@ export interface UseMonthlyCoverageResult {
   monthStart: string;
   /** YYYY-MM-DD of the last day of the month. */
   monthEnd: string;
-  /** Offset columns (Mon=0 … Sun=6) before the first day, for grid alignment. */
+  /** Offset columns before the first day, for grid alignment. */
   leadingBlankCount: number;
   isLoading: boolean;
 }
@@ -39,6 +40,8 @@ export function useMonthlyCoverage(
   monthDate: string,
 ): UseMonthlyCoverageResult {
   const timezone = getCurrentTimezone();
+  const { preferences } = useUserPreferences();
+  const weekStartDay = preferences.weekStartDay;
 
   const { monthStart, monthEnd, startIso, endIso } = useMemo(() => {
     const { monthStart, monthEnd } = getMonthRange(monthDate);
@@ -95,14 +98,16 @@ export function useMonthlyCoverage(
       const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
       const jsDate = new Date(year, month - 1, d, 12);
       const dow = jsDate.getDay(); // 0=Sun..6=Sat
-      const monFirstDow = dow === 0 ? 6 : dow - 1; // Mon=0..Sun=6
+      const monFirstDow = dow === 0 ? 6 : dow - 1; // 0=Mon..6=Sun
+      // Column index relative to the user's preferred first-day-of-week.
+      const gridColumn = ((monFirstDow - weekStartDay) + 7) % 7;
       const trackedSeconds = totals.get(dateStr) ?? 0;
 
       days.push({
         date: dateStr,
         trackedSeconds,
         coverage: Math.min(1, trackedSeconds / SECONDS_PER_DAY),
-        dayOfWeek: monFirstDow,
+        dayOfWeek: gridColumn,
         dayNumber: d,
         isFuture: dateStr > today,
         isToday: dateStr === today,
@@ -112,7 +117,7 @@ export function useMonthlyCoverage(
     const leadingBlankCount = days.length > 0 ? days[0].dayOfWeek : 0;
 
     return { days, leadingBlankCount };
-  }, [rows, monthStart, startIso, endIso, timezone]);
+  }, [rows, monthStart, startIso, endIso, timezone, weekStartDay]);
 
   return {
     days: result.days,

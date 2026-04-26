@@ -3,6 +3,7 @@ import { getCurrentTimezone, getEndOfDay, getStartOfDay } from "@/lib/timezone";
 import { useQuery } from "@powersync/react";
 import { useMemo } from "react";
 import { getMonthRange, getWeekRange } from "./useInsightsData";
+import { useUserPreferences } from "./useUserPreferences";
 
 export interface TrendCategory {
   id: string;
@@ -50,6 +51,8 @@ export function useFourWeekTrend(
   limit: number = TOP_CATEGORY_LIMIT,
 ): UseFourWeekTrendResult {
   const timezone = getCurrentTimezone();
+  const { preferences } = useUserPreferences();
+  const weekStartDay = preferences.weekStartDay;
 
   const { startIso, endIso, buckets, monthStart, monthEnd } = useMemo(() => {
     const { monthStart, monthEnd } = getMonthRange(monthDate);
@@ -61,7 +64,7 @@ export function useFourWeekTrend(
     let idx = 1;
     // Clamp safety: at most 6 ISO-week overlaps (month can span 4-6 weeks).
     while (cursor <= monthEnd && buckets.length < 6) {
-      const { weekEnd } = getWeekRange(cursor);
+      const { weekEnd } = getWeekRange(cursor, weekStartDay);
       const bucketStart = cursor;
       const bucketEnd = weekEnd > monthEnd ? monthEnd : weekEnd;
       buckets.push({
@@ -74,7 +77,7 @@ export function useFourWeekTrend(
     }
 
     return { startIso, endIso, buckets, monthStart, monthEnd };
-  }, [monthDate, timezone]);
+  }, [monthDate, timezone, weekStartDay]);
 
   const { data: rows, isLoading } = useQuery<TimelineEntryRow>(
     TIMELINE_ENTRIES_QUERY,

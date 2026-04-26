@@ -132,7 +132,7 @@ function BarsColumn({
           })}
         </View>
       </View>
-      <Text style={styles.dayLabel}>{DAY_LABELS[day.dayIndex]}</Text>
+      <Text style={styles.dayLabel}>{DAY_LABELS[day.weekdayMonZero]}</Text>
     </View>
   );
 }
@@ -157,7 +157,7 @@ function TimelineColumn({ day }: { day: DayOfWeekBucket }): React.ReactElement {
           );
         })}
       </View>
-      <Text style={styles.dayLabel}>{DAY_LABELS[day.dayIndex]}</Text>
+      <Text style={styles.dayLabel}>{DAY_LABELS[day.weekdayMonZero]}</Text>
     </View>
   );
 }
