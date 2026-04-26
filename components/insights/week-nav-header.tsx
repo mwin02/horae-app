@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from '@/constants/theme';
 import { getCurrentTimezone, getTodayDate } from '@/lib/timezone';
+import { useUserPreferences } from '@/hooks/useUserPreferences';
 
 interface WeekNavHeaderProps {
   selectedDate: string; // YYYY-MM-DD — any day in the target week
@@ -16,12 +17,13 @@ function addDays(dateStr: string, days: number): string {
   return date.toLocaleDateString('en-CA');
 }
 
-function getMondayOfWeek(dateStr: string): string {
+function getWeekStart(dateStr: string, weekStartDay: number): string {
   const [year, month, day] = dateStr.split('-').map(Number);
   const date = new Date(year, month - 1, day, 12);
-  const dow = date.getDay();
-  const offset = dow === 0 ? -6 : 1 - dow;
-  date.setDate(date.getDate() + offset);
+  const jsDow = date.getDay();
+  const monZeroDow = (jsDow + 6) % 7; // 0=Mon … 6=Sun
+  const offset = ((monZeroDow - weekStartDay) + 7) % 7;
+  date.setDate(date.getDate() - offset);
   return date.toLocaleDateString('en-CA');
 }
 
@@ -34,12 +36,14 @@ function formatShortDate(dateStr: string): string {
 }
 
 export function WeekNavHeader({ selectedDate, onDateChange }: WeekNavHeaderProps): React.ReactElement {
-  const mondayOfSelected = getMondayOfWeek(selectedDate);
-  const sundayOfSelected = addDays(mondayOfSelected, 6);
-  const mondayOfToday = getMondayOfWeek(getTodayDate(getCurrentTimezone()));
-  const isCurrentWeek = mondayOfSelected >= mondayOfToday;
+  const { preferences } = useUserPreferences();
+  const weekStartDay = preferences.weekStartDay;
+  const startOfSelected = getWeekStart(selectedDate, weekStartDay);
+  const endOfSelected = addDays(startOfSelected, 6);
+  const startOfToday = getWeekStart(getTodayDate(getCurrentTimezone()), weekStartDay);
+  const isCurrentWeek = startOfSelected >= startOfToday;
 
-  const label = `${formatShortDate(mondayOfSelected)} – ${formatShortDate(sundayOfSelected)}`;
+  const label = `${formatShortDate(startOfSelected)} – ${formatShortDate(endOfSelected)}`;
 
   const goBack = useCallback(() => {
     onDateChange(addDays(selectedDate, -7));

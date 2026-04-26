@@ -23,6 +23,7 @@ import {
   setIdealAllocation,
 } from "@/db/queries";
 import { useIdealAllocationsForCategory } from "@/hooks/useIdealAllocationsForCategory";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 
 type Mode = "uniform" | "perDay";
 
@@ -56,6 +57,15 @@ export function GoalEditorModal({
     goalDirection: savedDirection,
     isLoading,
   } = useIdealAllocationsForCategory(category?.id ?? null);
+  const { preferences } = useUserPreferences();
+  const orderedWeekdayIndices = useMemo(
+    () =>
+      Array.from(
+        { length: 7 },
+        (_, i) => (preferences.weekStartDay + i) % 7,
+      ),
+    [preferences.weekStartDay],
+  );
 
   const [mode, setMode] = useState<Mode>("uniform");
   const [direction, setDirection] = useState<GoalDirection>("around");
@@ -243,11 +253,11 @@ export function GoalEditorModal({
                 onChange={setUniform}
               />
             ) : (
-              perDay.map((value, idx) => (
+              orderedWeekdayIndices.map((idx) => (
                 <HMInputRow
                   key={DAY_LABELS[idx]}
                   label={DAY_LABELS[idx]}
-                  value={value}
+                  value={perDay[idx]}
                   onChange={(next) =>
                     setPerDay((prev) => {
                       const copy = [...prev];

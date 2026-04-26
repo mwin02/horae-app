@@ -8,6 +8,7 @@ import {
 import { getCurrentTimezone, getEndOfDay, getStartOfDay } from "@/lib/timezone";
 import { useQuery } from "@powersync/react";
 import { useMemo } from "react";
+import { useUserPreferences } from "./useUserPreferences";
 
 // ──────────────────────────────────────────────
 // Types
@@ -52,20 +53,29 @@ export function getMonthRange(dateStr: string): {
   return { monthStart: fmt(firstDay), monthEnd: fmt(lastDay) };
 }
 
-export function getWeekRange(dateStr: string): {
+/**
+ * Get the first and last day of the week containing the given date.
+ * `weekStartDay` follows the user-pref convention 0=Mon … 6=Sun.
+ * Returns YYYY-MM-DD strings.
+ */
+export function getWeekRange(
+  dateStr: string,
+  weekStartDay: number = 0,
+): {
   weekStart: string;
   weekEnd: string;
 } {
   const date = new Date(`${dateStr}T12:00:00.000Z`); // noon to avoid DST issues
-  const day = date.getUTCDay(); // 0 = Sunday
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-  const monday = new Date(date);
-  monday.setUTCDate(date.getUTCDate() + diffToMonday);
-  const sunday = new Date(monday);
-  sunday.setUTCDate(monday.getUTCDate() + 6);
+  const jsDay = date.getUTCDay(); // 0=Sun … 6=Sat
+  const monZeroDay = (jsDay + 6) % 7; // 0=Mon … 6=Sun
+  const diffToStart = ((monZeroDay - weekStartDay) + 7) % 7;
+  const start = new Date(date);
+  start.setUTCDate(date.getUTCDate() - diffToStart);
+  const end = new Date(start);
+  end.setUTCDate(start.getUTCDate() + 6);
 
   const fmt = (d: Date): string => d.toISOString().slice(0, 10);
-  return { weekStart: fmt(monday), weekEnd: fmt(sunday) };
+  return { weekStart: fmt(start), weekEnd: fmt(end) };
 }
 
 /**
@@ -130,6 +140,8 @@ export function useInsightsData(
   period: InsightsPeriod,
 ): UseInsightsDataResult {
   const timezone = getCurrentTimezone();
+  const { preferences } = useUserPreferences();
+  const weekStartDay = preferences.weekStartDay;
 
   // Use timezone-aware local-midnight boundaries so the range matches the
   // user's local day rather than naive UTC midnight.
@@ -148,8 +160,8 @@ export function useInsightsData(
     }
 
     if (period === "weekly") {
-      // Weekly: Mon–Sun
-      const { weekStart, weekEnd } = getWeekRange(selectedDate);
+      // Weekly: 7 days starting from user's preferred week-start day
+      const { weekStart, weekEnd } = getWeekRange(selectedDate, weekStartDay);
       return {
         startOfRangeUTC: getStartOfDay(weekStart, timezone).toISOString(),
         endOfRangeUTC: getEndOfDay(weekEnd, timezone).toISOString(),
@@ -166,7 +178,7 @@ export function useInsightsData(
       numDays: countDaysInRange(monthStart, monthEnd, today),
       daysInRange: enumerateDaysInRange(monthStart, monthEnd, today),
     };
-  }, [selectedDate, period, timezone]);
+  }, [selectedDate, period, timezone, weekStartDay]);
 
   // Reactive query: time per category
   const { data: categoryRows, isLoading: categoriesLoading } =

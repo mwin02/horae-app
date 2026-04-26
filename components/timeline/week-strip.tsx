@@ -1,5 +1,6 @@
 import { COLORS, RADIUS, SPACING } from "@/constants/theme";
 import { getCurrentTimezone, getTodayDate } from "@/lib/timezone";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -20,13 +21,14 @@ interface DayInfo {
   isFuture: boolean;
 }
 
-/** Get Monday of the week containing the given date */
-function getMondayOfWeek(dateStr: string): Date {
+/** Get the first day of the week containing the given date (local-time anchored). */
+function getWeekStartDate(dateStr: string, weekStartDay: number): Date {
   const [year, month, day] = dateStr.split("-").map(Number);
   const date = new Date(year, month - 1, day, 12);
-  const dow = date.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
-  const mondayOffset = dow === 0 ? -6 : 1 - dow;
-  date.setDate(date.getDate() + mondayOffset);
+  const jsDow = date.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+  const monZeroDow = (jsDow + 6) % 7; // 0 = Mon ... 6 = Sun
+  const offset = ((monZeroDow - weekStartDay) + 7) % 7;
+  date.setDate(date.getDate() - offset);
   return date;
 }
 
@@ -41,23 +43,26 @@ export function WeekStrip({
 }: WeekStripProps): React.ReactElement {
   const timezone = getCurrentTimezone();
   const today = getTodayDate(timezone);
+  const { preferences } = useUserPreferences();
+  const weekStartDay = preferences.weekStartDay;
 
   const days: DayInfo[] = useMemo(() => {
-    const monday = getMondayOfWeek(selectedDate);
-    return DAY_LABELS.map((label, i) => {
-      const d = new Date(monday);
-      d.setDate(monday.getDate() + i);
+    const start = getWeekStartDate(selectedDate, weekStartDay);
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
       const dateStr = toDateStr(d);
+      const labelIdx = (weekStartDay + i) % 7; // 0=Mon … 6=Sun
       return {
         dateStr,
         dayOfMonth: d.getDate(),
-        dayLabel: label,
+        dayLabel: DAY_LABELS[labelIdx],
         isSelected: dateStr === selectedDate,
         isToday: dateStr === today,
         isFuture: dateStr > today,
       };
     });
-  }, [selectedDate, today]);
+  }, [selectedDate, today, weekStartDay]);
 
   return (
     <View style={styles.container}>

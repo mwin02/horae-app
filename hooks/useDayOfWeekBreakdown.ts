@@ -7,6 +7,7 @@ import {
 import { useQuery } from "@powersync/react";
 import { useMemo } from "react";
 import { getWeekRange } from "./useInsightsData";
+import { useUserPreferences } from "./useUserPreferences";
 
 export interface DayOfWeekCategory {
   id: string;
@@ -27,8 +28,10 @@ export interface DayOfWeekHour {
 }
 
 export interface DayOfWeekBucket {
-  /** Mon=0 … Sun=6 */
+  /** Offset from the user's week-start day (0=first column … 6=last column). */
   dayIndex: number;
+  /** Canonical weekday: 0=Mon … 6=Sun. Use for labelling. */
+  weekdayMonZero: number;
   totalSeconds: number;
   /** Category segments sorted by seconds desc for stable stacking. */
   segments: DayOfWeekSegment[];
@@ -57,15 +60,17 @@ export function useDayOfWeekBreakdown(
   weekDate: string,
 ): UseDayOfWeekBreakdownResult {
   const timezone = getCurrentTimezone();
+  const { preferences } = useUserPreferences();
+  const weekStartDay = preferences.weekStartDay;
 
   const { weekStartIso, weekEndIso, weekStartDateStr } = useMemo(() => {
-    const { weekStart, weekEnd } = getWeekRange(weekDate);
+    const { weekStart, weekEnd } = getWeekRange(weekDate, weekStartDay);
     return {
       weekStartIso: getStartOfDay(weekStart, timezone).toISOString(),
       weekEndIso: getEndOfDay(weekEnd, timezone).toISOString(),
       weekStartDateStr: weekStart,
     };
-  }, [weekDate, timezone]);
+  }, [weekDate, timezone, weekStartDay]);
 
   const { data: rows, isLoading } = useQuery<TimelineEntryRow>(
     TIMELINE_ENTRIES_QUERY,
@@ -182,7 +187,8 @@ export function useDayOfWeekBreakdown(
         },
       );
 
-      return { dayIndex, totalSeconds, segments, hours };
+      const weekdayMonZero = (weekStartDay + dayIndex) % 7;
+      return { dayIndex, weekdayMonZero, totalSeconds, segments, hours };
     });
 
     const maxSeconds = days.reduce(
@@ -196,7 +202,7 @@ export function useDayOfWeekBreakdown(
     );
 
     return { days, maxSeconds, legend };
-  }, [rows, weekStartIso, weekEndIso, weekStartDateStr]);
+  }, [rows, weekStartIso, weekEndIso, weekStartDateStr, weekStartDay]);
 
   return {
     days: result.days,

@@ -5,7 +5,8 @@ import {
   type InsightsActivityRow,
 } from '@/db/queries';
 import { getCurrentTimezone, getEndOfDay, getStartOfDay } from '@/lib/timezone';
-import type { InsightsPeriod } from './useInsightsData';
+import { getWeekRange, type InsightsPeriod } from './useInsightsData';
+import { useUserPreferences } from './useUserPreferences';
 
 // ──────────────────────────────────────────────
 // Types
@@ -30,22 +31,6 @@ export interface UseActivityBreakdownResult {
 // ──────────────────────────────────────────────
 // Helpers
 // ──────────────────────────────────────────────
-
-/**
- * Get the Monday (start) and Sunday (end) of the week containing the given date.
- */
-function getWeekRange(dateStr: string): { weekStart: string; weekEnd: string } {
-  const date = new Date(`${dateStr}T12:00:00.000Z`);
-  const day = date.getUTCDay();
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-  const monday = new Date(date);
-  monday.setUTCDate(date.getUTCDate() + diffToMonday);
-  const sunday = new Date(monday);
-  sunday.setUTCDate(monday.getUTCDate() + 6);
-
-  const fmt = (d: Date): string => d.toISOString().slice(0, 10);
-  return { weekStart: fmt(monday), weekEnd: fmt(sunday) };
-}
 
 /** Opacity steps for generating tonal color variations */
 const OPACITY_STEPS = [1.0, 0.75, 0.55, 0.40, 0.30];
@@ -93,6 +78,8 @@ export function useActivityBreakdown(
   period: InsightsPeriod,
 ): UseActivityBreakdownResult {
   const timezone = getCurrentTimezone();
+  const { preferences } = useUserPreferences();
+  const weekStartDay = preferences.weekStartDay;
 
   const { startOfRangeUTC, endOfRangeUTC } = useMemo(() => {
     if (period === 'daily') {
@@ -101,12 +88,12 @@ export function useActivityBreakdown(
         endOfRangeUTC: getEndOfDay(selectedDate, timezone).toISOString(),
       };
     }
-    const { weekStart, weekEnd } = getWeekRange(selectedDate);
+    const { weekStart, weekEnd } = getWeekRange(selectedDate, weekStartDay);
     return {
       startOfRangeUTC: getStartOfDay(weekStart, timezone).toISOString(),
       endOfRangeUTC: getEndOfDay(weekEnd, timezone).toISOString(),
     };
-  }, [selectedDate, period, timezone]);
+  }, [selectedDate, period, timezone, weekStartDay]);
 
   // Only run the query if a category is selected
   const { data: activityRows, isLoading } = useQuery<InsightsActivityRow>(

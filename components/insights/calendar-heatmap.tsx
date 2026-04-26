@@ -3,8 +3,9 @@ import {
   useMonthlyCoverage,
   type DayCoverageCell,
 } from '@/hooks/useMonthlyCoverage';
+import { useUserPreferences } from '@/hooks/useUserPreferences';
 import { formatDuration } from '@/lib/timezone';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
 
 interface CalendarHeatmapProps {
@@ -12,13 +13,23 @@ interface CalendarHeatmapProps {
   onDayPress: (date: string) => void;
 }
 
-const DOW_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+/** Mon=0 … Sun=6. */
+const DOW_LABELS_MON_ZERO = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
 export function CalendarHeatmap({
   monthDate,
   onDayPress,
 }: CalendarHeatmapProps): React.ReactElement | null {
   const { days, leadingBlankCount, isLoading } = useMonthlyCoverage(monthDate);
+  const { preferences } = useUserPreferences();
+  const dowLabels = useMemo(
+    () =>
+      Array.from(
+        { length: 7 },
+        (_, i) => DOW_LABELS_MON_ZERO[(preferences.weekStartDay + i) % 7],
+      ),
+    [preferences.weekStartDay],
+  );
 
   if (isLoading) return null;
 
@@ -38,7 +49,7 @@ export function CalendarHeatmap({
       </Text>
 
       <View style={styles.dowRow}>
-        {DOW_LABELS.map((label, i) => (
+        {dowLabels.map((label, i) => (
           <Text key={i} style={styles.dowLabel}>
             {label}
           </Text>

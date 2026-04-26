@@ -6,6 +6,7 @@ import { getCurrentTimezone, getEndOfDay, getStartOfDay } from "@/lib/timezone";
 import { useQuery } from "@powersync/react";
 import { useMemo } from "react";
 import { getWeekRange } from "./useInsightsData";
+import { useUserPreferences } from "./useUserPreferences";
 
 export interface WeekOverWeekRow {
   categoryId: string;
@@ -39,12 +40,14 @@ export function useWeekOverWeekDelta(
   weekDate: string,
 ): UseWeekOverWeekDeltaResult {
   const timezone = getCurrentTimezone();
+  const { preferences } = useUserPreferences();
+  const weekStartDay = preferences.weekStartDay;
 
   const ranges = useMemo(() => {
-    const { weekStart, weekEnd } = getWeekRange(weekDate);
+    const { weekStart, weekEnd } = getWeekRange(weekDate, weekStartDay);
     const prevWeekAnchor = shiftDate(weekStart, -1);
     const { weekStart: prevStart, weekEnd: prevEnd } =
-      getWeekRange(prevWeekAnchor);
+      getWeekRange(prevWeekAnchor, weekStartDay);
 
     return {
       thisStart: getStartOfDay(weekStart, timezone).toISOString(),
@@ -52,7 +55,7 @@ export function useWeekOverWeekDelta(
       prevStart: getStartOfDay(prevStart, timezone).toISOString(),
       prevEnd: getEndOfDay(prevEnd, timezone).toISOString(),
     };
-  }, [weekDate, timezone]);
+  }, [weekDate, timezone, weekStartDay]);
 
   const { data: thisRows, isLoading: thisLoading } =
     useQuery<InsightsCategoryRow>(INSIGHTS_CATEGORY_QUERY, [
