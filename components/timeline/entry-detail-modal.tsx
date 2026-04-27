@@ -45,22 +45,24 @@ export function EntryDetailModal({
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
   const { tags: entryTags } = useEntryTags(entry?.id ?? null);
 
-  // Reset state when entry changes
+  // Reset state when entry changes — always seed from the real (un-clamped)
+  // stored times so a cross-midnight entry shows its true start/end rather
+  // than the day boundary the canvas clamped to.
   useEffect(() => {
     if (entry) {
-      setEditedStart(entry.startedAt);
-      setEditedEnd(entry.endedAt);
+      setEditedStart(entry.realStartedAt);
+      setEditedEnd(entry.realEndedAt);
       setActivePicker(null);
     }
   }, [entry?.id]);
 
   const startDirty =
-    entry != null && editedStart.getTime() !== entry.startedAt.getTime();
+    entry != null && editedStart.getTime() !== entry.realStartedAt.getTime();
   const endDirty =
     entry != null &&
     editedEnd != null &&
-    entry.endedAt != null &&
-    editedEnd.getTime() !== entry.endedAt.getTime();
+    entry.realEndedAt != null &&
+    editedEnd.getTime() !== entry.realEndedAt.getTime();
   const timesDirty = startDirty || endDirty;
 
   const isValid =
@@ -129,7 +131,7 @@ export function EntryDetailModal({
     const time = formatTimeInTimezone(d.toISOString(), tz);
     const sameAsEntryStart = isSameDay(
       d.toISOString(),
-      entry.startedAt.toISOString(),
+      entry.realStartedAt.toISOString(),
       tz,
     );
     if (sameAsEntryStart) return time;
@@ -166,7 +168,7 @@ export function EntryDetailModal({
   // day boundary.
   const ONE_DAY_MS = 24 * 60 * 60 * 1000;
   const now = new Date();
-  const anchorMs = entry.startedAt.getTime();
+  const anchorMs = entry.realStartedAt.getTime();
   const startFloor = new Date(anchorMs - ONE_DAY_MS);
   const startCeil = new Date(
     Math.min(editedEnd?.getTime() ?? now.getTime(), now.getTime()),
