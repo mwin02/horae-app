@@ -132,66 +132,19 @@ create policy user_preferences_delete on user_preferences
   for delete to authenticated using (user_id = auth.uid());
 
 -- =========================================================================
--- entry_tags  (no user_id column; scope via parent time_entries + tags)
+-- entry_tags
 -- =========================================================================
+-- entry_tags.user_id is set by the entry_tags_set_user_id trigger from the
+-- parent time_entries.user_id (and rejected if the tag belongs to a
+-- different user). So a flat user_id = auth.uid() check here is sufficient
+-- AND prevents cross-user attachment.
 alter table entry_tags enable row level security;
 
--- Read: the parent entry must belong to the user.
 create policy entry_tags_select on entry_tags
-  for select to authenticated
-  using (
-    exists (
-      select 1 from time_entries te
-      where te.id = entry_tags.entry_id
-        and te.user_id = auth.uid()
-    )
-  );
-
--- Write: both the entry AND the tag must belong to the user. This blocks
--- attaching another user's tag to one of your entries (or vice versa).
+  for select to authenticated using (user_id = auth.uid());
 create policy entry_tags_insert on entry_tags
-  for insert to authenticated
-  with check (
-    exists (
-      select 1 from time_entries te
-      where te.id = entry_tags.entry_id
-        and te.user_id = auth.uid()
-    )
-    and exists (
-      select 1 from tags t
-      where t.id = entry_tags.tag_id
-        and t.user_id = auth.uid()
-    )
-  );
-
+  for insert to authenticated with check (user_id = auth.uid());
 create policy entry_tags_update on entry_tags
-  for update to authenticated
-  using (
-    exists (
-      select 1 from time_entries te
-      where te.id = entry_tags.entry_id
-        and te.user_id = auth.uid()
-    )
-  )
-  with check (
-    exists (
-      select 1 from time_entries te
-      where te.id = entry_tags.entry_id
-        and te.user_id = auth.uid()
-    )
-    and exists (
-      select 1 from tags t
-      where t.id = entry_tags.tag_id
-        and t.user_id = auth.uid()
-    )
-  );
-
+  for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 create policy entry_tags_delete on entry_tags
-  for delete to authenticated
-  using (
-    exists (
-      select 1 from time_entries te
-      where te.id = entry_tags.entry_id
-        and te.user_id = auth.uid()
-    )
-  );
+  for delete to authenticated using (user_id = auth.uid());

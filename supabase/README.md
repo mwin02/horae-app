@@ -33,7 +33,7 @@ PowerSync sync rules for the Habits app's optional cloud sync.
    Verify:
    ```sql
    select count(*) from categories where is_preset;  -- expect 10
-   select count(*) from activities where is_preset;  -- expect 40
+   select count(*) from activities where is_preset;  -- expect 41
    ```
 
 ## RLS smoke test

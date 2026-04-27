@@ -180,16 +180,59 @@ create index tags_by_sort on tags (sort_order);
 create index tags_by_user on tags (user_id);
 
 -- =========================================================================
--- entry_tags  (no user_id; scope follows time_entries)
+-- entry_tags
 -- =========================================================================
+-- Carries a denormalized `user_id` matching the parent entry. Two reasons:
+--   1. PowerSync sync rule data queries must be single-table flat SELECTs
+--      (no JOINs), so we need user_id on the row itself to scope buckets.
+--   2. RLS gets simpler and cheaper: `user_id = auth.uid()` instead of a
+--      correlated EXISTS subquery against time_entries.
+-- A BEFORE INSERT/UPDATE trigger keeps user_id consistent with the parent
+-- entry, so clients never have to set it explicitly.
 create table entry_tags (
   id          uuid        primary key default gen_random_uuid(),
+  user_id     uuid        not null references auth.users(id) on delete cascade,
   entry_id    uuid        not null references time_entries(id) on delete cascade,
   tag_id      uuid        not null references tags(id) on delete cascade,
   created_at  timestamptz not null default now()
 );
 create index entry_tags_by_entry on entry_tags (entry_id);
 create index entry_tags_by_tag   on entry_tags (tag_id);
+create index entry_tags_by_user  on entry_tags (user_id);
+
+-- Force entry_tags.user_id to match the parent time_entries.user_id and the
+-- referenced tag's user_id. Rejects mismatches outright (covers the edge
+-- case where a client sends the wrong user_id; the RLS WITH CHECK then
+-- can't be tricked).
+create or replace function entry_tags_sync_user_id()
+returns trigger
+language plpgsql
+as $$
+declare
+  v_entry_user uuid;
+  v_tag_user   uuid;
+begin
+  select user_id into v_entry_user from time_entries where id = new.entry_id;
+  select user_id into v_tag_user   from tags         where id = new.tag_id;
+
+  if v_entry_user is null then
+    raise exception 'entry_tags.entry_id % does not reference a valid entry', new.entry_id;
+  end if;
+  if v_tag_user is null then
+    raise exception 'entry_tags.tag_id % does not reference a valid tag', new.tag_id;
+  end if;
+  if v_entry_user <> v_tag_user then
+    raise exception 'entry_tags: entry and tag belong to different users';
+  end if;
+
+  new.user_id := v_entry_user;
+  return new;
+end;
+$$;
+
+create trigger entry_tags_set_user_id
+  before insert or update on entry_tags
+  for each row execute function entry_tags_sync_user_id();
 
 -- =========================================================================
 -- user_preferences  (singleton per user)

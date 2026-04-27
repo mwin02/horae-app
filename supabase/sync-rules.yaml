@@ -25,8 +25,8 @@ bucket_definitions:
       - SELECT * FROM notification_preferences WHERE user_id = bucket.user_id
       - SELECT * FROM tags                     WHERE user_id = bucket.user_id
       - SELECT * FROM user_preferences         WHERE user_id = bucket.user_id
-      # entry_tags has no user_id column; scope follows the parent entry.
-      - >-
-        SELECT et.* FROM entry_tags et
-        JOIN time_entries te ON te.id = et.entry_id
-        WHERE te.user_id = bucket.user_id
+      # entry_tags.user_id is kept in sync with the parent time_entry by a
+      # BEFORE INSERT/UPDATE trigger (see 0001_initial_schema.sql), so we
+      # can scope it like every other user-owned table. PowerSync sync-rule
+      # data queries don't support JOINs, which is why we denormalize here.
+      - SELECT * FROM entry_tags               WHERE user_id = bucket.user_id
