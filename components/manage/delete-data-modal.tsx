@@ -1,10 +1,9 @@
 import { Feather } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -72,17 +71,21 @@ export function DeleteDataModal({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <KeyboardAvoidingView
-        style={styles.overlay}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      <View style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={onClose} />
 
-        <View
-          style={[styles.sheet, { paddingBottom: insets.bottom + SPACING.lg }]}
-        >
+        <View style={styles.sheet}>
           <View style={styles.handleBar} />
 
+          <ScrollView
+            automaticallyAdjustKeyboardInsets
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={[
+              styles.sheetContent,
+              { paddingBottom: insets.bottom + SPACING.lg },
+            ]}
+          >
           <View style={styles.header}>
             <View style={styles.headerText}>
               <Text style={styles.headerTitle}>{title}</Text>
@@ -150,8 +153,9 @@ export function DeleteDataModal({
               {submitting ? "Deleting…" : "Delete permanently"}
             </Text>
           </Pressable>
+          </ScrollView>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }
@@ -168,8 +172,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceContainerLowest,
     borderTopLeftRadius: RADIUS.xxl,
     borderTopRightRadius: RADIUS.xxl,
-    paddingHorizontal: SPACING["2xl"],
     paddingTop: SPACING.md,
+    maxHeight: "90%",
+  },
+  sheetContent: {
+    paddingHorizontal: SPACING["2xl"],
   },
   handleBar: {
     width: 40,

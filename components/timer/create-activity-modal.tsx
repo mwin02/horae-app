@@ -134,11 +134,18 @@ export function CreateActivityModal({
       <View style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={handleClose} />
 
-        <View
-          style={[styles.sheet, { paddingBottom: insets.bottom + SPACING.lg }]}
-        >
+        <View style={styles.sheet}>
           <View style={styles.handleBar} />
 
+          <ScrollView
+            automaticallyAdjustKeyboardInsets
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={[
+              styles.sheetContent,
+              { paddingBottom: insets.bottom + SPACING.lg },
+            ]}
+          >
           <View style={styles.header}>
             <View>
               <Text style={styles.headerTitle}>
@@ -295,6 +302,7 @@ export function CreateActivityModal({
               color={COLORS.onPrimary}
             />
           </GradientButton>
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -313,8 +321,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceContainerLowest,
     borderTopLeftRadius: RADIUS.xxl,
     borderTopRightRadius: RADIUS.xxl,
-    paddingHorizontal: SPACING["2xl"],
     paddingTop: SPACING.md,
+    maxHeight: "90%",
+  },
+  sheetContent: {
+    paddingHorizontal: SPACING["2xl"],
   },
   handleBar: {
     width: 40,

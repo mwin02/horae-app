@@ -8,6 +8,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -76,11 +77,18 @@ export function CreateTagModal({
       <View style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={handleClose} />
 
-        <View
-          style={[styles.sheet, { paddingBottom: insets.bottom + SPACING.lg }]}
-        >
+        <View style={styles.sheet}>
           <View style={styles.handleBar} />
 
+          <ScrollView
+            automaticallyAdjustKeyboardInsets
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={[
+              styles.sheetContent,
+              { paddingBottom: insets.bottom + SPACING.lg },
+            ]}
+          >
           <View style={styles.header}>
             <View>
               <Text style={styles.headerTitle}>
@@ -152,6 +160,7 @@ export function CreateTagModal({
               color={COLORS.onPrimary}
             />
           </GradientButton>
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -170,8 +179,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceContainerLowest,
     borderTopLeftRadius: RADIUS.xxl,
     borderTopRightRadius: RADIUS.xxl,
-    paddingHorizontal: SPACING["2xl"],
     paddingTop: SPACING.md,
+    maxHeight: "90%",
+  },
+  sheetContent: {
+    paddingHorizontal: SPACING["2xl"],
   },
   handleBar: {
     width: 40,
