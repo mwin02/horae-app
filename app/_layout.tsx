@@ -31,6 +31,7 @@ import {
   seedUserPreferencesIfNeeded,
 } from "@/db/seed";
 import { AuthProvider } from "@/hooks/useAuth";
+import { useLiveActivity } from "@/hooks/useLiveActivity";
 import { useNotificationScheduler } from "@/hooks/useNotificationScheduler";
 import { db } from "@/lib/powersync";
 
@@ -109,6 +110,7 @@ function RootLayoutNav() {
     <PowerSyncContext.Provider value={db}>
       <AuthProvider>
       <NotificationSchedulerMount />
+      <LiveActivityMount />
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -183,5 +185,10 @@ function RootLayoutNav() {
 
 function NotificationSchedulerMount(): null {
   useNotificationScheduler();
+  return null;
+}
+
+function LiveActivityMount(): null {
+  useLiveActivity();
   return null;
 }
