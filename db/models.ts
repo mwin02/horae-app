@@ -86,6 +86,8 @@ export interface RecommendedActivity {
   activityName: string;
   categoryName: string;
   categoryColor: string;
+  /** Resolved display icon (override or category fallback); null = no icon. */
+  categoryIcon: string | null;
 }
 
 /** A time entry as displayed on the timeline */

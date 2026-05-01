@@ -11,6 +11,7 @@ interface FlatRow {
   activity_name: string;
   category_name: string;
   category_color: string;
+  category_icon: string | null;
 }
 
 export interface UseRecommendedActivityResult {
@@ -76,6 +77,7 @@ interface Score {
   activityName: string;
   categoryName: string;
   categoryColor: string;
+  categoryIcon: string | null;
   weight: number;
   count: number;
 }
@@ -125,6 +127,7 @@ export function useRecommendedActivity(): UseRecommendedActivityResult {
           activityName: row.activity_name,
           categoryName: row.category_name,
           categoryColor: row.category_color,
+          categoryIcon: row.category_icon,
           weight,
           count: 1,
         });
@@ -141,6 +144,7 @@ export function useRecommendedActivity(): UseRecommendedActivityResult {
       activityName: s.activityName,
       categoryName: s.categoryName,
       categoryColor: s.categoryColor,
+      categoryIcon: s.categoryIcon,
     }));
   }, [data]);
 
