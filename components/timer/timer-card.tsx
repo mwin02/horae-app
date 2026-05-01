@@ -1,21 +1,21 @@
-import React, { useRef, useState } from 'react';
+import { CategoryChip } from "@/components/common/category-chip";
+import { GlassCard } from "@/components/common/glass-card";
+import { GradientButton } from "@/components/common/gradient-button";
+import { PulsingDots } from "@/components/common/pulsing-dots";
+import { StopButton } from "@/components/timer/stop-button";
+import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import type { RecommendedActivity, RunningTimer } from "@/db/models";
+import { formatTimerDisplay } from "@/lib/timezone";
+import { Feather } from "@expo/vector-icons";
+import React, { useRef, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
   ScrollView,
-  type NativeSyntheticEvent,
+  StyleSheet,
+  Text,
+  View,
   type NativeScrollEvent,
-} from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import type { RecommendedActivity, RunningTimer } from '@/db/models';
-import { formatTimerDisplay } from '@/lib/timezone';
-import { COLORS, TYPOGRAPHY, SPACING } from '@/constants/theme';
-import { GlassCard } from '@/components/common/glass-card';
-import { CategoryChip } from '@/components/common/category-chip';
-import { PulsingDots } from '@/components/common/pulsing-dots';
-import { GradientButton } from '@/components/common/gradient-button';
-import { StopButton } from '@/components/timer/stop-button';
+  type NativeSyntheticEvent,
+} from "react-native";
 
 interface TimerCardProps {
   runningEntry: RunningTimer | null;
@@ -54,19 +54,19 @@ export function TimerCard({
         {/* Active state — always in flow to define the card height */}
         <View
           style={{ opacity: isActive ? 1 : 0 }}
-          pointerEvents={isActive ? 'auto' : 'none'}
+          pointerEvents={isActive ? "auto" : "none"}
         >
           <View style={styles.header}>
-            <View style={styles.headerLeft}>
+            <View style={styles.headerTopRow}>
               <Text style={styles.sessionLabel}>Current Session</Text>
-              <Text style={styles.activityName}>
-                {runningEntry?.activityName ?? ' '}
-              </Text>
+              <CategoryChip
+                name={runningEntry?.categoryName ?? " "}
+                color={runningEntry?.categoryColor ?? COLORS.onSurfaceVariant}
+              />
             </View>
-            <CategoryChip
-              name={runningEntry?.categoryName ?? ' '}
-              color={runningEntry?.categoryColor ?? COLORS.onSurfaceVariant}
-            />
+            <Text style={styles.activityName} numberOfLines={1}>
+              {runningEntry?.activityName ?? " "}
+            </Text>
           </View>
 
           <View style={styles.timerSection}>
@@ -104,7 +104,12 @@ export function TimerCard({
                     style={[styles.page, { width: pageWidth }]}
                   >
                     <Text style={styles.suggestedLabel}>Suggested for you</Text>
-                    <Text style={styles.recommendedName} numberOfLines={1}>
+                    <Text
+                      style={styles.recommendedName}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.7}
+                    >
                       {rec.activityName}
                     </Text>
                     <CategoryChip
@@ -113,7 +118,7 @@ export function TimerCard({
                     />
                     <GradientButton
                       shape="pill"
-                      label={`Start ${rec.activityName}`}
+                      label={`Start`}
                       onPress={() => onRecommendationPress(rec.activityId)}
                       style={styles.startButton}
                     >
@@ -149,10 +154,7 @@ export function TimerCard({
                 {Array.from({ length: totalPages }).map((_, i) => (
                   <View
                     key={i}
-                    style={[
-                      styles.dot,
-                      i === pageIndex && styles.dotActive,
-                    ]}
+                    style={[styles.dot, i === pageIndex && styles.dotActive]}
                   />
                 ))}
               </View>
@@ -166,37 +168,37 @@ export function TimerCard({
 
 const styles = StyleSheet.create({
   wrapper: {
-    position: 'relative',
+    position: "relative",
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: SPACING['3xl'],
+    marginBottom: SPACING["3xl"],
   },
-  headerLeft: {
-    flex: 1,
-    marginRight: SPACING.md,
+  headerTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: SPACING.sm,
+    gap: SPACING.md,
   },
   sessionLabel: {
     ...TYPOGRAPHY.labelSm,
     color: COLORS.primary,
-    marginBottom: SPACING.sm,
+    flexShrink: 1,
   },
   activityName: {
     ...TYPOGRAPHY.headingXl,
     color: COLORS.onSurface,
   },
   timerSection: {
-    alignItems: 'center',
-    marginBottom: SPACING['3xl'],
+    alignItems: "center",
+    marginBottom: SPACING["3xl"],
   },
   timerDisplay: {
     ...TYPOGRAPHY.timerDisplay,
     color: COLORS.onSurface,
   },
   stopRow: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   idleOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -205,11 +207,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    alignItems: 'stretch',
+    alignItems: "stretch",
   },
   page: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     gap: SPACING.sm,
     paddingBottom: SPACING.xl,
   },
@@ -224,6 +226,8 @@ const styles = StyleSheet.create({
   },
   startButton: {
     marginTop: SPACING.lg,
+    alignSelf: "stretch",
+    marginHorizontal: SPACING.lg,
   },
   suggestedLabel: {
     ...TYPOGRAPHY.labelSm,
@@ -233,16 +237,17 @@ const styles = StyleSheet.create({
   recommendedName: {
     ...TYPOGRAPHY.headingXl,
     color: COLORS.onSurface,
-    textAlign: 'center',
+    textAlign: "center",
+    alignSelf: "stretch",
     paddingHorizontal: SPACING.lg,
   },
   dotsRow: {
-    position: 'absolute',
+    position: "absolute",
     bottom: SPACING.sm,
     left: 0,
     right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     gap: 6,
   },
   dot: {

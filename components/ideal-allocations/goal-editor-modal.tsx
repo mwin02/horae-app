@@ -2,9 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -253,154 +251,154 @@ export function GoalEditorModal({
       animationType="slide"
       onRequestClose={handleClose}
     >
-      <KeyboardAvoidingView
-        style={styles.overlay}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      <View style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={handleClose} />
 
-        <View
-          style={[styles.sheet, { paddingBottom: insets.bottom + SPACING.lg }]}
-        >
+        <View style={styles.sheet}>
           <View style={styles.handleBar} />
 
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <View
-                style={[
-                  styles.iconBubble,
-                  { backgroundColor: category.color + "1F" },
-                ]}
-              >
-                <CategoryIcon
-                  icon={category.icon ?? "circle"}
-                  size={20}
-                  color={category.color}
-                />
-              </View>
-              <View style={styles.headerText}>
-                <Text style={styles.headerTitle} numberOfLines={1}>
-                  {category.name}
-                </Text>
-                <Text style={styles.headerSubtitle}>
-                  {labelForKind(periodKind)} goal
-                </Text>
-              </View>
-            </View>
-            <Pressable onPress={handleClose} style={styles.closeButton}>
-              <Feather name="x" size={22} color={COLORS.onSurface} />
-            </Pressable>
-          </View>
-
-          {/* Period kind selector */}
-          <Text style={styles.sectionLabel}>GOAL CADENCE</Text>
-          <View style={styles.modeRow}>
-            {PERIOD_OPTIONS.map((opt) => (
-              <ModeButton
-                key={opt.value}
-                label={opt.label}
-                active={periodKind === opt.value}
-                onPress={() => handlePeriodChange(opt.value)}
-              />
-            ))}
-          </View>
-
-          {/* Daily-only sub-mode toggle */}
-          {periodKind === "daily" && (
-            <View style={styles.modeRow}>
-              <ModeButton
-                label="Same every day"
-                active={mode === "uniform"}
-                onPress={() => setMode("uniform")}
-              />
-              <ModeButton
-                label="Per day of week"
-                active={mode === "perDay"}
-                onPress={() => setMode("perDay")}
-              />
-            </View>
-          )}
-
-          {/* Direction selector */}
-          <Text style={styles.sectionLabel}>GOAL TYPE</Text>
-          <View style={styles.directionRow}>
-            {DIRECTION_OPTIONS.map((opt) => (
-              <DirectionButton
-                key={opt.value}
-                label={opt.label}
-                active={direction === opt.value}
-                onPress={() => setDirection(opt.value)}
-              />
-            ))}
-          </View>
-          <Text style={styles.directionHelper}>
-            {DIRECTION_OPTIONS.find((o) => o.value === direction)?.helper}
-          </Text>
-
           <ScrollView
+            automaticallyAdjustKeyboardInsets
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
-            style={styles.scroll}
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[
+              styles.sheetContent,
+              { paddingBottom: insets.bottom + SPACING.lg },
+            ]}
           >
-            {periodKind === "weekly" || periodKind === "monthly" ? (
-              <HMInputRow
-                label={periodKind === "weekly" ? "Per week" : "Per month"}
-                value={periodTarget}
-                onChange={setPeriodTarget}
-                maxHours={periodKind === "weekly" ? 168 : 999}
-              />
-            ) : mode === "uniform" ? (
-              <HMInputRow
-                label="Every day"
-                value={uniform}
-                onChange={setUniform}
-              />
-            ) : (
-              orderedWeekdayIndices.map((idx) => (
-                <HMInputRow
-                  key={DAY_LABELS[idx]}
-                  label={DAY_LABELS[idx]}
-                  value={perDay[idx]}
-                  onChange={(next) =>
-                    setPerDay((prev) => {
-                      const copy = [...prev];
-                      copy[idx] = next;
-                      return copy;
-                    })
-                  }
+            <View style={styles.header}>
+              <View style={styles.headerLeft}>
+                <View
+                  style={[
+                    styles.iconBubble,
+                    { backgroundColor: category.color + "1F" },
+                  ]}
+                >
+                  <CategoryIcon
+                    icon={category.icon ?? "circle"}
+                    size={20}
+                    color={category.color}
+                  />
+                </View>
+                <View style={styles.headerText}>
+                  <Text style={styles.headerTitle} numberOfLines={1}>
+                    {category.name}
+                  </Text>
+                  <Text style={styles.headerSubtitle}>
+                    {labelForKind(periodKind)} goal
+                  </Text>
+                </View>
+              </View>
+              <Pressable onPress={handleClose} style={styles.closeButton}>
+                <Feather name="x" size={22} color={COLORS.onSurface} />
+              </Pressable>
+            </View>
+
+            {/* Period kind selector */}
+            <Text style={styles.sectionLabel}>GOAL CADENCE</Text>
+            <View style={styles.modeRow}>
+              {PERIOD_OPTIONS.map((opt) => (
+                <ModeButton
+                  key={opt.value}
+                  label={opt.label}
+                  active={periodKind === opt.value}
+                  onPress={() => handlePeriodChange(opt.value)}
                 />
-              ))
-            )}
+              ))}
+            </View>
 
+            {/* Daily-only sub-mode toggle */}
             {periodKind === "daily" && (
-              <Text style={styles.totalLine}>
-                Weekly total: {formatHM(totalWeekMinutes)}
-              </Text>
+              <View style={styles.modeRow}>
+                <ModeButton
+                  label="Same every day"
+                  active={mode === "uniform"}
+                  onPress={() => setMode("uniform")}
+                />
+                <ModeButton
+                  label="Per day of week"
+                  active={mode === "perDay"}
+                  onPress={() => setMode("perDay")}
+                />
+              </View>
             )}
-          </ScrollView>
 
-          {hasExistingGoal && (
-            <Pressable
-              onPress={handleClear}
-              style={styles.clearButton}
-              disabled={submitting}
+            {/* Direction selector */}
+            <Text style={styles.sectionLabel}>GOAL TYPE</Text>
+            <View style={styles.directionRow}>
+              {DIRECTION_OPTIONS.map((opt) => (
+                <DirectionButton
+                  key={opt.value}
+                  label={opt.label}
+                  active={direction === opt.value}
+                  onPress={() => setDirection(opt.value)}
+                />
+              ))}
+            </View>
+            <Text style={styles.directionHelper}>
+              {DIRECTION_OPTIONS.find((o) => o.value === direction)?.helper}
+            </Text>
+
+            <View style={styles.inputsBlock}>
+              {periodKind === "weekly" || periodKind === "monthly" ? (
+                <HMInputRow
+                  label={periodKind === "weekly" ? "Per week" : "Per month"}
+                  value={periodTarget}
+                  onChange={setPeriodTarget}
+                  maxHours={periodKind === "weekly" ? 168 : 999}
+                />
+              ) : mode === "uniform" ? (
+                <HMInputRow
+                  label="Every day"
+                  value={uniform}
+                  onChange={setUniform}
+                />
+              ) : (
+                orderedWeekdayIndices.map((idx) => (
+                  <HMInputRow
+                    key={DAY_LABELS[idx]}
+                    label={DAY_LABELS[idx]}
+                    value={perDay[idx]}
+                    onChange={(next) =>
+                      setPerDay((prev) => {
+                        const copy = [...prev];
+                        copy[idx] = next;
+                        return copy;
+                      })
+                    }
+                  />
+                ))
+              )}
+
+              {periodKind === "daily" && (
+                <Text style={styles.totalLine}>
+                  Weekly total: {formatHM(totalWeekMinutes)}
+                </Text>
+              )}
+            </View>
+
+            {hasExistingGoal && (
+              <Pressable
+                onPress={handleClear}
+                style={styles.clearButton}
+                disabled={submitting}
+              >
+                <Feather name="trash-2" size={16} color={COLORS.error} />
+                <Text style={styles.clearButtonText}>Clear goal</Text>
+              </Pressable>
+            )}
+
+            <GradientButton
+              shape="pill"
+              label={submitting ? "Saving..." : "Save Goal"}
+              onPress={handleSave}
+              disabled={submitting || isLoading}
             >
-              <Feather name="trash-2" size={16} color={COLORS.error} />
-              <Text style={styles.clearButtonText}>Clear goal</Text>
-            </Pressable>
-          )}
-
-          <GradientButton
-            shape="pill"
-            label={submitting ? "Saving..." : "Save Goal"}
-            onPress={handleSave}
-            disabled={submitting || isLoading}
-          >
-            <Feather name="check" size={18} color={COLORS.onPrimary} />
-          </GradientButton>
+              <Feather name="check" size={18} color={COLORS.onPrimary} />
+            </GradientButton>
+          </ScrollView>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }
@@ -563,9 +561,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceContainerLowest,
     borderTopLeftRadius: RADIUS.xxl,
     borderTopRightRadius: RADIUS.xxl,
-    paddingHorizontal: SPACING["2xl"],
     paddingTop: SPACING.md,
     maxHeight: "90%",
+  },
+  sheetContent: {
+    paddingHorizontal: SPACING["2xl"],
   },
   handleBar: {
     width: 40,
@@ -674,12 +674,9 @@ const styles = StyleSheet.create({
     color: COLORS.onSurfaceVariant,
     marginBottom: SPACING.lg,
   },
-  scroll: {
-    flexGrow: 0,
-    marginBottom: SPACING.lg,
-  },
-  scrollContent: {
+  inputsBlock: {
     gap: SPACING.sm,
+    marginBottom: SPACING.lg,
   },
   hmRow: {
     flexDirection: "row",

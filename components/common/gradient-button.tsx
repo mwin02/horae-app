@@ -47,7 +47,11 @@ export function GradientButton({
         ]}
       >
         {children}
-        {label && <Text style={styles.label}>{label}</Text>}
+        {label && (
+          <Text style={styles.label} numberOfLines={1}>
+            {label}
+          </Text>
+        )}
       </LinearGradient>
     </Pressable>
   );
@@ -70,5 +74,6 @@ const styles = StyleSheet.create({
   label: {
     ...TYPOGRAPHY.button,
     color: COLORS.onPrimary,
+    flexShrink: 1,
   },
 });

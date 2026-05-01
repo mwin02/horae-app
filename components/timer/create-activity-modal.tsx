@@ -15,9 +15,7 @@ import { createActivity, updateActivity } from "@/db/queries";
 import { Feather } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -133,17 +131,21 @@ export function CreateActivityModal({
       animationType="slide"
       onRequestClose={handleClose}
     >
-      <KeyboardAvoidingView
-        style={styles.overlay}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      <View style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={handleClose} />
 
-        <View
-          style={[styles.sheet, { paddingBottom: insets.bottom + SPACING.lg }]}
-        >
+        <View style={styles.sheet}>
           <View style={styles.handleBar} />
 
+          <ScrollView
+            automaticallyAdjustKeyboardInsets
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={[
+              styles.sheetContent,
+              { paddingBottom: insets.bottom + SPACING.lg },
+            ]}
+          >
           <View style={styles.header}>
             <View>
               <Text style={styles.headerTitle}>
@@ -166,7 +168,6 @@ export function CreateActivityModal({
               placeholderTextColor={COLORS.onSurfaceVariant}
               value={name}
               onChangeText={setName}
-              autoFocus
               autoCorrect={false}
               maxLength={50}
               returnKeyType="done"
@@ -301,8 +302,9 @@ export function CreateActivityModal({
               color={COLORS.onPrimary}
             />
           </GradientButton>
+          </ScrollView>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }
@@ -319,8 +321,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceContainerLowest,
     borderTopLeftRadius: RADIUS.xxl,
     borderTopRightRadius: RADIUS.xxl,
-    paddingHorizontal: SPACING["2xl"],
     paddingTop: SPACING.md,
+    maxHeight: "90%",
+  },
+  sheetContent: {
+    paddingHorizontal: SPACING["2xl"],
   },
   handleBar: {
     width: 40,
