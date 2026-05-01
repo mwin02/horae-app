@@ -48,12 +48,7 @@ export function GradientButton({
       >
         {children}
         {label && (
-          <Text
-            style={styles.label}
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.7}
-          >
+          <Text style={styles.label} numberOfLines={1}>
             {label}
           </Text>
         )}
@@ -79,5 +74,6 @@ const styles = StyleSheet.create({
   label: {
     ...TYPOGRAPHY.button,
     color: COLORS.onPrimary,
+    flexShrink: 1,
   },
 });

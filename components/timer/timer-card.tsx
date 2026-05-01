@@ -59,12 +59,7 @@ export function TimerCard({
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Text style={styles.sessionLabel}>Current Session</Text>
-              <Text
-                style={styles.activityName}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.7}
-              >
+              <Text style={styles.activityName} numberOfLines={1}>
                 {runningEntry?.activityName ?? ' '}
               </Text>
             </View>
@@ -109,12 +104,7 @@ export function TimerCard({
                     style={[styles.page, { width: pageWidth }]}
                   >
                     <Text style={styles.suggestedLabel}>Suggested for you</Text>
-                    <Text
-                      style={styles.recommendedName}
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                      minimumFontScale={0.6}
-                    >
+                    <Text style={styles.recommendedName} numberOfLines={1}>
                       {rec.activityName}
                     </Text>
                     <CategoryChip
@@ -234,6 +224,8 @@ const styles = StyleSheet.create({
   },
   startButton: {
     marginTop: SPACING.lg,
+    alignSelf: 'stretch',
+    marginHorizontal: SPACING.lg,
   },
   suggestedLabel: {
     ...TYPOGRAPHY.labelSm,
@@ -244,6 +236,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.headingXl,
     color: COLORS.onSurface,
     textAlign: 'center',
+    alignSelf: 'stretch',
     paddingHorizontal: SPACING.lg,
   },
   dotsRow: {
