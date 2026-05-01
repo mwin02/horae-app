@@ -1,8 +1,8 @@
 import { ForgottenTimerModal } from "@/components/timer/forgotten-timer-modal";
 import { HomeHeader } from "@/components/home/home-header";
 import { RingTimerHero } from "@/components/home/ring-timer-hero";
+import { QuickStartGrid } from "@/components/home/quick-start-grid";
 import { SuggestedRow } from "@/components/home/suggested-row";
-import { QuickSwitchSection } from "@/components/timer/quick-switch-section";
 import { COLORS, SPACING } from "@/constants/theme";
 import {
   endForgottenEntry,
@@ -13,7 +13,7 @@ import {
 import { useTimer } from "@/hooks/useTimer";
 import { useForgottenTimer } from "@/hooks/useForgottenTimer";
 import { useCategoriesWithActivities } from "@/hooks/useCategoriesWithActivities";
-import { useQuickSwitchData } from "@/hooks/useQuickSwitchData";
+import { useQuickStartActivities } from "@/hooks/useQuickStartActivities";
 import { useRecommendedActivity } from "@/hooks/useRecommendedActivity";
 import { useTodayClockArcs } from "@/hooks/useTodayClockArcs";
 import { NewSessionModal } from "@/components/timer/new-session-modal";
@@ -36,9 +36,9 @@ export default function HomeScreen(): React.ReactElement {
   } = useTimer();
   const { categories, isLoading: categoriesLoading } =
     useCategoriesWithActivities();
-  const { categories: quickSwitchCategories } = useQuickSwitchData();
+  const { activities: quickStartActivities } = useQuickStartActivities();
   const { recommendations } = useRecommendedActivity();
-  const { arcs, totalTrackedSeconds } = useTodayClockArcs();
+  const { arcs, nowMinutes, totalTrackedSeconds } = useTodayClockArcs();
   const { forgottenEntry, dismissForgotten } = useForgottenTimer();
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -114,6 +114,7 @@ export default function HomeScreen(): React.ReactElement {
         <View style={styles.timerCardWrapper}>
           <RingTimerHero
             arcs={arcs}
+            nowMinutes={nowMinutes}
             runningEntry={runningEntry}
             onStartPress={() => setModalVisible(true)}
             onStop={stopActivity}
@@ -126,9 +127,9 @@ export default function HomeScreen(): React.ReactElement {
           onSelect={handleActivityPress}
         />
 
-        {/* Quick Switch Carousel */}
-        <QuickSwitchSection
-          categories={quickSwitchCategories}
+        {/* Quick Start grid */}
+        <QuickStartGrid
+          activities={quickStartActivities}
           activeActivityId={runningEntry?.activityId ?? null}
           onActivityPress={handleActivityPress}
         />
