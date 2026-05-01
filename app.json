@@ -14,7 +14,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.myozawwin.horae"
+      "bundleIdentifier": "com.myozawwin.horae",
+      "deploymentTarget": "16.1",
+      "infoPlist": {
+        "NSSupportsLiveActivities": true
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -41,7 +45,8 @@
           "defaultChannel": "default"
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      "@bacons/apple-targets"
     ],
     "experiments": {
       "typedRoutes": true
