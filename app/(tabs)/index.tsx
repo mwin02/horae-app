@@ -1,6 +1,6 @@
 import { ForgottenTimerModal } from "@/components/timer/forgotten-timer-modal";
 import { HomeHeader } from "@/components/home/home-header";
-import { TimerCard } from "@/components/timer/timer-card";
+import { RingTimerHero } from "@/components/home/ring-timer-hero";
 import { QuickSwitchSection } from "@/components/timer/quick-switch-section";
 import { COLORS, SPACING } from "@/constants/theme";
 import {
@@ -13,7 +13,6 @@ import { useTimer } from "@/hooks/useTimer";
 import { useForgottenTimer } from "@/hooks/useForgottenTimer";
 import { useCategoriesWithActivities } from "@/hooks/useCategoriesWithActivities";
 import { useQuickSwitchData } from "@/hooks/useQuickSwitchData";
-import { useRecommendedActivity } from "@/hooks/useRecommendedActivity";
 import { useTodayClockArcs } from "@/hooks/useTodayClockArcs";
 import { NewSessionModal } from "@/components/timer/new-session-modal";
 import React, { useCallback, useState } from "react";
@@ -36,8 +35,7 @@ export default function HomeScreen(): React.ReactElement {
   const { categories, isLoading: categoriesLoading } =
     useCategoriesWithActivities();
   const { categories: quickSwitchCategories } = useQuickSwitchData();
-  const { recommendations } = useRecommendedActivity();
-  const { totalTrackedSeconds } = useTodayClockArcs();
+  const { arcs, totalTrackedSeconds } = useTodayClockArcs();
   const { forgottenEntry, dismissForgotten } = useForgottenTimer();
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -109,14 +107,13 @@ export default function HomeScreen(): React.ReactElement {
         {/* Header */}
         <HomeHeader totalTrackedSeconds={totalTrackedSeconds} />
 
-        {/* Timer Card */}
+        {/* Ring timer hero */}
         <View style={styles.timerCardWrapper}>
-          <TimerCard
+          <RingTimerHero
+            arcs={arcs}
             runningEntry={runningEntry}
-            recommendations={recommendations}
-            onStop={stopActivity}
             onStartPress={() => setModalVisible(true)}
-            onRecommendationPress={handleActivityPress}
+            onStop={stopActivity}
           />
         </View>
 
