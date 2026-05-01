@@ -73,9 +73,10 @@ const MIN_GAP_SECONDS = 5 * 60; // 5 minutes
 
 /**
  * Entries shorter than this (in seconds) are candidates for clustering.
- * Tuned to match the canvas's MIN_BLOCK_HEIGHT (40px @ 1.33px/min ≈ 30min):
- * anything below this gets padded up visually, breaking hour-label alignment
- * when several stack consecutively — so we catch them at the source.
+ * Catches stretches of short entries before they accumulate visual drift
+ * (each one sits at MIN_BLOCK_HEIGHT, exceeding its natural temporal span).
+ * Drift-absorbing gaps in the canvas mitigate this, but clustering is still
+ * the cleaner UX for runs of brief activities.
  */
 const SHORT_ENTRY_THRESHOLD_SECONDS = 30 * 60; // 30 minutes
 
