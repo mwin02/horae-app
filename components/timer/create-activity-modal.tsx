@@ -161,7 +161,6 @@ export function CreateActivityModal({
               placeholderTextColor={COLORS.onSurfaceVariant}
               value={name}
               onChangeText={setName}
-              autoFocus
               autoCorrect={false}
               maxLength={50}
               returnKeyType="done"

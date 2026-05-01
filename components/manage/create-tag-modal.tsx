@@ -103,7 +103,6 @@ export function CreateTagModal({
               placeholderTextColor={COLORS.onSurfaceVariant}
               value={name}
               onChangeText={setName}
-              autoFocus
               autoCorrect={false}
               maxLength={40}
               returnKeyType="done"
