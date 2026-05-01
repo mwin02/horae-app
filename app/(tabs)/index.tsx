@@ -1,7 +1,8 @@
 import { ForgottenTimerModal } from "@/components/timer/forgotten-timer-modal";
+import { HomeHeader } from "@/components/home/home-header";
 import { TimerCard } from "@/components/timer/timer-card";
 import { QuickSwitchSection } from "@/components/timer/quick-switch-section";
-import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { COLORS, SPACING } from "@/constants/theme";
 import {
   endForgottenEntry,
   deleteEntry,
@@ -13,13 +14,13 @@ import { useForgottenTimer } from "@/hooks/useForgottenTimer";
 import { useCategoriesWithActivities } from "@/hooks/useCategoriesWithActivities";
 import { useQuickSwitchData } from "@/hooks/useQuickSwitchData";
 import { useRecommendedActivity } from "@/hooks/useRecommendedActivity";
+import { useTodayClockArcs } from "@/hooks/useTodayClockArcs";
 import { NewSessionModal } from "@/components/timer/new-session-modal";
 import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -36,6 +37,7 @@ export default function HomeScreen(): React.ReactElement {
     useCategoriesWithActivities();
   const { categories: quickSwitchCategories } = useQuickSwitchData();
   const { recommendations } = useRecommendedActivity();
+  const { totalTrackedSeconds } = useTodayClockArcs();
   const { forgottenEntry, dismissForgotten } = useForgottenTimer();
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -105,7 +107,7 @@ export default function HomeScreen(): React.ReactElement {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <Text style={styles.title}>Horae</Text>
+        <HomeHeader totalTrackedSeconds={totalTrackedSeconds} />
 
         {/* Timer Card */}
         <View style={styles.timerCardWrapper}>
@@ -158,11 +160,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: SPACING.lg,
     paddingBottom: 100,
-  },
-  title: {
-    ...TYPOGRAPHY.headingXl,
-    color: COLORS.onSurface,
-    marginBottom: SPACING["2xl"],
   },
   timerCardWrapper: {
     marginBottom: SPACING["3xl"],
