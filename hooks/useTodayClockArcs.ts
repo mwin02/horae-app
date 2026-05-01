@@ -28,6 +28,8 @@ export interface ClockArc {
 export interface UseTodayClockArcsResult {
   arcs: ClockArc[];
   totalTrackedSeconds: number;
+  /** Local minutes since today's midnight, in [0, 1440]. Ticks once a minute. */
+  nowMinutes: number;
   timezone: string;
   isLoading: boolean;
 }
@@ -120,6 +122,7 @@ export function useTodayClockArcs(): UseTodayClockArcsResult {
     return {
       arcs,
       totalTrackedSeconds: totalSeconds,
+      nowMinutes,
       timezone,
       isLoading,
     };

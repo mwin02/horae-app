@@ -17,6 +17,8 @@ const DAY_MINUTES = 24 * 60;
 
 interface RingTimerHeroProps {
   arcs: ClockArc[];
+  /** Current local minutes since midnight (0–1440). Drives the time pin. */
+  nowMinutes: number;
   runningEntry: RunningTimer | null;
   onStartPress: () => void;
   onStop: () => void;
@@ -29,6 +31,7 @@ interface RingTimerHeroProps {
  */
 export function RingTimerHero({
   arcs,
+  nowMinutes,
   runningEntry,
   onStartPress,
   onStop,
@@ -37,6 +40,13 @@ export function RingTimerHero({
   const elapsed = useElapsedTime(
     runningEntry ? runningEntry.startedAt.toISOString() : null,
   );
+
+  // Pin coordinates pre-rotation: the SVG itself is rotated -90deg (so
+  // angle 0 sits at 12 o'clock). x/y here are computed in math coords
+  // and the wrapper rotation maps them onto the clock face.
+  const pinAngle = (Math.min(nowMinutes, DAY_MINUTES) / DAY_MINUTES) * 2 * Math.PI;
+  const pinX = SIZE / 2 + R * Math.cos(pinAngle);
+  const pinY = SIZE / 2 + R * Math.sin(pinAngle);
 
   const arcCircles = useMemo(
     () =>
@@ -81,6 +91,15 @@ export function RingTimerHero({
             fill="none"
           />
           {arcCircles}
+
+          {/* Current-time pin: white halo + ink dot at "now" on the ring. */}
+          <Circle
+            cx={pinX}
+            cy={pinY}
+            r={STROKE / 2 + 2}
+            fill={COLORS.surfaceContainerLowest}
+          />
+          <Circle cx={pinX} cy={pinY} r={5} fill={COLORS.onSurface} />
         </Svg>
 
         <View style={styles.center} pointerEvents="box-none">

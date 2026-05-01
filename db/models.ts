@@ -80,7 +80,7 @@ export interface RunningTimer {
   timezone: string;
 }
 
-/** A time-of-day-aware activity recommendation for the idle TimerCard */
+/** A time-of-day-aware activity recommendation surfaced on the Home tab. */
 export interface RecommendedActivity {
   activityId: string;
   activityName: string;
