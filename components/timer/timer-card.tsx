@@ -59,7 +59,12 @@ export function TimerCard({
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Text style={styles.sessionLabel}>Current Session</Text>
-              <Text style={styles.activityName}>
+              <Text
+                style={styles.activityName}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}
+              >
                 {runningEntry?.activityName ?? ' '}
               </Text>
             </View>
@@ -104,7 +109,12 @@ export function TimerCard({
                     style={[styles.page, { width: pageWidth }]}
                   >
                     <Text style={styles.suggestedLabel}>Suggested for you</Text>
-                    <Text style={styles.recommendedName} numberOfLines={1}>
+                    <Text
+                      style={styles.recommendedName}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.6}
+                    >
                       {rec.activityName}
                     </Text>
                     <CategoryChip

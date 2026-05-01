@@ -2,9 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -253,10 +251,7 @@ export function GoalEditorModal({
       animationType="slide"
       onRequestClose={handleClose}
     >
-      <KeyboardAvoidingView
-        style={styles.overlay}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      <View style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={handleClose} />
 
         <View
@@ -400,7 +395,7 @@ export function GoalEditorModal({
             <Feather name="check" size={18} color={COLORS.onPrimary} />
           </GradientButton>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }

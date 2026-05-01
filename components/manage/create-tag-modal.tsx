@@ -6,9 +6,7 @@ import { createTag, updateTag } from "@/db/queries";
 import { Feather } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -75,10 +73,7 @@ export function CreateTagModal({
       animationType="slide"
       onRequestClose={handleClose}
     >
-      <KeyboardAvoidingView
-        style={styles.overlay}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      <View style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={handleClose} />
 
         <View
@@ -159,7 +154,7 @@ export function CreateTagModal({
             />
           </GradientButton>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }

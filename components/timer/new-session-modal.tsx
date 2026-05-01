@@ -9,9 +9,7 @@ import { Feather } from "@expo/vector-icons";
 import React, { useCallback, useMemo, useState } from "react";
 import {
   FlatList,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -136,10 +134,7 @@ export function NewSessionModal({
       animationType="slide"
       onRequestClose={handleClose}
     >
-      <KeyboardAvoidingView
-        style={styles.overlay}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      <View style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={handleClose} />
 
         <View
@@ -279,7 +274,7 @@ export function NewSessionModal({
           onClose={() => setTagPickerOpen(false)}
           onConfirm={setSelectedTagIds}
         />
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }

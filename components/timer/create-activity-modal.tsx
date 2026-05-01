@@ -15,9 +15,7 @@ import { createActivity, updateActivity } from "@/db/queries";
 import { Feather } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -133,10 +131,7 @@ export function CreateActivityModal({
       animationType="slide"
       onRequestClose={handleClose}
     >
-      <KeyboardAvoidingView
-        style={styles.overlay}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      <View style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={handleClose} />
 
         <View
@@ -302,7 +297,7 @@ export function CreateActivityModal({
             />
           </GradientButton>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }

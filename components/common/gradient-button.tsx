@@ -47,7 +47,16 @@ export function GradientButton({
         ]}
       >
         {children}
-        {label && <Text style={styles.label}>{label}</Text>}
+        {label && (
+          <Text
+            style={styles.label}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
+          >
+            {label}
+          </Text>
+        )}
       </LinearGradient>
     </Pressable>
   );

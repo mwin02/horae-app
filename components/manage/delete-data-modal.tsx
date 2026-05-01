@@ -1,9 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -72,10 +70,7 @@ export function DeleteDataModal({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <KeyboardAvoidingView
-        style={styles.overlay}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      <View style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={onClose} />
 
         <View
@@ -151,7 +146,7 @@ export function DeleteDataModal({
             </Text>
           </Pressable>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }
