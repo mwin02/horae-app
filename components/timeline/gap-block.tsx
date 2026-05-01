@@ -15,7 +15,8 @@ export function GapBlock({
   height,
   onPress,
 }: GapBlockProps): React.ReactElement {
-  const isCompact = height < 48;
+  const isTiny = durationSeconds < 30 * 60;
+  const isCompact = !isTiny && height < 48;
 
   return (
     <Pressable
@@ -26,7 +27,7 @@ export function GapBlock({
         pressed && styles.pressed,
       ]}
     >
-      {isCompact ? (
+      {isTiny ? null : isCompact ? (
         <View style={styles.compactRow}>
           <Feather name="plus" size={12} color={COLORS.onSurfaceVariant + '4D'} />
           <Text style={styles.compactLabel}>{formatDuration(durationSeconds)}</Text>
