@@ -6,7 +6,14 @@ import {
 import { getCurrentTimezone, getTodayDate } from "@/lib/timezone";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Dimensions, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Dimensions,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { ACTIVE_CHIP_HEIGHT, ActiveSessionChip } from "./active-session-chip";
 import { ClusterBlock } from "./cluster-block";
 import { CurrentTimeIndicator } from "./current-time-indicator";
@@ -17,18 +24,30 @@ import { TimelineBlock } from "./timeline-block";
 // Layout constants
 // ──────────────────────────────────────────────
 
-const PIXELS_PER_MINUTE = 1.33;
-const MIN_BLOCK_HEIGHT = 40;
-const BAR_THRESHOLD = 24;
-const BAR_HEIGHT = 22;
 /**
- * Extra px forced between visually-colliding blocks during push-down.
- * Kept at 0 so adjacent entries (no natural time gap) stay glued to their
- * real time positions — otherwise the gap accumulates across a run of
- * consecutive blocks and hour labels drift out of alignment. Block visual
- * separation comes from borderRadius + category color, not a spacer.
+ * PIXELS_PER_MINUTE is computed per-render from window height (see
+ * `usePixelsPerMinute`) so the timeline density adapts to the device. The
+ * constants below are time- or pixel-units that don't depend on PPM.
  */
-const BLOCK_GAP = 0;
+const MIN_BLOCK_HEIGHT = 44;
+/** Entries shorter than this collapse to a fixed-height chip. */
+const CHIP_MAX_MINUTES = 20;
+/** Fixed visual height for chip-variant entries. */
+const CHIP_HEIGHT = 30;
+/**
+ * Target hours visible in the viewport — drives PPM. Picked so an average
+ * day's busy stretch (work block + a few short entries) reads comfortably.
+ */
+const TARGET_VISIBLE_HOURS = 6;
+const MIN_PIXELS_PER_MINUTE = 1.7;
+const MAX_PIXELS_PER_MINUTE = 2.6;
+/**
+ * Minimum visual height a gap can shrink to when absorbing drift. Gaps act
+ * as a drift sink — accumulated overflow from MIN_BLOCK_HEIGHT/chip clamps
+ * gets absorbed here so hour labels realign with the time axis. Kept above
+ * zero so the gap stays visible and tappable even after full absorption.
+ */
+const MIN_GAP_VISUAL_HEIGHT = 8;
 const TIME_AXIS_WIDTH = 52;
 const TRACK_LINE_LEFT = TIME_AXIS_WIDTH;
 const BLOCK_LEFT = TIME_AXIS_WIDTH + 16;
@@ -77,6 +96,18 @@ export function TimelineCanvas({
 }: TimelineCanvasProps): React.ReactElement {
   const isToday = selectedDate === getTodayDate(getCurrentTimezone());
 
+  // Adaptive density: scale pixels-per-minute by viewport height so smaller
+  // devices don't crush short entries. Subtract ~200px for header/tab chrome
+  // when computing the visible-area target.
+  const { height: windowHeight } = useWindowDimensions();
+  const PIXELS_PER_MINUTE = useMemo(() => {
+    const target = (windowHeight - 200) / (TARGET_VISIBLE_HOURS * 60);
+    return Math.max(
+      MIN_PIXELS_PER_MINUTE,
+      Math.min(MAX_PIXELS_PER_MINUTE, target),
+    );
+  }, [windowHeight]);
+
   const scrollRef = useRef<ScrollView>(null);
   const hasAutoScrolledRef = useRef<string | null>(null);
 
@@ -120,7 +151,7 @@ export function TimelineCanvas({
       });
     }
     return labels;
-  }, [rangeStartMinutes, rangeEndMinutes]);
+  }, [rangeStartMinutes, rangeEndMinutes, PIXELS_PER_MINUTE]);
 
   // Position helper
   const getTop = useCallback(
@@ -128,7 +159,7 @@ export function TimelineCanvas({
       const mins = minutesSinceMidnight(date, timezone);
       return (mins - rangeStartMinutes) * PIXELS_PER_MINUTE;
     },
-    [rangeStartMinutes, timezone],
+    [rangeStartMinutes, timezone, PIXELS_PER_MINUTE],
   );
 
   const getNaturalHeight = useCallback(
@@ -138,7 +169,7 @@ export function TimelineCanvas({
       const durationMins = Math.max(0, endMins - startMins);
       return durationMins * PIXELS_PER_MINUTE;
     },
-    [timezone],
+    [timezone, PIXELS_PER_MINUTE],
   );
 
   // Resolve block positions with overlap detection for side-by-side layout
@@ -150,9 +181,11 @@ export function TimelineCanvas({
       top: number;
       naturalHeight: number;
       visualHeight: number;
-      bottom: number;
+      /** Natural (time-based) bottom — used for temporal overlap detection. */
+      naturalBottom: number;
       variant: "bar" | "normal";
     }[] = [];
+    const CHIP_NATURAL_THRESHOLD = CHIP_MAX_MINUTES * PIXELS_PER_MINUTE;
     for (const item of filteredItems) {
       let startDate: Date;
       let endDate: Date;
@@ -176,18 +209,20 @@ export function TimelineCanvas({
       const naturalHeight = getNaturalHeight(startDate, endDate);
 
       // Only regular entries (non-running, non-gap, non-cluster) qualify for
-      // the bar-variant: clusters already summarize short entries, gaps have
+      // the chip-variant: clusters already summarize short entries, gaps have
       // their own MIN_GAP threshold, running entries live-grow.
       const isEntry = item.type === "entry";
-      const isBar =
-        isEntry && !isRunning && naturalHeight < BAR_THRESHOLD;
+      const isChip =
+        isEntry && !isRunning && naturalHeight < CHIP_NATURAL_THRESHOLD;
 
       let visualHeight: number;
-      if (isBar) {
-        visualHeight = BAR_HEIGHT;
-      } else if (isRunning) {
+      if (isChip) {
+        visualHeight = CHIP_HEIGHT;
+      } else if (isRunning || item.type === "gap") {
         // Running entries skip the min-height clamp so their bottom edge stays
-        // exactly at the "now" indicator line.
+        // exactly at the "now" indicator line. Gaps render at their true
+        // duration so the time axis stays honest — short gaps should look
+        // short, not balloon up to MIN_BLOCK_HEIGHT.
         visualHeight = naturalHeight;
       } else {
         visualHeight = Math.max(MIN_BLOCK_HEIGHT, naturalHeight);
@@ -197,15 +232,10 @@ export function TimelineCanvas({
         top,
         naturalHeight,
         visualHeight,
-        bottom: top + naturalHeight,
-        variant: isBar ? "bar" : "normal",
+        naturalBottom: top + naturalHeight,
+        variant: isChip ? "bar" : "normal",
       });
     }
-    // natural.forEach((pos, idx) => {
-    //   console.log(
-    //     `Item ${idx} (${items[idx].type}) natural position: top=${pos.top}, height=${pos.height}, bottom=${pos.bottom}`,
-    //   );
-    // });
     // Step 2: Find overlap groups among non-gap items only
     // Gaps are excluded — they represent untracked time and never overlap with entries
     const groupIndex = new Array<number>(filteredItems.length).fill(-1);
@@ -217,14 +247,14 @@ export function TimelineCanvas({
 
       if (groupIndex[i] === -1) {
         groupIndex[i] = currentGroup;
-        let groupBottom = natural[i].bottom;
+        let groupBottom = natural[i].naturalBottom;
 
         for (let j = i + 1; j < filteredItems.length; j++) {
           if (filteredItems[j].type === "gap") continue;
           // if a block starts at the same time another block ends, consider that non-overlapping (hence the -1px tolerance)
           if (natural[j].top < groupBottom - 1) {
             groupIndex[j] = currentGroup;
-            groupBottom = Math.max(groupBottom, natural[j].bottom);
+            groupBottom = Math.max(groupBottom, natural[j].naturalBottom);
           } else {
             break;
           }
@@ -258,21 +288,31 @@ export function TimelineCanvas({
         for (let col = 0; col < columnBottoms.length; col++) {
           if (natural[idx].top >= columnBottoms[col]) {
             columnAssignment[idx] = col;
-            columnBottoms[col] = natural[idx].bottom;
+            columnBottoms[col] = natural[idx].naturalBottom;
             placed = true;
             break;
           }
         }
         if (!placed) {
           columnAssignment[idx] = columnBottoms.length;
-          columnBottoms.push(natural[idx].bottom);
+          columnBottoms.push(natural[idx].naturalBottom);
         }
       }
 
       totalColumnsPerGroup.set(g, columnBottoms.length);
     }
 
-    // Step 4: Build final positions
+    // Step 4: Build final positions with drift-based push-down.
+    //
+    // `drift` accumulates the visual overflow (visualHeight - naturalHeight)
+    // of every clamped block above the current item. Each block is placed at
+    // `naturalTop + drift`, so consecutive blocks stay glued and never visually
+    // collide with a clamped predecessor.
+    //
+    // Gaps act as the drift sink: they shrink (down to MIN_GAP_VISUAL_HEIGHT)
+    // to absorb accumulated drift, which realigns subsequent blocks back onto
+    // the time axis. This keeps hour labels honest at the cost of slightly
+    // compressed gap visuals when the stretch above them was clamp-heavy.
     const positions: {
       top: number;
       height: number;
@@ -281,39 +321,33 @@ export function TimelineCanvas({
       variant: "bar" | "normal";
     }[] = [];
 
-    let prevBottom = -Infinity;
+    let drift = 0;
 
     for (let i = 0; i < filteredItems.length; i++) {
       const { naturalHeight, visualHeight, variant } = natural[i];
-      let top: number;
+      const naturalTop = natural[i].top;
+      let top = naturalTop + drift;
+      let height = visualHeight;
       let colIndex = 0;
       let totalCols = 1;
 
       if (filteredItems[i].type === "gap") {
-        // Gaps always get full-width push-down layout
-        top = Math.max(natural[i].top, prevBottom + BLOCK_GAP);
+        const absorbable = Math.max(0, visualHeight - MIN_GAP_VISUAL_HEIGHT);
+        const absorbed = Math.min(drift, absorbable);
+        height = visualHeight - absorbed;
+        drift -= absorbed;
       } else {
         const g = groupIndex[i];
         totalCols = totalColumnsPerGroup.get(g) ?? 1;
-        const isOverlapping = totalCols > 1;
-
-        if (isOverlapping) {
-          top = natural[i].top;
+        if (totalCols > 1) {
           colIndex = columnAssignment[i];
-        } else {
-          top = Math.max(natural[i].top, prevBottom + BLOCK_GAP);
         }
+        drift += Math.max(0, visualHeight - naturalHeight);
       }
-
-      // Push-down always uses VISUAL bottom so a later block never visually
-      // collides with a clamped predecessor. Overlap/column detection is a
-      // separate pass (uses natural bounds) so this doesn't reintroduce the
-      // false-columns bug.
-      prevBottom = Math.max(prevBottom, top + visualHeight);
 
       positions.push({
         top,
-        height: visualHeight,
+        height,
         columnIndex: colIndex,
         totalColumns: totalCols,
         variant,
