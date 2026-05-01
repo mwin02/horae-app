@@ -119,7 +119,7 @@ export default function SettingsScreen(): React.ReactElement {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.header}>
         <Text style={styles.title}>Settings</Text>
         <Text style={styles.subtitle}>

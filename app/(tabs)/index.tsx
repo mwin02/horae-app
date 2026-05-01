@@ -90,7 +90,7 @@ export default function HomeScreen(): React.ReactElement {
 
   if (isLoading || categoriesLoading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />
         </View>
@@ -99,7 +99,7 @@ export default function HomeScreen(): React.ReactElement {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
