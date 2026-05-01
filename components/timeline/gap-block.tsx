@@ -7,7 +7,7 @@ import { formatDuration } from '@/lib/timezone';
 interface GapBlockProps {
   durationSeconds: number;
   height: number;
-  onPress: () => void;
+  onPress: (locationY: number) => void;
 }
 
 export function GapBlock({
@@ -19,7 +19,7 @@ export function GapBlock({
 
   return (
     <Pressable
-      onPress={onPress}
+      onPress={(e) => onPress(e.nativeEvent.locationY)}
       style={({ pressed }) => [
         styles.container,
         { height },

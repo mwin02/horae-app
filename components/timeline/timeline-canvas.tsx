@@ -505,7 +505,32 @@ export function TimelineCanvas({
             <GapBlock
               durationSeconds={g.durationSeconds}
               height={height}
-              onPress={() => onGapPress(g.startedAt, g.endedAt)}
+              onPress={(locationY) => {
+                const gapDurationMs =
+                  g.endedAt.getTime() - g.startedAt.getTime();
+                const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+                if (gapDurationMs < TWO_HOURS_MS) {
+                  onGapPress(g.startedAt, g.endedAt);
+                  return;
+                }
+                const fraction = Math.max(
+                  0,
+                  Math.min(1, locationY / height),
+                );
+                const clickTimeMs =
+                  g.startedAt.getTime() + fraction * gapDurationMs;
+                const HALF_WINDOW_MS = 30 * 60 * 1000;
+                let startMs = clickTimeMs - HALF_WINDOW_MS;
+                let endMs = clickTimeMs + HALF_WINDOW_MS;
+                if (startMs < g.startedAt.getTime()) {
+                  startMs = g.startedAt.getTime();
+                  endMs = startMs + 2 * HALF_WINDOW_MS;
+                } else if (endMs > g.endedAt.getTime()) {
+                  endMs = g.endedAt.getTime();
+                  startMs = endMs - 2 * HALF_WINDOW_MS;
+                }
+                onGapPress(new Date(startMs), new Date(endMs));
+              }}
             />
           </View>
         );
