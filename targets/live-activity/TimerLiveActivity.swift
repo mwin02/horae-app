@@ -50,19 +50,13 @@ struct TimerLiveActivity: Widget {
                     .frame(width: 8, height: 8)
                     .padding(.leading, 2)
             } compactTrailing: {
-                // Force MM:SS (showsHours: false) so the trailing slot stays
-                // narrow even past 1h. No frame width override — the system
-                // sizes the island around the natural text width, which is
-                // ~32pt for "MM:SS"; forcing minWidth here makes the pill
-                // span the full status bar and hides the system clock.
-                Text(timerInterval: context.state.startedAt...Date.distantFuture,
-                     pauseTime: nil,
-                     countsDown: false,
-                     showsHours: false)
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundColor(.white)
-                    .padding(.trailing, 2)
+                // No live counter here — even MM:SS noticeably widens the
+                // island. The Horae mark on the trailing keeps it visually
+                // balanced with the colored dot on the leading while
+                // signalling "this is Horae" at a glance. Full elapsed time
+                // is still available on the lock-screen banner and on the
+                // Dynamic Island expanded view (tap-and-hold).
+                HoraeLogoMark(size: 16)
             } minimal: {
                 Circle()
                     .fill(Color(hex: context.state.categoryColorHex))
