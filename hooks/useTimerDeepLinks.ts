@@ -5,18 +5,24 @@ import { stopEntry } from "@/db/queries";
 import { db } from "@/lib/powersync";
 
 /**
- * Listens for `horae://timer/...` deep links and dispatches them to the
- * existing PowerSync mutations. Mounted once at the root inside the
- * PowerSync provider (alongside `useNotificationScheduler` and
- * `useLiveActivity`).
+ * Listens for `horae://` deep links carrying an `action` query param
+ * and dispatches them to the existing PowerSync mutations. Mounted
+ * once at the root inside the PowerSync provider, alongside
+ * `useNotificationScheduler` and `useLiveActivity`.
  *
  * Currently handles:
- *   - `horae://timer/stop`  → stops the running entry, if any.
+ *   - `?action=stop` → stops the running entry, if any.
  *
- * Fired by the Stop buttons on the Live Activity (Block 4). The Live
- * Activity itself dismisses reactively via `useLiveActivity` once
- * `time_entries.ended_at` flips — no need to call `endLiveActivity`
- * here.
+ * The action lives in a query param rather than the URL path because
+ * Expo Router treats every URL path as a file-based route — anything
+ * unknown shows the "Oops! / This screen doesn't exist" 404 page.
+ * Putting the action on the root path (`horae:///?action=stop`) lands
+ * on the home tab (a sensible place to be after stopping a timer) and
+ * sidesteps that 404.
+ *
+ * The Live Activity itself dismisses reactively via `useLiveActivity`
+ * once `time_entries.ended_at` flips — no need to call
+ * `endLiveActivity` here.
  *
  * Resolves the running entry via a fresh `db.getOptional` rather than
  * trusting the running-entry React query: the URL can land at cold
@@ -24,7 +30,6 @@ import { db } from "@/lib/powersync";
  * may still be stale on resume. A direct read avoids the race.
  */
 
-const STOP_PATH = "/timer/stop";
 const HORAE_SCHEME = "horae:";
 
 interface RunningRow {
@@ -48,10 +53,8 @@ export function useTimerDeepLinks(): void {
   useEffect(() => {
     const handle = (rawUrl: string | null): void => {
       if (!rawUrl) return;
-      const url = parseHoraeUrl(rawUrl);
-      if (!url) return;
-
-      if (url.path === STOP_PATH) {
+      const action = parseHoraeAction(rawUrl);
+      if (action === "stop") {
         void runStopAction(inFlightRef);
       }
     };
@@ -70,21 +73,20 @@ export function useTimerDeepLinks(): void {
   }, []);
 }
 
-interface ParsedHoraeUrl {
-  path: string;
-}
-
-function parseHoraeUrl(rawUrl: string): ParsedHoraeUrl | null {
+function parseHoraeAction(rawUrl: string): string | null {
   // Avoid `new URL()` — React Native's URL polyfill is incomplete for
-  // custom schemes. Parse manually.
+  // custom schemes. Parse the query string manually.
   if (!rawUrl.startsWith(HORAE_SCHEME)) return null;
-  const withoutScheme = rawUrl.slice(HORAE_SCHEME.length).replace(/^\/\//, "");
-  // `withoutScheme` is now e.g. "timer/stop" or "timer/stop?foo=bar".
-  const [pathWithLeading] = withoutScheme.split("?");
-  const path = pathWithLeading.startsWith("/")
-    ? pathWithLeading
-    : `/${pathWithLeading}`;
-  return { path };
+  const queryStart = rawUrl.indexOf("?");
+  if (queryStart === -1) return null;
+  const query = rawUrl.slice(queryStart + 1);
+  for (const pair of query.split("&")) {
+    const [rawKey, rawValue] = pair.split("=");
+    if (decodeURIComponent(rawKey ?? "") === "action") {
+      return decodeURIComponent(rawValue ?? "");
+    }
+  }
+  return null;
 }
 
 async function runStopAction(

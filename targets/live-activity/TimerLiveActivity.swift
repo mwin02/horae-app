@@ -214,7 +214,12 @@ private struct StopButton: View {
 
     let style: Style
 
-    private static let stopURL = URL(string: "horae://timer/stop")!
+    // Use the root path with a query param rather than `/timer/stop`:
+    // Expo Router treats every URL path as a file-based route and shows
+    // its "Oops!" 404 page for unknown paths. Routing to root lands on
+    // the home tab (a sensible place to be after stopping a timer)
+    // while `useTimerDeepLinks` reads the `action=stop` query.
+    private static let stopURL = URL(string: "horae:///?action=stop")!
 
     var body: some View {
         Link(destination: Self.stopURL) {
@@ -223,7 +228,7 @@ private struct StopButton: View {
                 HStack(spacing: 6) {
                     Image(systemName: "stop.fill")
                         .font(.system(size: 12, weight: .bold))
-                    Text("Stop & save")
+                    Text("Stop activity")
                         .font(.system(size: 13, weight: .bold))
                 }
                 .foregroundColor(Color(red: 0x0E/255, green: 0x0F/255, blue: 0x1A/255))
