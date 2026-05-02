@@ -1,6 +1,12 @@
 import ActivityKit
 import ExpoModulesCore
 import Foundation
+import WidgetKit
+
+// Shared with the home-screen widget extension. If you change either constant
+// here, mirror it in the widget target's snapshot reader.
+private let WIDGET_APP_GROUP = "group.com.myozawwin.horae.shared"
+private let WIDGET_SNAPSHOT_KEY = "runningTimerSnapshot"
 
 /// JS-facing bridge to ActivityKit for the running-timer Live Activity.
 ///
@@ -46,7 +52,40 @@ public class LiveActivityModule: Module {
                 promise.resolve(nil)
             }
         }
+
+        // Writes (or clears, when payload is nil) a JSON snapshot of the
+        // running entry to the shared App Group UserDefaults, then asks the
+        // OS to reload widget timelines so the home-screen widget rerenders.
+        AsyncFunction("writeWidgetSnapshot") { (payload: WidgetSnapshotPayload?) in
+            guard let defaults = UserDefaults(suiteName: WIDGET_APP_GROUP) else {
+                return
+            }
+            if let payload = payload {
+                let dict: [String: Any] = [
+                    "entry_id": payload.entryId,
+                    "started_at": payload.startedAt,
+                    "activity_name": payload.activityName,
+                    "category_color": payload.categoryColor,
+                ]
+                if let data = try? JSONSerialization.data(withJSONObject: dict) {
+                    defaults.set(data, forKey: WIDGET_SNAPSHOT_KEY)
+                }
+            } else {
+                defaults.removeObject(forKey: WIDGET_SNAPSHOT_KEY)
+            }
+            if #available(iOS 14.0, *) {
+                WidgetCenter.shared.reloadAllTimelines()
+            }
+        }
     }
+}
+
+internal struct WidgetSnapshotPayload: Record {
+    @Field var entryId: String = ""
+    /// ISO 8601 string. Decoded into a Date by the widget at render time.
+    @Field var startedAt: String = ""
+    @Field var activityName: String = ""
+    @Field var categoryColor: String = "#6E8BFF"
 }
 
 // MARK: - Payload

@@ -21,5 +21,6 @@ class LiveActivityModule : Module() {
     AsyncFunction("start") { _: Map<String, Any?> -> /* no-op */ }
     AsyncFunction("update") { _: Map<String, Any?> -> /* no-op */ }
     AsyncFunction("end") { -> /* no-op */ }
+    AsyncFunction("writeWidgetSnapshot") { _: Map<String, Any?>? -> /* no-op */ }
   }
 }

@@ -34,6 +34,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { useLiveActivity } from "@/hooks/useLiveActivity";
 import { useNotificationScheduler } from "@/hooks/useNotificationScheduler";
 import { useTimerDeepLinks } from "@/hooks/useTimerDeepLinks";
+import { useWidgetSnapshot } from "@/hooks/useWidgetSnapshot";
 import { db } from "@/lib/powersync";
 
 export {
@@ -112,6 +113,7 @@ function RootLayoutNav() {
       <AuthProvider>
       <NotificationSchedulerMount />
       <LiveActivityMount />
+      <WidgetSnapshotMount />
       <TimerDeepLinksMount />
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <Stack>
@@ -192,6 +194,11 @@ function NotificationSchedulerMount(): null {
 
 function LiveActivityMount(): null {
   useLiveActivity();
+  return null;
+}
+
+function WidgetSnapshotMount(): null {
+  useWidgetSnapshot();
   return null;
 }
 
