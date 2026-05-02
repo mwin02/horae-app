@@ -8,7 +8,16 @@ import WidgetKit
 /// Activity. Visuals are lifted from the design handoff
 /// (`HoraeLiveActivity` and `HoraeDynamicIsland` in widget-and-live.jsx),
 /// minus the Pause button and progress bar (out of scope per product
-/// direction). The Stop button is added in a later block.
+/// direction).
+///
+/// Action button: a single Stop control on the Lock Screen banner action
+/// row and the Dynamic Island expanded trailing region. Both are SwiftUI
+/// `Link` views pointing at `horae://timer/stop` rather than
+/// `LiveActivityIntent` — Live Activities have supported `Link` for
+/// per-region tap targets since iOS 16.1, and routing through the app's
+/// existing URL handler keeps the DB write in JS instead of duplicating
+/// PowerSync access in Swift. The `useTimerDeepLinks` hook on the JS side
+/// resolves the running entry and calls `stopEntry`.
 @available(iOS 16.1, *)
 struct TimerLiveActivity: Widget {
     var body: some WidgetConfiguration {
@@ -34,8 +43,7 @@ struct TimerLiveActivity: Widget {
                     }
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    // Stop button placeholder — wired in Block 4.
-                    Color.clear.frame(width: 28, height: 28)
+                    StopButton(style: .roundIcon)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     EmptyView()
@@ -77,7 +85,7 @@ private struct LockScreenView: View {
         VStack(alignment: .leading, spacing: 10) {
             topRow
             bodyRow
-            // Action row (Stop button) added in Block 4.
+            StopButton(style: .lockScreenPill)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
@@ -182,6 +190,60 @@ private struct HoraeLogoMark: View {
             .frame(width: size, height: size)
             .clipShape(RoundedRectangle(cornerRadius: size * 0.32,
                                         style: .continuous))
+    }
+}
+
+// MARK: - Stop button
+
+/// Two visual variants for the same action:
+///   - `.lockScreenPill`  → full-width white pill (Lock Screen action row).
+///   - `.roundIcon`       → 28pt translucent round (Dynamic Island expanded
+///                          trailing region).
+///
+/// Both wrap a `Link(destination: horae://timer/stop)`. iOS routes the
+/// URL through the host app's URL handler — picked up by
+/// `useTimerDeepLinks` on the JS side, which resolves the running entry
+/// and calls `stopEntry`. Using `Link` rather than a `LiveActivityIntent`
+/// avoids needing iOS 17 and keeps the action layer pure-SwiftUI.
+@available(iOS 16.1, *)
+private struct StopButton: View {
+    enum Style {
+        case lockScreenPill
+        case roundIcon
+    }
+
+    let style: Style
+
+    private static let stopURL = URL(string: "horae://timer/stop")!
+
+    var body: some View {
+        Link(destination: Self.stopURL) {
+            switch style {
+            case .lockScreenPill:
+                HStack(spacing: 6) {
+                    Image(systemName: "stop.fill")
+                        .font(.system(size: 12, weight: .bold))
+                    Text("Stop & save")
+                        .font(.system(size: 13, weight: .bold))
+                }
+                .foregroundColor(Color(red: 0x0E/255, green: 0x0F/255, blue: 0x1A/255))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 9)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.white)
+                )
+            case .roundIcon:
+                Image(systemName: "stop.fill")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(width: 28, height: 28)
+                    .background(
+                        Circle()
+                            .fill(Color.white.opacity(0.12))
+                    )
+            }
+        }
     }
 }
 
