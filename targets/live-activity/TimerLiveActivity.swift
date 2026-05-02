@@ -51,8 +51,10 @@ struct TimerLiveActivity: Widget {
                     .padding(.leading, 2)
             } compactTrailing: {
                 // Force MM:SS (showsHours: false) so the trailing slot stays
-                // narrow even past 1h. The expanded view shows the full
-                // HH:MM:SS, and the lock screen banner already renders hours.
+                // narrow even past 1h. No frame width override — the system
+                // sizes the island around the natural text width, which is
+                // ~32pt for "MM:SS"; forcing minWidth here makes the pill
+                // span the full status bar and hides the system clock.
                 Text(timerInterval: context.state.startedAt...Date.distantFuture,
                      pauseTime: nil,
                      countsDown: false,
@@ -60,7 +62,7 @@ struct TimerLiveActivity: Widget {
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
                     .monospacedDigit()
                     .foregroundColor(.white)
-                    .frame(minWidth: 44)
+                    .padding(.trailing, 2)
             } minimal: {
                 Circle()
                     .fill(Color(hex: context.state.categoryColorHex))
