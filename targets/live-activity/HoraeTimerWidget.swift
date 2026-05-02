@@ -108,10 +108,7 @@ private struct HoraeTimerWidgetView: View {
             if let snapshot = entry.snapshot {
                 ActiveStateView(snapshot: snapshot)
             } else {
-                // Block 3 replaces this with the "Tap to start" CTA + deep
-                // link. For Block 2 we just show a quiet placeholder so the
-                // simulator can verify the active path independently.
-                EmptyStateView()
+                IdleStateView()
             }
         }
         .widgetBackgroundIfAvailable {
@@ -127,15 +124,22 @@ private struct HoraeTimerWidgetView: View {
     }
 }
 
+// Deep links the widget fires through the host app's URL handler
+// (`useTimerDeepLinks` on the JS side). Routing to the root path with a
+// query param avoids Expo Router's "Oops! / This screen doesn't exist"
+// 404 — see the matching comment in `TimerLiveActivity.swift`.
+private let STOP_URL = URL(string: "horae:///?action=stop")!
+private let NEW_SESSION_URL = URL(string: "horae:///?action=newSession")!
+
+private let INK_COLOR = Color(red: 0x0E/255, green: 0x0F/255, blue: 0x1A/255)
+private let MUTED_COLOR = Color(red: 0x0E/255, green: 0x0F/255, blue: 0x1A/255).opacity(0.45)
+
 @available(iOS 16.1, *)
 private struct ActiveStateView: View {
     let snapshot: RunningSnapshot
 
-    private let inkColor = Color(red: 0x0E/255, green: 0x0F/255, blue: 0x1A/255)
-    private let mutedColor = Color(red: 0x0E/255, green: 0x0F/255, blue: 0x1A/255).opacity(0.45)
-
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
+        ZStack(alignment: .topTrailing) {
             HStack(alignment: .center, spacing: 16) {
                 IconTile(colorHex: snapshot.categoryColor, size: 84, cornerRadius: 22)
 
@@ -152,11 +156,11 @@ private struct ActiveStateView: View {
                     Text(snapshot.activityName)
                         .font(.system(size: 18, weight: .heavy))
                         .kerning(-0.4)
-                        .foregroundColor(inkColor)
+                        .foregroundColor(INK_COLOR)
                         .lineLimit(1)
                         .truncationMode(.tail)
                     timerText(startedAt: snapshot.startedAt, size: 30, weight: .heavy)
-                        .foregroundColor(inkColor)
+                        .foregroundColor(INK_COLOR)
                         .padding(.top, 2)
                 }
 
@@ -165,37 +169,60 @@ private struct ActiveStateView: View {
             .padding(.horizontal, 18)
             .padding(.vertical, 16)
 
-            Text("HORAE")
-                .font(.system(size: 10, weight: .bold))
-                .kerning(1.4)
-                .foregroundColor(mutedColor)
-                .padding(.trailing, 16)
-                .padding(.bottom, 12)
+            // Top-right Stop button. `Link` wins over the surrounding
+            // widget tap target — taps inside the 32pt circle go to
+            // `?action=stop`; taps anywhere else open the app normally.
+            Link(destination: STOP_URL) {
+                Image(systemName: "stop.fill")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(width: 32, height: 32)
+                    .background(Circle().fill(INK_COLOR))
+            }
+            .padding(.top, 14)
+            .padding(.trailing, 14)
+
+            // Bottom-right HORAE wordmark.
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    Text("HORAE")
+                        .font(.system(size: 10, weight: .bold))
+                        .kerning(1.4)
+                        .foregroundColor(MUTED_COLOR)
+                }
+            }
+            .padding(.trailing, 16)
+            .padding(.bottom, 12)
+            .allowsHitTesting(false)
         }
     }
 }
 
 @available(iOS 16.1, *)
-private struct EmptyStateView: View {
-    private let mutedColor = Color(red: 0x0E/255, green: 0x0F/255, blue: 0x1A/255).opacity(0.45)
-
+private struct IdleStateView: View {
     var body: some View {
+        // The whole idle card is the tap target — `widgetURL` on the
+        // outer view sends taps anywhere (outside any inner Link) to the
+        // host app. The deep-link handler opens NewSessionModal.
         ZStack(alignment: .bottomTrailing) {
-            VStack(spacing: 8) {
+            VStack(spacing: 10) {
                 HoraeLogoMark(size: 36)
-                Text("No timer running")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(mutedColor)
+                Text("Tap to start tracking")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(INK_COLOR)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             Text("HORAE")
                 .font(.system(size: 10, weight: .bold))
                 .kerning(1.4)
-                .foregroundColor(mutedColor)
+                .foregroundColor(MUTED_COLOR)
                 .padding(.trailing, 16)
                 .padding(.bottom, 12)
         }
+        .widgetURL(NEW_SESSION_URL)
     }
 }
 

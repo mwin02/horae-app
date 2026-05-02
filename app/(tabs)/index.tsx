@@ -17,7 +17,8 @@ import { useQuickStartActivities } from "@/hooks/useQuickStartActivities";
 import { useRecommendedActivity } from "@/hooks/useRecommendedActivity";
 import { useTodayClockArcs } from "@/hooks/useTodayClockArcs";
 import { NewSessionModal } from "@/components/timer/new-session-modal";
-import React, { useCallback, useState } from "react";
+import { useUIStore } from "@/store/uiStore";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -41,6 +42,17 @@ export default function HomeScreen(): React.ReactElement {
   const { arcs, nowMinutes, totalTrackedSeconds } = useTodayClockArcs();
   const { forgottenEntry, dismissForgotten } = useForgottenTimer();
   const [modalVisible, setModalVisible] = useState(false);
+  const pendingHomeAction = useUIStore((s) => s.pendingHomeAction);
+  const setPendingHomeAction = useUIStore((s) => s.setPendingHomeAction);
+
+  // Consume deep-link triggers (e.g. the home-screen widget's "Tap to
+  // start" CTA). Runs once per flag flip from `useTimerDeepLinks`.
+  useEffect(() => {
+    if (pendingHomeAction === "newSession") {
+      setModalVisible(true);
+      setPendingHomeAction(null);
+    }
+  }, [pendingHomeAction, setPendingHomeAction]);
 
   const handleForgottenStop = useCallback(
     async (endedAt: Date): Promise<void> => {
