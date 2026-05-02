@@ -1,0 +1,7 @@
+{
+  "name": "live-activity",
+  "version": "0.1.0",
+  "description": "Local Expo Module bridging JS to ActivityKit for the running-timer Live Activity.",
+  "main": "index.ts",
+  "private": true
+}
