@@ -19,7 +19,7 @@ struct TimerLiveActivity: Widget {
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    IconTile(colorHex: context.state.categoryColorHex, size: 36)
+                    HoraeLogoMark(size: 32)
                         .padding(.leading, 4)
                 }
                 DynamicIslandExpandedRegion(.center) {
@@ -41,14 +41,26 @@ struct TimerLiveActivity: Widget {
                     EmptyView()
                 }
             } compactLeading: {
-                IconTile(colorHex: context.state.categoryColorHex, size: 22)
+                // Compact regions are intentionally tight: a thin colored dot
+                // on the leading + a fixed-width MM:SS counter on the trailing
+                // keeps the island narrow enough not to crowd the system clock
+                // / battery on the right side of the status bar.
+                Circle()
+                    .fill(Color(hex: context.state.categoryColorHex))
+                    .frame(width: 8, height: 8)
+                    .padding(.leading, 2)
             } compactTrailing: {
-                timerText(startedAt: context.state.startedAt, size: 13, weight: .semibold)
-                    .foregroundColor(.white)
+                // No live counter here — even MM:SS noticeably widens the
+                // island. The Horae mark on the trailing keeps it visually
+                // balanced with the colored dot on the leading while
+                // signalling "this is Horae" at a glance. Full elapsed time
+                // is still available on the lock-screen banner and on the
+                // Dynamic Island expanded view (tap-and-hold).
+                HoraeLogoMark(size: 16)
             } minimal: {
                 Circle()
                     .fill(Color(hex: context.state.categoryColorHex))
-                    .frame(width: 10, height: 10)
+                    .frame(width: 8, height: 8)
             }
             .keylineTint(Color(hex: context.state.categoryColorHex))
         }
@@ -73,9 +85,7 @@ private struct LockScreenView: View {
 
     private var topRow: some View {
         HStack(spacing: 8) {
-            HoraeMark()
-                .frame(width: 22, height: 22)
-                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+            HoraeLogoMark(size: 22)
             Text("HORAE")
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundColor(.white.opacity(0.75))
@@ -151,33 +161,27 @@ private struct LiveDot: View {
     }
 }
 
+/// Renders the app's home-screen icon (`HoraeLogo` in
+/// `Assets.xcassets`).
+///
+/// IMPORTANT — image size: WidgetKit enforces a strict per-image memory
+/// budget on Live Activity snapshots. Oversized bitmaps are silently
+/// dropped and replaced with a grey placeholder rather than triggering
+/// a runtime error. The bundled icon is pre-resized to 192px for this
+/// reason; do not swap it for the full 1024px app icon. See
+/// https://developer.apple.com/forums/thread/716902.
 @available(iOS 16.1, *)
-private struct HoraeMark: View {
+private struct HoraeLogoMark: View {
+    let size: CGFloat
+
     var body: some View {
-        ZStack {
-            LinearGradient(
-                colors: [Color(red: 0xC9/255, green: 0xA3/255, blue: 0x6B/255),
-                         Color(red: 0x8B/255, green: 0x6E/255, blue: 0x4A/255)],
-                startPoint: .topLeading, endPoint: .bottomTrailing
-            )
-            // Tiny pie mark echoing the splash icon.
-            ZStack {
-                Circle()
-                    .fill(Color(red: 0xA8/255, green: 0xB0/255, blue: 0xA4/255))
-                Path { path in
-                    path.move(to: CGPoint(x: 7, y: 1))
-                    path.addArc(center: CGPoint(x: 7, y: 7),
-                                radius: 6,
-                                startAngle: .degrees(-90),
-                                endAngle: .degrees(-30),
-                                clockwise: false)
-                    path.closeSubpath()
-                }
-                .fill(Color(red: 0xC2/255, green: 0x65/255, blue: 0x45/255))
-                .frame(width: 14, height: 14)
-            }
-            .frame(width: 14, height: 14)
-        }
+        Image("HoraeLogo")
+            .renderingMode(.original)
+            .resizable()
+            .scaledToFill()
+            .frame(width: size, height: size)
+            .clipShape(RoundedRectangle(cornerRadius: size * 0.32,
+                                        style: .continuous))
     }
 }
 
