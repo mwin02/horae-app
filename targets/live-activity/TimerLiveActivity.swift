@@ -161,53 +161,27 @@ private struct LiveDot: View {
     }
 }
 
-/// Renders the app's home-screen icon (`assets/images/icon.png`).
+/// Renders the app's home-screen icon (`HoraeLogo` in
+/// `Assets.xcassets`).
 ///
-/// The icon is bundled into the widget extension via TWO paths so we
-/// have a fallback if the asset catalog lookup fails inside the
-/// widget's runtime bundle context:
-///   1. As `HoraeLogo` in `Assets.xcassets/HoraeLogo.imageset/icon.png`
-///      (loaded via `UIImage(named:)`).
-///   2. As a plain bundle resource at `targets/live-activity/horae-logo.png`
-///      (loaded via `Bundle.main.url(forResource:withExtension:)`).
-///
-/// If both paths fail, we render bright magenta so the asset miss is
-/// immediately obvious — distinguishable from both SwiftUI's grey
-/// placeholder AND from the tan icon background.
+/// IMPORTANT — image size: WidgetKit enforces a strict per-image memory
+/// budget on Live Activity snapshots. Oversized bitmaps are silently
+/// dropped and replaced with a grey placeholder rather than triggering
+/// a runtime error. The bundled icon is pre-resized to 192px for this
+/// reason; do not swap it for the full 1024px app icon. See
+/// https://developer.apple.com/forums/thread/716902.
 @available(iOS 16.1, *)
 private struct HoraeLogoMark: View {
     let size: CGFloat
 
-    /// Resolved once at first use and reused across renders.
-    private static let resolvedImage: UIImage? = {
-        if let img = UIImage(named: "HoraeLogo") {
-            return img
-        }
-        if let url = Bundle.main.url(forResource: "horae-logo", withExtension: "png"),
-           let data = try? Data(contentsOf: url),
-           let img = UIImage(data: data) {
-            return img
-        }
-        return nil
-    }()
-
     var body: some View {
-        Group {
-            if let img = Self.resolvedImage {
-                Image(uiImage: img)
-                    .renderingMode(.original)
-                    .resizable()
-                    .scaledToFill()
-            } else {
-                // Bright magenta fallback so a missing asset doesn't look
-                // like SwiftUI's grey placeholder. If you ever see this
-                // color on the Live Activity, BOTH lookup paths failed.
-                Color(red: 1.0, green: 0.0, blue: 1.0)
-            }
-        }
-        .frame(width: size, height: size)
-        .clipShape(RoundedRectangle(cornerRadius: size * 0.32,
-                                    style: .continuous))
+        Image("HoraeLogo")
+            .renderingMode(.original)
+            .resizable()
+            .scaledToFill()
+            .frame(width: size, height: size)
+            .clipShape(RoundedRectangle(cornerRadius: size * 0.32,
+                                        style: .continuous))
     }
 }
 
