@@ -163,19 +163,39 @@ private struct LiveDot: View {
 
 /// Renders the app's home-screen icon (the pie/clock mark in
 /// `assets/images/icon.png`, exposed to the widget bundle as the
-/// `HoraeLogo` image asset). Used both on the Lock Screen banner's top
-/// row and on the Dynamic Island expanded leading region.
+/// `HoraeLogo` image asset).
+///
+/// Loads via `UIImage(named:)` instead of `Image("HoraeLogo")` for two
+/// reasons:
+///   1. `.renderingMode(.original)` is set explicitly on the resulting
+///      Image so the asset catalog can't auto-tag it as a template
+///      and tint-fill it grey/white.
+///   2. If the lookup ever fails (e.g. the asset gets dropped on a
+///      future prebuild), we fall back to a tan-colored solid block
+///      matching the icon background — that's a visible signal during
+///      development rather than the silent grey placeholder SwiftUI
+///      otherwise renders.
 @available(iOS 16.1, *)
 private struct HoraeLogoMark: View {
     let size: CGFloat
 
     var body: some View {
-        Image("HoraeLogo")
-            .resizable()
-            .aspectRatio(contentMode: .fill)
-            .frame(width: size, height: size)
-            .clipShape(RoundedRectangle(cornerRadius: size * 0.32,
-                                        style: .continuous))
+        Group {
+            if let uiImage = UIImage(named: "HoraeLogo") {
+                Image(uiImage: uiImage)
+                    .renderingMode(.original)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                // Tan from the icon background — visually distinct from
+                // SwiftUI's empty-image grey so we notice immediately if
+                // the asset goes missing in the bundle.
+                Color(red: 0xD9/255, green: 0xB5/255, blue: 0x83/255)
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(RoundedRectangle(cornerRadius: size * 0.32,
+                                    style: .continuous))
     }
 }
 
