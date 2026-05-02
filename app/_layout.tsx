@@ -33,6 +33,7 @@ import {
 import { AuthProvider } from "@/hooks/useAuth";
 import { useLiveActivity } from "@/hooks/useLiveActivity";
 import { useNotificationScheduler } from "@/hooks/useNotificationScheduler";
+import { useTimerDeepLinks } from "@/hooks/useTimerDeepLinks";
 import { db } from "@/lib/powersync";
 
 export {
@@ -111,6 +112,7 @@ function RootLayoutNav() {
       <AuthProvider>
       <NotificationSchedulerMount />
       <LiveActivityMount />
+      <TimerDeepLinksMount />
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -190,5 +192,10 @@ function NotificationSchedulerMount(): null {
 
 function LiveActivityMount(): null {
   useLiveActivity();
+  return null;
+}
+
+function TimerDeepLinksMount(): null {
+  useTimerDeepLinks();
   return null;
 }
