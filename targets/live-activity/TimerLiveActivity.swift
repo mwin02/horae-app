@@ -161,36 +161,48 @@ private struct LiveDot: View {
     }
 }
 
-/// Renders the app's home-screen icon (the pie/clock mark in
-/// `assets/images/icon.png`, exposed to the widget bundle as the
-/// `HoraeLogo` image asset).
+/// Renders the app's home-screen icon (`assets/images/icon.png`).
 ///
-/// Loads via `UIImage(named:)` instead of `Image("HoraeLogo")` for two
-/// reasons:
-///   1. `.renderingMode(.original)` is set explicitly on the resulting
-///      Image so the asset catalog can't auto-tag it as a template
-///      and tint-fill it grey/white.
-///   2. If the lookup ever fails (e.g. the asset gets dropped on a
-///      future prebuild), we fall back to a tan-colored solid block
-///      matching the icon background — that's a visible signal during
-///      development rather than the silent grey placeholder SwiftUI
-///      otherwise renders.
+/// The icon is bundled into the widget extension via TWO paths so we
+/// have a fallback if the asset catalog lookup fails inside the
+/// widget's runtime bundle context:
+///   1. As `HoraeLogo` in `Assets.xcassets/HoraeLogo.imageset/icon.png`
+///      (loaded via `UIImage(named:)`).
+///   2. As a plain bundle resource at `targets/live-activity/horae-logo.png`
+///      (loaded via `Bundle.main.url(forResource:withExtension:)`).
+///
+/// If both paths fail, we render bright magenta so the asset miss is
+/// immediately obvious — distinguishable from both SwiftUI's grey
+/// placeholder AND from the tan icon background.
 @available(iOS 16.1, *)
 private struct HoraeLogoMark: View {
     let size: CGFloat
 
+    /// Resolved once at first use and reused across renders.
+    private static let resolvedImage: UIImage? = {
+        if let img = UIImage(named: "HoraeLogo") {
+            return img
+        }
+        if let url = Bundle.main.url(forResource: "horae-logo", withExtension: "png"),
+           let data = try? Data(contentsOf: url),
+           let img = UIImage(data: data) {
+            return img
+        }
+        return nil
+    }()
+
     var body: some View {
         Group {
-            if let uiImage = UIImage(named: "HoraeLogo") {
-                Image(uiImage: uiImage)
+            if let img = Self.resolvedImage {
+                Image(uiImage: img)
                     .renderingMode(.original)
                     .resizable()
                     .scaledToFill()
             } else {
-                // Tan from the icon background — visually distinct from
-                // SwiftUI's empty-image grey so we notice immediately if
-                // the asset goes missing in the bundle.
-                Color(red: 0xD9/255, green: 0xB5/255, blue: 0x83/255)
+                // Bright magenta fallback so a missing asset doesn't look
+                // like SwiftUI's grey placeholder. If you ever see this
+                // color on the Live Activity, BOTH lookup paths failed.
+                Color(red: 1.0, green: 0.0, blue: 1.0)
             }
         }
         .frame(width: size, height: size)
