@@ -41,6 +41,34 @@ export const INSIGHTS_CATEGORY_QUERY = `
 `;
 
 /**
+ * Row shape for clipped intervals used to compute coverage / total tracked
+ * time as a UNION (rather than a sum). Each row is one entry's overlap with
+ * the queried range, in Julian-day units.
+ */
+export interface InsightsIntervalRow {
+  clipped_start_jd: number;
+  clipped_end_jd: number;
+}
+
+/**
+ * SQL query returning each entry's clipped overlap with the queried range,
+ * sorted by start. Used to compute union-of-intervals in TS — per-category
+ * SUM-based aggregation in INSIGHTS_CATEGORY_QUERY double-counts overlapping
+ * entries when summed for a grand total.
+ * Params: [startOfRangeUTC, endOfRangeUTC, endOfRangeUTC, startOfRangeUTC]
+ */
+export const INSIGHTS_INTERVALS_QUERY = `
+  SELECT
+    MAX(julianday(?), julianday(te.started_at))                AS clipped_start_jd,
+    MIN(julianday(?), julianday(COALESCE(te.ended_at, 'now'))) AS clipped_end_jd
+  FROM time_entries te
+  WHERE te.deleted_at IS NULL
+    AND te.started_at <= ?
+    AND (te.ended_at IS NULL OR te.ended_at >= ?)
+  ORDER BY clipped_start_jd ASC
+`;
+
+/**
  * Row shape returned by the activity breakdown query.
  */
 export interface InsightsActivityRow {
