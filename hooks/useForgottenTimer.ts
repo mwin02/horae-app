@@ -37,11 +37,29 @@ interface RunningEntryRow {
   category_color: string;
 }
 
+interface SnoozeState {
+  entryId: string;
+  snoozedAt: Date;
+  snoozeUntil: Date;
+}
+
+const FALLBACK_SNOOZE_SECONDS = 3600;
+
 export interface UseForgottenTimerResult {
   /** The stale/forgotten entry if one is detected, otherwise null */
   forgottenEntry: RunningTimer | null;
-  /** Dismiss the forgotten timer prompt (user chose to keep it running) */
-  dismissForgotten: () => void;
+  /**
+   * Recommended default for the stop-time picker. When the user previously
+   * snoozed this entry, this is the moment they pressed "Still going" — so
+   * a quick confirm matches reality. Otherwise it's `min(startedAt+1h, now)`.
+   */
+  recommendedEndAt: Date | null;
+  /**
+   * Snooze the forgotten timer prompt for the current running entry.
+   * The modal stays hidden until the snooze expires; on re-prompt the
+   * picker defaults to the moment this was called.
+   */
+  snoozeForgotten: () => void;
 }
 
 /**
@@ -63,9 +81,10 @@ export function useForgottenTimer(): UseForgottenTimerResult {
   const { data: prefsData } = useQuery<NotificationPreferencesRecord>(
     NOTIFICATION_PREFERENCES_QUERY
   );
-  const [dismissed, setDismissed] = useState(false);
   const [shouldCheck, setShouldCheck] = useState(true);
   const [thresholdSeconds, setThresholdSeconds] = useState<number | null>(null);
+  const [, setSnoozeTick] = useState(0);
+  const snoozeRef = useRef<SnoozeState | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 
   const row = data.length > 0 ? data[0] : null;
@@ -76,6 +95,9 @@ export function useForgottenTimer(): UseForgottenTimerResult {
   useEffect(() => {
     if (row === null) {
       setThresholdSeconds(null);
+      // Timer stopped (or never started this session) — clear any pending snooze
+      // so a fresh entry never inherits stale state.
+      snoozeRef.current = null;
       return;
     }
     let cancelled = false;
@@ -88,6 +110,28 @@ export function useForgottenTimer(): UseForgottenTimerResult {
     };
   }, [row?.activity_id, prefs?.threshold_override_seconds]);
 
+  // Drop the snooze if the running entry changes (stop, switch).
+  useEffect(() => {
+    if (snoozeRef.current && row?.entry_id !== snoozeRef.current.entryId) {
+      snoozeRef.current = null;
+    }
+  }, [row?.entry_id]);
+
+  // When a snooze is active, schedule a wake-up at expiry to re-evaluate.
+  useEffect(() => {
+    const snooze = snoozeRef.current;
+    if (!snooze) return;
+    const remainingMs = snooze.snoozeUntil.getTime() - Date.now();
+    if (remainingMs <= 0) {
+      setSnoozeTick((t) => t + 1);
+      return;
+    }
+    const timeoutId = setTimeout(() => {
+      setSnoozeTick((t) => t + 1);
+    }, remainingMs);
+    return () => clearTimeout(timeoutId);
+  }, [snoozeRef.current?.entryId, snoozeRef.current?.snoozeUntil.getTime()]);
+
   // Listen for app state changes (background → active)
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextState) => {
@@ -96,7 +140,9 @@ export function useForgottenTimer(): UseForgottenTimerResult {
         nextState === "active"
       ) {
         setShouldCheck(true);
-        setDismissed(false);
+        // Force re-evaluation of the snooze window on foreground in case the
+        // snooze expired while backgrounded.
+        setSnoozeTick((t) => t + 1);
       }
       appStateRef.current = nextState;
     });
@@ -106,8 +152,19 @@ export function useForgottenTimer(): UseForgottenTimerResult {
     };
   }, []);
 
-  const forgottenEntry: RunningTimer | null = (() => {
-    if (!shouldCheck || dismissed || row === null) return null;
+  const { forgottenEntry, recommendedEndAt } = (() => {
+    if (!shouldCheck || row === null) {
+      return { forgottenEntry: null, recommendedEndAt: null };
+    }
+
+    const snooze = snoozeRef.current;
+    const snoozeActive =
+      snooze !== null &&
+      snooze.entryId === row.entry_id &&
+      Date.now() < snooze.snoozeUntil.getTime();
+    if (snoozeActive) {
+      return { forgottenEntry: null, recommendedEndAt: null };
+    }
 
     const startedAt = new Date(row.started_at);
     const now = Date.now();
@@ -120,9 +177,11 @@ export function useForgottenTimer(): UseForgottenTimerResult {
       thresholdSeconds !== null &&
       elapsedSeconds > thresholdSeconds;
 
-    if (!isPastThreshold && !isDifferentDay) return null;
+    if (!isPastThreshold && !isDifferentDay) {
+      return { forgottenEntry: null, recommendedEndAt: null };
+    }
 
-    return {
+    const entry: RunningTimer = {
       entryId: row.entry_id,
       activityId: row.activity_id,
       activityName: row.activity_name,
@@ -132,14 +191,39 @@ export function useForgottenTimer(): UseForgottenTimerResult {
       elapsedSeconds,
       timezone: row.timezone,
     };
+
+    // If a snooze for this entry just expired, default the picker to the
+    // moment the user pressed "Still going" — that's their best estimate of
+    // when they actually stopped.
+    let recommended: Date;
+    if (snooze !== null && snooze.entryId === row.entry_id) {
+      recommended = snooze.snoozedAt;
+    } else {
+      const oneHourAfter = new Date(startedAt.getTime() + 3600_000);
+      const nowDate = new Date(now);
+      recommended = oneHourAfter > nowDate ? nowDate : oneHourAfter;
+    }
+
+    return { forgottenEntry: entry, recommendedEndAt: recommended };
   })();
 
-  const dismissForgotten = useCallback(() => {
-    setDismissed(true);
-  }, []);
+  const snoozeForgotten = useCallback(() => {
+    if (!row) return;
+    const snoozedAt = new Date();
+    const snoozeSeconds = thresholdSeconds ?? FALLBACK_SNOOZE_SECONDS;
+    snoozeRef.current = {
+      entryId: row.entry_id,
+      snoozedAt,
+      snoozeUntil: new Date(snoozedAt.getTime() + snoozeSeconds * 1000),
+    };
+    // Force a re-render so the IIFE picks up the new snooze, and re-arm the
+    // expiry timer effect.
+    setSnoozeTick((t) => t + 1);
+  }, [row?.entry_id, thresholdSeconds]);
 
   return {
     forgottenEntry,
-    dismissForgotten,
+    recommendedEndAt,
+    snoozeForgotten,
   };
 }
