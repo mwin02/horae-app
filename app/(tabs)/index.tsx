@@ -38,7 +38,9 @@ export default function HomeScreen(): React.ReactElement {
   const { categories, isLoading: categoriesLoading } =
     useCategoriesWithActivities();
   const { activities: quickStartActivities } = useQuickStartActivities();
-  const { recommendations } = useRecommendedActivity();
+  const { recommendations } = useRecommendedActivity(
+    runningEntry?.activityId ?? null,
+  );
   const { arcs, nowMinutes, totalTrackedSeconds } = useTodayClockArcs();
   const { forgottenEntry, recommendedEndAt, snoozeForgotten } =
     useForgottenTimer();

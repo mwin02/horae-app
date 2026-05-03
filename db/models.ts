@@ -88,6 +88,10 @@ export interface RecommendedActivity {
   categoryColor: string;
   /** Resolved display icon (override or category fallback); null = no icon. */
   categoryIcon: string | null;
+  /** Why we surfaced this card — drives the subtitle copy. */
+  reason: 'history' | 'routine';
+  /** Pre-resolved subtitle for the card (e.g. "It's around lunchtime"). */
+  subtitle: string;
 }
 
 /** A time entry as displayed on the timeline */

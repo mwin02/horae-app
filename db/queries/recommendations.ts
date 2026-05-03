@@ -28,3 +28,24 @@ export const RECOMMENDATION_QUERY = `
     AND te.started_at >= datetime('now', '-60 days')
   ORDER BY te.started_at DESC
 `;
+
+/**
+ * Lookup of all currently-usable activities with display metadata. Used by the
+ * recommendation hook to resolve routine slot name matches (e.g. "Lunch")
+ * against the user's actual catalog. Returns no rows for archived/deleted
+ * activities or categories.
+ */
+export const ACTIVITY_LOOKUP_QUERY = `
+  SELECT
+    a.id            AS activity_id,
+    a.name          AS activity_name,
+    c.name          AS category_name,
+    c.color         AS category_color,
+    COALESCE(a.icon, c.icon) AS category_icon
+  FROM activities a
+  JOIN categories c ON c.id = a.category_id
+  WHERE a.deleted_at IS NULL
+    AND a.is_archived = 0
+    AND c.deleted_at IS NULL
+    AND c.is_archived = 0
+`;
