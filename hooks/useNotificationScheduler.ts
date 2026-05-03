@@ -78,6 +78,7 @@ export function useNotificationScheduler(): void {
   const quietHoursEnd = prefs?.quiet_hours_end ?? null;
 
   const prevEntryIdRef = useRef<string | null | undefined>(undefined);
+  const prevStartedAtRef = useRef<string | null | undefined>(undefined);
   const prevIdleEnabledRef = useRef<boolean | undefined>(undefined);
   const prevLongRunningEnabledRef = useRef<boolean | undefined>(undefined);
   const prevQuietHoursKeyRef = useRef<string | undefined>(undefined);
@@ -112,6 +113,7 @@ export function useNotificationScheduler(): void {
       const granted = await hasNotificationPermission();
       if (!granted) {
         prevEntryIdRef.current = currId;
+        prevStartedAtRef.current = running?.started_at ?? null;
         return;
       }
 
@@ -121,6 +123,7 @@ export function useNotificationScheduler(): void {
           await scheduleLongRunningForEntry(running, prefs);
         }
         prevEntryIdRef.current = currId;
+        prevStartedAtRef.current = running?.started_at ?? null;
         return;
       }
 
@@ -144,9 +147,24 @@ export function useNotificationScheduler(): void {
         if (longRunningEnabled) {
           await scheduleLongRunningForEntry(running, prefs);
         }
+      } else if (
+        prev !== null &&
+        currId !== null &&
+        prev === currId &&
+        running !== null &&
+        prevStartedAtRef.current !== undefined &&
+        prevStartedAtRef.current !== running.started_at
+      ) {
+        // started_at edited on the running entry — re-anchor the long-running
+        // reminder so it fires relative to the new start, not the old one.
+        await cancelLongRunningReminder(currId);
+        if (longRunningEnabled) {
+          await scheduleLongRunningForEntry(running, prefs);
+        }
       }
 
       prevEntryIdRef.current = currId;
+      prevStartedAtRef.current = running?.started_at ?? null;
     })();
   }, [
     prefs,
