@@ -9,4 +9,11 @@ module.exports = (/** @type {any} */ _config) => ({
   infoPlist: {
     NSSupportsLiveActivities: true,
   },
+  // Shared with the host app via app.json's ios.entitlements so the
+  // home-screen widget can read the running-timer snapshot the app writes.
+  entitlements: {
+    "com.apple.security.application-groups": [
+      "group.com.myozawwin.horae.shared",
+    ],
+  },
 });

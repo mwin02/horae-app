@@ -18,6 +18,11 @@
       "deploymentTarget": "16.1",
       "infoPlist": {
         "NSSupportsLiveActivities": true
+      },
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.com.myozawwin.horae.shared"
+        ]
       }
     },
     "android": {
