@@ -1,8 +1,10 @@
+import { router } from "expo-router";
 import { useEffect, useRef } from "react";
 import { Linking } from "react-native";
 
 import { stopEntry } from "@/db/queries";
 import { db } from "@/lib/powersync";
+import { useUIStore } from "@/store/uiStore";
 
 /**
  * Listens for `horae://` deep links carrying an `action` query param
@@ -11,7 +13,8 @@ import { db } from "@/lib/powersync";
  * `useNotificationScheduler` and `useLiveActivity`.
  *
  * Currently handles:
- *   - `?action=stop` → stops the running entry, if any.
+ *   - `?action=stop`       → stops the running entry, if any.
+ *   - `?action=newSession` → opens the home tab's NewSessionModal.
  *
  * The action lives in a query param rather than the URL path because
  * Expo Router treats every URL path as a file-based route — anything
@@ -56,6 +59,8 @@ export function useTimerDeepLinks(): void {
       const action = parseHoraeAction(rawUrl);
       if (action === "stop") {
         void runStopAction(inFlightRef);
+      } else if (action === "newSession") {
+        runNewSessionAction();
       }
     };
 
@@ -87,6 +92,14 @@ function parseHoraeAction(rawUrl: string): string | null {
     }
   }
   return null;
+}
+
+function runNewSessionAction(): void {
+  // Make sure the home tab is focused before flipping the flag — the
+  // user may be on Timeline / Insights / Settings when they tap the
+  // widget. Expo Router's `navigate` is a no-op if we're already there.
+  router.navigate("/(tabs)");
+  useUIStore.getState().setPendingHomeAction("newSession");
 }
 
 async function runStopAction(
