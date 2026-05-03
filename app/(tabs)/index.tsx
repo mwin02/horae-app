@@ -40,7 +40,8 @@ export default function HomeScreen(): React.ReactElement {
   const { activities: quickStartActivities } = useQuickStartActivities();
   const { recommendations } = useRecommendedActivity();
   const { arcs, nowMinutes, totalTrackedSeconds } = useTodayClockArcs();
-  const { forgottenEntry, dismissForgotten } = useForgottenTimer();
+  const { forgottenEntry, recommendedEndAt, snoozeForgotten } =
+    useForgottenTimer();
   const [modalVisible, setModalVisible] = useState(false);
   const pendingHomeAction = useUIStore((s) => s.pendingHomeAction);
   const setPendingHomeAction = useUIStore((s) => s.setPendingHomeAction);
@@ -58,18 +59,16 @@ export default function HomeScreen(): React.ReactElement {
     async (endedAt: Date): Promise<void> => {
       if (forgottenEntry) {
         await endForgottenEntry(forgottenEntry.entryId, endedAt);
-        dismissForgotten();
       }
     },
-    [forgottenEntry, dismissForgotten],
+    [forgottenEntry],
   );
 
   const handleForgottenDiscard = useCallback(async (): Promise<void> => {
     if (forgottenEntry) {
       await deleteEntry(forgottenEntry.entryId);
-      dismissForgotten();
     }
-  }, [forgottenEntry, dismissForgotten]);
+  }, [forgottenEntry]);
 
   const handleActivityPress = useCallback(
     async (activityId: string): Promise<void> => {
@@ -158,8 +157,9 @@ export default function HomeScreen(): React.ReactElement {
       {/* Forgotten Timer Modal */}
       <ForgottenTimerModal
         entry={forgottenEntry}
+        recommendedEndAt={recommendedEndAt}
         onConfirmStop={handleForgottenStop}
-        onDismiss={dismissForgotten}
+        onDismiss={snoozeForgotten}
         onDiscard={handleForgottenDiscard}
       />
     </SafeAreaView>
