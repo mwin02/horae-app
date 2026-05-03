@@ -7,8 +7,10 @@ import type {
 import {
   IDEAL_ALLOCATIONS_QUERY,
   INSIGHTS_CATEGORY_QUERY,
+  INSIGHTS_INTERVALS_QUERY,
   type IdealAllocationRow,
   type InsightsCategoryRow,
+  type InsightsIntervalRow,
 } from "@/db/queries";
 import { getCurrentTimezone, getEndOfDay, getStartOfDay } from "@/lib/timezone";
 import { useQuery } from "@powersync/react";
@@ -122,6 +124,36 @@ function enumerateDaysInRange(
   return days;
 }
 
+/**
+ * Compute the total covered seconds across a list of pre-clipped intervals
+ * (sorted ascending by start) by merging overlaps. The per-category insight
+ * query intentionally counts overlap (a minute spent on two activities is
+ * credited to both), but the headline total / coverage number must be the
+ * union — otherwise it can exceed real elapsed time.
+ *
+ * Inputs are in Julian-day units (from SQLite's julianday()); the result
+ * is in seconds.
+ */
+function unionSecondsFromIntervals(rows: InsightsIntervalRow[]): number {
+  if (rows.length === 0) return 0;
+  let totalJd = 0;
+  let curStart = rows[0].clipped_start_jd;
+  let curEnd = rows[0].clipped_end_jd;
+  for (let i = 1; i < rows.length; i++) {
+    const s = rows[i].clipped_start_jd;
+    const e = rows[i].clipped_end_jd;
+    if (s <= curEnd) {
+      if (e > curEnd) curEnd = e;
+    } else {
+      totalJd += curEnd - curStart;
+      curStart = s;
+      curEnd = e;
+    }
+  }
+  totalJd += curEnd - curStart;
+  return Math.max(0, Math.round(totalJd * 86400));
+}
+
 /** Mon=0 … Sun=6 for a YYYY-MM-DD string (noon-anchored to avoid DST). */
 function weekdayMondayZero(dateStr: string): number {
   const [y, m, d] = dateStr.split("-").map(Number);
@@ -190,6 +222,15 @@ export function useInsightsData(
     useQuery<InsightsCategoryRow>(INSIGHTS_CATEGORY_QUERY, [
       endOfRangeUTC,
       startOfRangeUTC,
+      endOfRangeUTC,
+      startOfRangeUTC,
+    ]);
+
+  // Reactive query: clipped intervals for union-based total / coverage.
+  const { data: intervalRows, isLoading: intervalsLoading } =
+    useQuery<InsightsIntervalRow>(INSIGHTS_INTERVALS_QUERY, [
+      startOfRangeUTC,
+      endOfRangeUTC,
       endOfRangeUTC,
       startOfRangeUTC,
     ]);
@@ -302,11 +343,14 @@ export function useInsightsData(
       return allSame ? first : "around";
     };
 
-    let totalTrackedMinutes = 0;
+    // Union-based total: per-category numbers below intentionally include
+    // overlap, but the headline coverage must reflect actual wall-clock time.
+    const totalTrackedMinutes = Math.round(
+      unionSecondsFromIntervals(intervalRows) / 60,
+    );
 
     const categoryInsights: CategoryInsight[] = categoryRows.map((row) => {
       const actualMinutes = Math.round(row.total_seconds / 60);
-      totalTrackedMinutes += actualMinutes;
 
       const { target: targetMinutes, kind: goalPeriodKind } = computeTarget(
         row.category_id,
@@ -343,12 +387,20 @@ export function useInsightsData(
     };
 
     return { categoryInsights, coverage, totalTrackedMinutes };
-  }, [categoryRows, allocationRows, daysInRange, numDays, selectedDate, period]);
+  }, [
+    categoryRows,
+    intervalRows,
+    allocationRows,
+    daysInRange,
+    numDays,
+    selectedDate,
+    period,
+  ]);
 
   return {
     categoryInsights: result.categoryInsights,
     coverage: result.coverage,
     totalTrackedMinutes: result.totalTrackedMinutes,
-    isLoading: categoriesLoading || allocationsLoading,
+    isLoading: categoriesLoading || intervalsLoading || allocationsLoading,
   };
 }

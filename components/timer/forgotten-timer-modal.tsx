@@ -15,6 +15,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface ForgottenTimerModalProps {
   entry: RunningTimer | null;
+  /**
+   * Default for the stop-time picker. When the user previously snoozed this
+   * entry, this is the moment they pressed "Still going". Falls back to
+   * `min(startedAt + 1h, now)` when null.
+   */
+  recommendedEndAt?: Date | null;
   onConfirmStop: (endedAt: Date) => void;
   onDismiss: () => void;
   onDiscard: () => void;
@@ -28,21 +34,26 @@ function getDefaultEndTime(startedAt: Date): Date {
 
 export function ForgottenTimerModal({
   entry,
+  recommendedEndAt,
   onConfirmStop,
   onDismiss,
   onDiscard,
 }: ForgottenTimerModalProps): React.ReactElement | null {
   const insets = useSafeAreaInsets();
   const [selectedTime, setSelectedTime] = useState<Date>(() =>
-    entry ? getDefaultEndTime(entry.startedAt) : new Date(),
+    entry
+      ? recommendedEndAt ?? getDefaultEndTime(entry.startedAt)
+      : new Date(),
   );
 
-  // Reset selected time when a new forgotten entry appears
+  // Reset selected time when a new forgotten entry appears, or when the
+  // recommended end shifts (e.g. a snooze just expired so we want to default
+  // to the snooze moment instead of the original 1h-after default).
   useEffect(() => {
     if (entry) {
-      setSelectedTime(getDefaultEndTime(entry.startedAt));
+      setSelectedTime(recommendedEndAt ?? getDefaultEndTime(entry.startedAt));
     }
-  }, [entry?.entryId]);
+  }, [entry?.entryId, recommendedEndAt?.getTime()]);
 
   const handleTimeChange = useCallback(
     (_event: unknown, date?: Date): void => {
