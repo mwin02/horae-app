@@ -139,7 +139,7 @@ private struct LockScreenView: View {
 // MARK: - Shared sub-views
 
 @available(iOS 16.1, *)
-private struct IconTile: View {
+struct IconTile: View {
     let colorHex: String
     let size: CGFloat
     var cornerRadius: CGFloat? = nil
@@ -179,7 +179,7 @@ private struct LiveDot: View {
 /// reason; do not swap it for the full 1024px app icon. See
 /// https://developer.apple.com/forums/thread/716902.
 @available(iOS 16.1, *)
-private struct HoraeLogoMark: View {
+struct HoraeLogoMark: View {
     let size: CGFloat
 
     var body: some View {
@@ -255,7 +255,7 @@ private struct StopButton: View {
 // MARK: - Helpers
 
 @available(iOS 16.1, *)
-private func timerText(startedAt: Date, size: CGFloat, weight: Font.Weight) -> some View {
+func timerText(startedAt: Date, size: CGFloat, weight: Font.Weight) -> some View {
     // Text(timerInterval:) animates seconds at the OS level — no per-second
     // JS pushes. `showsHours: true` auto-promotes to HH:MM:SS past 1 hour.
     Text(timerInterval: startedAt...Date.distantFuture,
