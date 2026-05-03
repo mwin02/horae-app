@@ -9,8 +9,6 @@ interface SuggestedRowProps {
   onSelect: (activityId: string) => void;
 }
 
-const SUBTITLE = "You usually start around now";
-
 /**
  * Section header + horizontally-scrollable row of recommendation cards.
  * Renders nothing if there are no qualifying recommendations.
@@ -36,7 +34,7 @@ export function SuggestedRow({
             categoryName={rec.categoryName}
             categoryColor={rec.categoryColor}
             categoryIcon={rec.categoryIcon}
-            subtitle={SUBTITLE}
+            subtitle={rec.subtitle}
             onPress={() => onSelect(rec.activityId)}
           />
         ))}
