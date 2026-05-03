@@ -83,7 +83,6 @@ export function useTodayClockArcs(): UseTodayClockArcsResult {
     );
 
     const arcs: ClockArc[] = [];
-    let totalSeconds = 0;
 
     for (const row of rows) {
       const startedAt = new Date(row.started_at);
@@ -116,12 +115,31 @@ export function useTodayClockArcs(): UseTodayClockArcsResult {
         color: row.category_color,
         isRunning,
       });
-      totalSeconds += (endMinute - correctedStart) * 60;
+    }
+
+    // Total tracked is the union of arcs (overlapping entries shouldn't
+    // double-count wall-clock time). Sweep-merge sorted starts.
+    const sorted = [...arcs].sort((a, b) => a.startMinute - b.startMinute);
+    let totalMinutes = 0;
+    if (sorted.length > 0) {
+      let curStart = sorted[0].startMinute;
+      let curEnd = sorted[0].endMinute;
+      for (let i = 1; i < sorted.length; i++) {
+        const { startMinute: s, endMinute: e } = sorted[i];
+        if (s <= curEnd) {
+          if (e > curEnd) curEnd = e;
+        } else {
+          totalMinutes += curEnd - curStart;
+          curStart = s;
+          curEnd = e;
+        }
+      }
+      totalMinutes += curEnd - curStart;
     }
 
     return {
       arcs,
-      totalTrackedSeconds: totalSeconds,
+      totalTrackedSeconds: totalMinutes * 60,
       nowMinutes,
       timezone,
       isLoading,
