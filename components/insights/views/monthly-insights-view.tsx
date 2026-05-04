@@ -2,12 +2,16 @@ import { ActivityBreakdown } from "@/components/insights/activity-breakdown";
 import { ActualVsIdeal } from "@/components/insights/actual-vs-ideal";
 import { CalendarHeatmap } from "@/components/insights/calendar-heatmap";
 import { CategoryBreakdown } from "@/components/insights/category-breakdown";
+import {
+  CustomizableCardList,
+  type CardEntry,
+} from "@/components/insights/customizable-card-list";
 import { FourWeekTrend } from "@/components/insights/four-week-trend";
 import { TopActivitiesRanked } from "@/components/insights/top-activities-ranked";
 import { TrackingCoverage } from "@/components/insights/tracking-coverage";
 import { SPACING } from "@/constants/theme";
 import type { CategoryInsight, DayCoverage } from "@/db/models";
-import React from "react";
+import React, { useMemo } from "react";
 import { ScrollView, StyleSheet } from "react-native";
 
 interface MonthlyInsightsViewProps {
@@ -25,32 +29,60 @@ export function MonthlyInsightsView({
   totalTrackedMinutes,
   onDayPress,
 }: MonthlyInsightsViewProps): React.ReactElement {
+  const cards = useMemo<CardEntry[]>(
+    () => [
+      {
+        id: "calendar-heatmap",
+        node: (
+          <CalendarHeatmap monthDate={selectedDate} onDayPress={onDayPress} />
+        ),
+      },
+      {
+        id: "category-breakdown",
+        node: (
+          <CategoryBreakdown
+            categoryInsights={categoryInsights}
+            totalTrackedMinutes={totalTrackedMinutes}
+          />
+        ),
+      },
+      {
+        id: "actual-vs-ideal",
+        node: <ActualVsIdeal categoryInsights={categoryInsights} />,
+      },
+      {
+        id: "activity-breakdown",
+        node: (
+          <ActivityBreakdown
+            categoryInsights={categoryInsights}
+            selectedDate={selectedDate}
+            period="monthly"
+          />
+        ),
+      },
+      {
+        id: "four-week-trend",
+        node: <FourWeekTrend monthDate={selectedDate} />,
+      },
+      {
+        id: "top-activities",
+        node: <TopActivitiesRanked monthDate={selectedDate} />,
+      },
+      {
+        id: "tracking-coverage",
+        node: <TrackingCoverage coverage={coverage} period="monthly" />,
+      },
+    ],
+    [categoryInsights, coverage, onDayPress, selectedDate, totalTrackedMinutes],
+  );
+
   return (
     <ScrollView
       style={styles.scrollView}
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
-      <CalendarHeatmap monthDate={selectedDate} onDayPress={onDayPress} />
-
-      <CategoryBreakdown
-        categoryInsights={categoryInsights}
-        totalTrackedMinutes={totalTrackedMinutes}
-      />
-
-      <ActualVsIdeal categoryInsights={categoryInsights} />
-
-      <ActivityBreakdown
-        categoryInsights={categoryInsights}
-        selectedDate={selectedDate}
-        period="monthly"
-      />
-
-      <FourWeekTrend monthDate={selectedDate} />
-
-      <TopActivitiesRanked monthDate={selectedDate} />
-
-      <TrackingCoverage coverage={coverage} period="monthly" />
+      <CustomizableCardList period="monthly" cards={cards} />
     </ScrollView>
   );
 }

@@ -185,6 +185,25 @@ const user_preferences = new Table(
   { localOnly: true }
 );
 
+// Singleton row of per-period card customization for the Insights tab.
+// Orders + hidden cards are stored as JSON-encoded TEXT (PowerSync columns
+// are TEXT/INTEGER only). NULL columns mean "use defaults".
+const insight_preferences = new Table(
+  {
+    user_id: column.text,
+    daily_order: column.text,    // JSON string[] of card ids
+    weekly_order: column.text,   // JSON string[]
+    monthly_order: column.text,  // JSON string[]
+    daily_hidden: column.text,   // JSON string[] of card ids hidden in this period
+    weekly_hidden: column.text,  // JSON string[]
+    monthly_hidden: column.text, // JSON string[]
+    created_at: column.text,
+    updated_at: column.text,
+    deleted_at: column.text,
+  },
+  { localOnly: true }
+);
+
 const daily_summaries = new Table(
   {
     user_id: column.text,
@@ -207,6 +226,7 @@ export const AppSchema = new Schema({
   tags,
   entry_tags,
   user_preferences,
+  insight_preferences,
   daily_summaries,
 });
 
@@ -220,4 +240,5 @@ export type NotificationFireRecord = Database['notification_fires'];
 export type TagRecord = Database['tags'];
 export type EntryTagRecord = Database['entry_tags'];
 export type UserPreferencesRecord = Database['user_preferences'];
+export type InsightPreferencesRecord = Database['insight_preferences'];
 export type DailySummaryRecord = Database['daily_summaries'];
