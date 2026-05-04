@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons";
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   LayoutChangeEvent,
   Pressable,
@@ -13,6 +13,7 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withTiming,
+  type SharedValue,
 } from "react-native-reanimated";
 import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import {
@@ -79,11 +80,17 @@ export function CustomizableCardList({
     [cards, hidden],
   );
 
-  // Heights captured per index from onLayout. Used to compute drop targets.
-  const heightsRef = useRef<number[]>([]);
-  const onItemLayout = useCallback((index: number, e: LayoutChangeEvent) => {
-    heightsRef.current[index] = e.nativeEvent.layout.height;
-  }, []);
+  // Heights captured per index from onLayout. Lives in a SharedValue so the
+  // Pan worklet on the UI thread can read it without crossing the bridge.
+  const heights = useSharedValue<number[]>([]);
+  const onItemLayout = useCallback(
+    (index: number, e: LayoutChangeEvent) => {
+      const next = [...heights.value];
+      next[index] = e.nativeEvent.layout.height;
+      heights.value = next;
+    },
+    [heights],
+  );
 
   // Persist the list of visible card ids in the requested new order.
   // Hidden cards are appended so we don't lose their stored position
@@ -149,7 +156,7 @@ export function CustomizableCardList({
           editMode={editMode}
           onLongPressEnter={() => setEditMode(true)}
           onLayoutMeasured={onItemLayout}
-          getHeights={() => heightsRef.current}
+          heights={heights}
           onReorder={handleReorder}
           onHide={() => handleHide(card.id)}
         />
@@ -185,7 +192,7 @@ interface DraggableCardItemProps {
   editMode: boolean;
   onLongPressEnter: () => void;
   onLayoutMeasured: (index: number, e: LayoutChangeEvent) => void;
-  getHeights: () => number[];
+  heights: SharedValue<number[]>;
   onReorder: (fromIndex: number, toIndex: number) => void;
   onHide: () => void;
 }
@@ -197,7 +204,7 @@ function DraggableCardItem({
   editMode,
   onLongPressEnter,
   onLayoutMeasured,
-  getHeights,
+  heights,
   onReorder,
   onHide,
 }: DraggableCardItemProps): React.ReactElement {
@@ -218,16 +225,17 @@ function DraggableCardItem({
           translateY.value = e.translationY;
         })
         .onEnd(() => {
-          const heights = getHeights();
+          "worklet";
+          const hs = heights.value;
           const offset = translateY.value;
           let targetIndex = index;
           if (offset < 0) {
             // moving up
             let acc = 0;
             for (let i = index - 1; i >= 0; i--) {
-              const h = heights[i] ?? 0;
+              const h = hs[i] ?? 0;
               acc += h;
-              if (Math.abs(offset) > acc / 2 + (heights[i + 1] ?? 0) / 4) {
+              if (Math.abs(offset) > acc / 2 + (hs[i + 1] ?? 0) / 4) {
                 targetIndex = i;
               } else {
                 break;
@@ -236,9 +244,9 @@ function DraggableCardItem({
           } else if (offset > 0) {
             let acc = 0;
             for (let i = index + 1; i < totalItems; i++) {
-              const h = heights[i] ?? 0;
+              const h = hs[i] ?? 0;
               acc += h;
-              if (offset > acc / 2 + (heights[i - 1] ?? 0) / 4) {
+              if (offset > acc / 2 + (hs[i - 1] ?? 0) / 4) {
                 targetIndex = i;
               } else {
                 break;
@@ -251,7 +259,7 @@ function DraggableCardItem({
             runOnJS(onReorder)(index, targetIndex);
           }
         }),
-    [editMode, getHeights, index, isDragging, onReorder, totalItems, translateY],
+    [editMode, heights, index, isDragging, onReorder, totalItems, translateY],
   );
 
   // Long-press on the whole card enters edit mode. Disabled while already
