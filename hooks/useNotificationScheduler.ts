@@ -3,21 +3,32 @@ import { useEffect, useRef } from "react";
 import { AppState, type AppStateStatus } from "react-native";
 
 import {
+  DEFAULT_WEEK_START_DAY,
   IDLE_REMINDER_DELAY_SECONDS,
   NOTIFICATION_PREFERENCES_QUERY,
+  USER_PREFERENCES_QUERY,
   deferForQuietHours,
-  getCategoryDailyTotalSeconds,
-  getDailyAllocationForCategory,
-  hasGoalAlertFiredToday,
+  getCategoryRangeTotalSeconds,
+  getEffectiveAllocationForCategory,
+  hasGoalAlertFiredForPeriod,
   isInQuietHours,
   localDayBoundsUTC,
   recordGoalAlertFire,
   resolveLongRunningThreshold,
   updateNotificationPreferences,
+  type GoalAlertPeriodKind,
   type GoalType,
 } from "@/db/queries";
-import type { NotificationPreferencesRecord } from "@/db/schema";
-import { getTodayDate } from "@/lib/timezone";
+import type {
+  NotificationPreferencesRecord,
+  UserPreferencesRecord,
+} from "@/db/schema";
+import { getWeekRange } from "@/hooks/useInsightsData";
+import {
+  getEndOfDay,
+  getStartOfDay,
+  getTodayDate,
+} from "@/lib/timezone";
 import {
   cancelAllGoalAlerts,
   cancelGoalAlertForCategory,
@@ -43,7 +54,15 @@ const TIME_ENTRIES_FINGERPRINT_QUERY = `
   FROM time_entries
 `;
 
-interface TimeEntriesFingerprintRow {
+// Same fingerprint pattern for ideal_allocations — mid-session edits to a
+// category's target/direction/period_kind shift the projected fire time, and
+// removing the allocation should cancel any pending goal alert.
+const IDEAL_ALLOCATIONS_FINGERPRINT_QUERY = `
+  SELECT MAX(updated_at) AS max_updated, COUNT(*) AS cnt
+  FROM ideal_allocations
+`;
+
+interface TableFingerprintRow {
   max_updated: string | null;
   cnt: number;
 }
@@ -100,15 +119,30 @@ export function useNotificationScheduler(): void {
   const { data: prefsData } = useQuery<NotificationPreferencesRecord>(
     NOTIFICATION_PREFERENCES_QUERY,
   );
-  const { data: fingerprintData } = useQuery<TimeEntriesFingerprintRow>(
+  const { data: userPrefsData } = useQuery<UserPreferencesRecord>(
+    USER_PREFERENCES_QUERY,
+  );
+  const { data: fingerprintData } = useQuery<TableFingerprintRow>(
     TIME_ENTRIES_FINGERPRINT_QUERY,
+  );
+  const { data: allocationsFingerprintData } = useQuery<TableFingerprintRow>(
+    IDEAL_ALLOCATIONS_FINGERPRINT_QUERY,
   );
 
   const running = runningData.length > 0 ? runningData[0] : null;
   const prefs = prefsData.length > 0 ? prefsData[0] : null;
+  const userPrefs = userPrefsData.length > 0 ? userPrefsData[0] : null;
+  const weekStartDay = userPrefs?.week_start_day ?? DEFAULT_WEEK_START_DAY;
   const fingerprintRow = fingerprintData.length > 0 ? fingerprintData[0] : null;
   const entriesFingerprint = fingerprintRow
     ? `${fingerprintRow.max_updated ?? ""}|${fingerprintRow.cnt}`
+    : "";
+  const allocationsFingerprintRow =
+    allocationsFingerprintData.length > 0
+      ? allocationsFingerprintData[0]
+      : null;
+  const allocationsFingerprint = allocationsFingerprintRow
+    ? `${allocationsFingerprintRow.max_updated ?? ""}|${allocationsFingerprintRow.cnt}`
     : "";
 
   const idleEnabled = prefs?.idle_reminder_enabled === 1;
@@ -173,7 +207,7 @@ export function useNotificationScheduler(): void {
           await scheduleLongRunningForEntry(running, prefs);
         }
         if (running !== null && goalAlertsEnabled) {
-          await reconcileGoalAlertForEntry(running, prefs);
+          await reconcileGoalAlertForEntry(running, prefs, weekStartDay);
         }
         prevEntryIdRef.current = currId;
         prevStartedAtRef.current = running?.started_at ?? null;
@@ -188,7 +222,7 @@ export function useNotificationScheduler(): void {
           await scheduleLongRunningForEntry(running, prefs);
         }
         if (goalAlertsEnabled) {
-          await reconcileGoalAlertForEntry(running, prefs);
+          await reconcileGoalAlertForEntry(running, prefs, weekStartDay);
         }
       } else if (prev !== null && currId === null) {
         await cancelLongRunningReminder(prev);
@@ -214,7 +248,7 @@ export function useNotificationScheduler(): void {
           await cancelGoalAlertForCategory(prevCategoryId);
         }
         if (goalAlertsEnabled) {
-          await reconcileGoalAlertForEntry(running, prefs);
+          await reconcileGoalAlertForEntry(running, prefs, weekStartDay);
         }
       } else if (
         prev !== null &&
@@ -254,7 +288,7 @@ export function useNotificationScheduler(): void {
           (startedAtChanged || categoryChanged) &&
           goalAlertsEnabled
         ) {
-          await reconcileGoalAlertForEntry(running, prefs);
+          await reconcileGoalAlertForEntry(running, prefs, weekStartDay);
         }
       }
 
@@ -274,6 +308,7 @@ export function useNotificationScheduler(): void {
     longRunningEnabled,
     goalAlertsEnabled,
     thresholdOverride,
+    weekStartDay,
     running,
   ]);
 
@@ -324,11 +359,18 @@ export function useNotificationScheduler(): void {
         if (!goalAlertsEnabled) {
           await cancelAllGoalAlerts();
         } else if (running !== null) {
-          await reconcileGoalAlertForEntry(running, prefs);
+          await reconcileGoalAlertForEntry(running, prefs, weekStartDay);
         }
       }
     })();
-  }, [idleEnabled, longRunningEnabled, goalAlertsEnabled, prefs, running]);
+  }, [
+    idleEnabled,
+    longRunningEnabled,
+    goalAlertsEnabled,
+    prefs,
+    running,
+    weekStartDay,
+  ]);
 
   // Re-reconcile goal alerts when *any* time_entries row changes — retro
   // adds/edits/deletes shift today's cumulative for the running category and
@@ -342,9 +384,16 @@ export function useNotificationScheduler(): void {
     void (async () => {
       const granted = await hasNotificationPermission();
       if (!granted) return;
-      await reconcileGoalAlertForEntry(running, prefs);
+      await reconcileGoalAlertForEntry(running, prefs, weekStartDay);
     })();
-  }, [entriesFingerprint, goalAlertsEnabled, prefs, running]);
+  }, [
+    entriesFingerprint,
+    allocationsFingerprint,
+    goalAlertsEnabled,
+    prefs,
+    running,
+    weekStartDay,
+  ]);
 
   // Re-reconcile when quiet-hours fields change so an active schedule shifts
   // to (or away from) the deferred fire time without waiting for the next
@@ -363,7 +412,7 @@ export function useNotificationScheduler(): void {
         await scheduleLongRunningForEntry(running, prefs);
       }
       if (running !== null && goalAlertsEnabled) {
-        await reconcileGoalAlertForEntry(running, prefs);
+        await reconcileGoalAlertForEntry(running, prefs, weekStartDay);
       }
       if (running === null && idleEnabled) {
         // Only reschedule the idle reminder if one is already pending —
@@ -383,6 +432,7 @@ export function useNotificationScheduler(): void {
     idleEnabled,
     longRunningEnabled,
     goalAlertsEnabled,
+    weekStartDay,
     running,
   ]);
 
@@ -456,7 +506,14 @@ function weekdayMondayZero(dateStr: string): number {
 
 /**
  * Compute & schedule the goal alert for the running entry's category, if any.
- * Bails on: no allocation, already-fired today, fire time inside quiet hours.
+ * Bails on: no allocation, already-fired in the period, fire time inside
+ * quiet hours.
+ *
+ * The allocation's `period_kind` (daily or weekly — weekly takes precedence
+ * when both exist) controls the cumulative window: a single local day for
+ * daily, or the user's configured week (`week_start_day`) for weekly. The
+ * dedup row is keyed on `(category, goal_type, period_kind, period_start)`
+ * so daily and weekly alerts coexist on the same category.
  *
  * `at_most`: fires 15 min before target. If target ≤ 15 min, fires
  *   immediately (the warning window has already closed).
@@ -464,32 +521,62 @@ function weekdayMondayZero(dateStr: string): number {
  *
  * Records the fire in `notification_fires` at schedule time — JS can't
  * observe delivery in background, and this prevents re-firing within the
- * same local day across stop/restart cycles.
+ * same period across stop/restart cycles.
  */
 async function reconcileGoalAlertForEntry(
   row: RunningRow,
   prefs: NotificationPreferencesRecord | null,
+  weekStartDay: number,
 ): Promise<void> {
   const localDate = getTodayDate(row.timezone);
   const dayOfWeek = weekdayMondayZero(localDate);
-  const allocation = await getDailyAllocationForCategory(
+  const allocation = await getEffectiveAllocationForCategory(
     row.category_id,
     dayOfWeek,
   );
-  if (!allocation) return;
+  if (!allocation) {
+    // Allocation removed (or never set). Drop any pending goal alert so a
+    // mid-session deletion of the allocation doesn't leave a stale buzz
+    // queued. Idempotent — cancels nothing if nothing's scheduled.
+    await cancelGoalAlertForCategory(row.category_id);
+    return;
+  }
 
+  const periodKind: GoalAlertPeriodKind = allocation.period_kind;
   const goalType: GoalType = allocation.goal_direction;
-  if (await hasGoalAlertFiredToday(row.category_id, goalType, localDate))
+
+  let periodStart: string;
+  let startUTC: string;
+  let endUTC: string;
+  if (periodKind === "weekly") {
+    const { weekStart, weekEnd } = getWeekRange(localDate, weekStartDay);
+    periodStart = weekStart;
+    startUTC = getStartOfDay(weekStart, row.timezone).toISOString();
+    endUTC = getEndOfDay(weekEnd, row.timezone).toISOString();
+  } else {
+    periodStart = localDate;
+    const bounds = localDayBoundsUTC(localDate, row.timezone);
+    startUTC = bounds.startUTC;
+    endUTC = bounds.endUTC;
+  }
+
+  if (
+    await hasGoalAlertFiredForPeriod(
+      row.category_id,
+      goalType,
+      periodKind,
+      periodStart,
+    )
+  )
     return;
 
-  const targetSeconds = allocation.target_minutes_per_day * 60;
+  const targetSeconds = allocation.target_minutes * 60;
   const thresholdSeconds =
     goalType === "at_most"
       ? Math.max(0, targetSeconds - 15 * 60)
       : targetSeconds;
 
-  const { startUTC, endUTC } = localDayBoundsUTC(localDate, row.timezone);
-  const cumulative = await getCategoryDailyTotalSeconds(
+  const cumulative = await getCategoryRangeTotalSeconds(
     row.category_id,
     startUTC,
     endUTC,
@@ -506,7 +593,14 @@ async function reconcileGoalAlertForEntry(
     categoryId: row.category_id,
     categoryName: row.category_name,
     goalType,
+    periodKind,
     fireAt,
   });
-  await recordGoalAlertFire(row.category_id, goalType, localDate, fireAt);
+  await recordGoalAlertFire(
+    row.category_id,
+    goalType,
+    periodKind,
+    periodStart,
+    fireAt,
+  );
 }

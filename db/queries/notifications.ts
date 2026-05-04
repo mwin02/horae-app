@@ -267,25 +267,58 @@ export async function resolveLongRunningThreshold(
 
 export type GoalType = "at_most" | "around" | "at_least";
 
-export interface DailyAllocation {
-  target_minutes_per_day: number;
+/** Goal-alert period kinds we actually schedule against. Monthly is not yet supported. */
+export type GoalAlertPeriodKind = "daily" | "weekly";
+
+export interface EffectiveAllocation {
+  /**
+   * For `period_kind === 'daily'` this is target minutes for a single day.
+   * For `period_kind === 'weekly'` this is target minutes for the whole week.
+   * The schema column is named `target_minutes_per_day` for legacy reasons —
+   * weekly rows store the period total in it.
+   */
+  target_minutes: number;
   goal_direction: GoalDirection;
+  period_kind: GoalAlertPeriodKind;
 }
 
 /**
- * Resolve today's daily allocation for a category. Prefers a `day_of_week`
- * match over the `day_of_week IS NULL` "every day" fallback. Ignores
- * weekly/monthly rows — V1 goal alerts are daily-only.
+ * Resolve the *effective* goal-alert allocation for a category. Weekly takes
+ * precedence over daily when both exist (mirrors the precedence in
+ * `useInsightsData.resolveKind`, so a single configured weekly target is the
+ * source of truth for both views and notifications). Monthly rows are
+ * ignored — the v2 goal-alert scope is daily + weekly.
  *
- * `dayOfWeek` is Monday=0 … Sunday=6 (matches the schema convention).
+ * For daily, prefers a `day_of_week` match over the `day_of_week IS NULL`
+ * "every day" fallback. `dayOfWeek` is Monday=0 … Sunday=6.
  */
-export async function getDailyAllocationForCategory(
+export async function getEffectiveAllocationForCategory(
   categoryId: string,
   dayOfWeek: number,
-): Promise<DailyAllocation | null> {
+): Promise<EffectiveAllocation | null> {
+  const weekly = await db.getOptional<{
+    target_minutes_per_day: number;
+    goal_direction: GoalDirection | null;
+  }>(
+    `SELECT target_minutes_per_day, goal_direction
+     FROM ideal_allocations
+     WHERE category_id = ?
+       AND deleted_at IS NULL
+       AND period_kind = 'weekly'
+     LIMIT 1`,
+    [categoryId],
+  );
+  if (weekly) {
+    return {
+      target_minutes: weekly.target_minutes_per_day,
+      goal_direction: weekly.goal_direction ?? "around",
+      period_kind: "weekly",
+    };
+  }
+
   // `day_of_week IS NULL` evaluates to 1/0 in SQLite. ASC sort puts 0 (i.e.
   // a real weekday match) before 1, so the more specific row wins.
-  const row = await db.getOptional<{
+  const daily = await db.getOptional<{
     target_minutes_per_day: number;
     goal_direction: GoalDirection | null;
   }>(
@@ -299,24 +332,24 @@ export async function getDailyAllocationForCategory(
      LIMIT 1`,
     [categoryId, dayOfWeek],
   );
-  if (!row) return null;
-  // Legacy NULL goal_direction is treated as 'around' per schema docs.
+  if (!daily) return null;
   return {
-    target_minutes_per_day: row.target_minutes_per_day,
-    goal_direction: row.goal_direction ?? "around",
+    target_minutes: daily.target_minutes_per_day,
+    goal_direction: daily.goal_direction ?? "around",
+    period_kind: "daily",
   };
 }
 
 /**
- * Cumulative seconds tracked under `categoryId` between `dayStartUTC` and
- * `dayEndUTC`, including the running entry (uses `COALESCE(ended_at, 'now')`).
+ * Cumulative seconds tracked under `categoryId` between `rangeStartUTC` and
+ * `rangeEndUTC`, including the running entry (uses `COALESCE(ended_at, 'now')`).
  * Each entry is clipped to the queried range — same pattern as the insights
- * aggregations.
+ * aggregations. Used for both daily-window and weekly-window goal alerts.
  */
-export async function getCategoryDailyTotalSeconds(
+export async function getCategoryRangeTotalSeconds(
   categoryId: string,
-  dayStartUTC: string,
-  dayEndUTC: string,
+  rangeStartUTC: string,
+  rangeEndUTC: string,
 ): Promise<number> {
   const row = await db.getOptional<{ total_seconds: number }>(
     `SELECT
@@ -332,7 +365,7 @@ export async function getCategoryDailyTotalSeconds(
        AND te.deleted_at IS NULL
        AND te.started_at <= ?
        AND (te.ended_at IS NULL OR te.ended_at >= ?)`,
-    [dayEndUTC, dayStartUTC, categoryId, dayEndUTC, dayStartUTC],
+    [rangeEndUTC, rangeStartUTC, categoryId, rangeEndUTC, rangeStartUTC],
   );
   return row?.total_seconds ?? 0;
 }
@@ -349,24 +382,31 @@ export function localDayBoundsUTC(
 }
 
 /**
- * True if a goal alert has *already fired* for the
- * `(categoryId, goalType, localDate)` triple — i.e. a row exists and its
+ * True if a goal alert has *already fired* for the period — i.e. a row
+ * exists for `(categoryId, goalType, periodKind, periodStart)` and its
  * `scheduled_for` time is in the past. A row with a still-future
  * `scheduled_for` is a *pending* schedule that callers may safely overwrite,
  * so we don't treat it as fired yet. Legacy rows with NULL `scheduled_for`
  * are treated as fired (defensive).
+ *
+ * `periodStart` is YYYY-MM-DD: today's date for daily, the week-start date
+ * (per the user's `week_start_day` pref) for weekly.
  */
-export async function hasGoalAlertFiredToday(
+export async function hasGoalAlertFiredForPeriod(
   categoryId: string,
   goalType: GoalType,
-  localDate: string,
+  periodKind: GoalAlertPeriodKind,
+  periodStart: string,
 ): Promise<boolean> {
   const row = await db.getOptional<{ scheduled_for: string | null }>(
     `SELECT scheduled_for FROM notification_fires
-     WHERE category_id = ? AND goal_type = ? AND local_date = ?
+     WHERE category_id = ?
+       AND goal_type = ?
+       AND COALESCE(period_kind, 'daily') = ?
+       AND local_date = ?
        AND deleted_at IS NULL
      LIMIT 1`,
-    [categoryId, goalType, localDate],
+    [categoryId, goalType, periodKind, periodStart],
   );
   if (!row) return false;
   if (!row.scheduled_for) return true;
@@ -374,24 +414,28 @@ export async function hasGoalAlertFiredToday(
 }
 
 /**
- * Upsert today's dedup row for a goal alert. `scheduledFor` is the absolute
- * fire time; subsequent reconciliations with a different fire time replace
- * the row in place (so dedup still blocks re-fires after delivery).
+ * Upsert the dedup row for a goal alert in a period. `scheduledFor` is the
+ * absolute fire time; subsequent reconciliations with a different fire time
+ * replace the row in place (so dedup still blocks re-fires after delivery).
  */
 export async function recordGoalAlertFire(
   categoryId: string,
   goalType: GoalType,
-  localDate: string,
+  periodKind: GoalAlertPeriodKind,
+  periodStart: string,
   scheduledFor: Date,
 ): Promise<void> {
   const now = nowUTC();
   const scheduledForIso = scheduledFor.toISOString();
   const existing = await db.getOptional<{ id: string }>(
     `SELECT id FROM notification_fires
-     WHERE category_id = ? AND goal_type = ? AND local_date = ?
+     WHERE category_id = ?
+       AND goal_type = ?
+       AND COALESCE(period_kind, 'daily') = ?
+       AND local_date = ?
        AND deleted_at IS NULL
      LIMIT 1`,
-    [categoryId, goalType, localDate],
+    [categoryId, goalType, periodKind, periodStart],
   );
   if (existing) {
     await db.execute(
@@ -404,14 +448,15 @@ export async function recordGoalAlertFire(
   }
   await db.execute(
     `INSERT INTO notification_fires
-       (id, user_id, category_id, goal_type, local_date,
+       (id, user_id, category_id, goal_type, period_kind, local_date,
         scheduled_for, fired_at, created_at, updated_at)
-     VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?)`,
+     VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       generateId(),
       categoryId,
       goalType,
-      localDate,
+      periodKind,
+      periodStart,
       scheduledForIso,
       now,
       now,

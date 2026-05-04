@@ -122,7 +122,8 @@ const notification_fires = new Table(
     user_id: column.text,
     category_id: column.text,
     goal_type: column.text,        // 'at_most' | 'around' | 'at_least'
-    local_date: column.text,       // 'YYYY-MM-DD' in the entry's timezone
+    period_kind: column.text,      // 'daily' | 'weekly'. NULL = legacy 'daily'.
+    local_date: column.text,       // YYYY-MM-DD of the period's start in the entry's timezone (today for daily, week-start for weekly)
     scheduled_for: column.text,    // ISO 8601 UTC; if in the future, the alert hasn't fired yet and dedup can be cleared
     fired_at: column.text,         // ISO 8601 UTC of the schedule call
     created_at: column.text,
@@ -131,7 +132,7 @@ const notification_fires = new Table(
   },
   {
     localOnly: true,
-    indexes: { by_lookup: ['category_id', 'goal_type', 'local_date'] },
+    indexes: { by_lookup: ['category_id', 'goal_type', 'period_kind', 'local_date'] },
   }
 );
 
