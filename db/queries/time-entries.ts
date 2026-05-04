@@ -54,6 +54,35 @@ export async function startEntry(params: {
   return id;
 }
 
+/**
+ * Re-open a previously stopped entry by clearing `ended_at`. Used for the
+ * "undo stop" / resume affordance so the original `started_at` is preserved
+ * and elapsed time keeps ticking from the real start.
+ *
+ * Aborts if another timer is already running — the server enforces a single
+ * running entry per user, and the local UI hides resume in that case anyway.
+ */
+export async function resumeEntry(entryId: string): Promise<void> {
+  const now = nowUTC();
+  await db.writeTransaction(async (tx) => {
+    const conflict = await tx.getOptional<{ id: string }>(
+      `SELECT id FROM time_entries
+       WHERE ended_at IS NULL AND deleted_at IS NULL AND id != ?
+       LIMIT 1`,
+      [entryId],
+    );
+    if (conflict) {
+      throw new Error('Cannot resume: another timer is already running');
+    }
+    await tx.execute(
+      `UPDATE time_entries
+       SET ended_at = NULL, duration_seconds = NULL, updated_at = ?
+       WHERE id = ? AND deleted_at IS NULL`,
+      [now, entryId],
+    );
+  });
+}
+
 /** Stop a running time entry */
 export async function stopEntry(entryId: string): Promise<void> {
   const now = nowUTC();
