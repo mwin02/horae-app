@@ -86,6 +86,15 @@ export function useForgottenTimer(): UseForgottenTimerResult {
   const [, setSnoozeTick] = useState(0);
   const snoozeRef = useRef<SnoozeState | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  // Cache the recommended end time so its reference is stable across re-renders
+  // (the running timer ticks once a second). Without this, the modal's
+  // useEffect keeps resetting the picker because `recommended = new Date(now)`
+  // when the threshold is < 1h, which produces a fresh Date every render.
+  const recommendedRef = useRef<{
+    entryId: string;
+    snoozeAt: number | null;
+    date: Date;
+  } | null>(null);
 
   const row = data.length > 0 ? data[0] : null;
   const prefs = prefsData.length > 0 ? prefsData[0] : null;
@@ -195,13 +204,32 @@ export function useForgottenTimer(): UseForgottenTimerResult {
     // If a snooze for this entry just expired, default the picker to the
     // moment the user pressed "Still going" — that's their best estimate of
     // when they actually stopped.
+    const snoozeAt =
+      snooze !== null && snooze.entryId === row.entry_id
+        ? snooze.snoozedAt.getTime()
+        : null;
+
+    const cached = recommendedRef.current;
     let recommended: Date;
-    if (snooze !== null && snooze.entryId === row.entry_id) {
-      recommended = snooze.snoozedAt;
+    if (
+      cached !== null &&
+      cached.entryId === row.entry_id &&
+      cached.snoozeAt === snoozeAt
+    ) {
+      recommended = cached.date;
     } else {
-      const oneHourAfter = new Date(startedAt.getTime() + 3600_000);
-      const nowDate = new Date(now);
-      recommended = oneHourAfter > nowDate ? nowDate : oneHourAfter;
+      if (snoozeAt !== null) {
+        recommended = new Date(snoozeAt);
+      } else {
+        const oneHourAfter = new Date(startedAt.getTime() + 3600_000);
+        const nowDate = new Date(now);
+        recommended = oneHourAfter > nowDate ? nowDate : oneHourAfter;
+      }
+      recommendedRef.current = {
+        entryId: row.entry_id,
+        snoozeAt,
+        date: recommended,
+      };
     }
 
     return { forgottenEntry: entry, recommendedEndAt: recommended };
