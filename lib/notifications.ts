@@ -21,11 +21,13 @@ function goalAlertId(categoryId: string): string {
 }
 
 export type GoalAlertType = "at_most" | "around" | "at_least";
+export type GoalAlertPeriodKind = "daily" | "weekly";
 
 export interface GoalAlertParams {
   categoryId: string;
   categoryName: string;
   goalType: GoalAlertType;
+  periodKind: GoalAlertPeriodKind;
   fireAt: Date;
 }
 
@@ -144,23 +146,26 @@ export async function cancelLongRunningReminder(entryId: string): Promise<void> 
 
 function goalAlertCopy(
   goalType: GoalAlertType,
+  periodKind: GoalAlertPeriodKind,
   categoryName: string,
 ): { title: string; body: string } {
+  const period = periodKind === "weekly" ? "weekly" : "daily";
+  const window = periodKind === "weekly" ? "this week" : "today";
   switch (goalType) {
     case "at_most":
       return {
         title: `${categoryName}: 15 minutes left`,
-        body: `You're 15 minutes away from your daily ${categoryName} limit.`,
+        body: `You're 15 minutes away from your ${period} ${categoryName} limit.`,
       };
     case "around":
       return {
         title: `${categoryName} target reached`,
-        body: `You've hit your ${categoryName} target for today.`,
+        body: `You've hit your ${period} ${categoryName} target ${window}.`,
       };
     case "at_least":
       return {
         title: `${categoryName} goal reached`,
-        body: `Nice — you've hit your ${categoryName} goal for today.`,
+        body: `Nice — you've hit your ${period} ${categoryName} goal ${window}.`,
       };
   }
 }
@@ -172,7 +177,11 @@ function goalAlertCopy(
 export async function scheduleGoalAlert(params: GoalAlertParams): Promise<void> {
   const id = goalAlertId(params.categoryId);
   await Notifications.cancelScheduledNotificationAsync(id);
-  const { title, body } = goalAlertCopy(params.goalType, params.categoryName);
+  const { title, body } = goalAlertCopy(
+    params.goalType,
+    params.periodKind,
+    params.categoryName,
+  );
   await scheduleAt(id, title, body, params.fireAt);
 }
 
