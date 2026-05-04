@@ -54,7 +54,15 @@ const TIME_ENTRIES_FINGERPRINT_QUERY = `
   FROM time_entries
 `;
 
-interface TimeEntriesFingerprintRow {
+// Same fingerprint pattern for ideal_allocations — mid-session edits to a
+// category's target/direction/period_kind shift the projected fire time, and
+// removing the allocation should cancel any pending goal alert.
+const IDEAL_ALLOCATIONS_FINGERPRINT_QUERY = `
+  SELECT MAX(updated_at) AS max_updated, COUNT(*) AS cnt
+  FROM ideal_allocations
+`;
+
+interface TableFingerprintRow {
   max_updated: string | null;
   cnt: number;
 }
@@ -114,8 +122,11 @@ export function useNotificationScheduler(): void {
   const { data: userPrefsData } = useQuery<UserPreferencesRecord>(
     USER_PREFERENCES_QUERY,
   );
-  const { data: fingerprintData } = useQuery<TimeEntriesFingerprintRow>(
+  const { data: fingerprintData } = useQuery<TableFingerprintRow>(
     TIME_ENTRIES_FINGERPRINT_QUERY,
+  );
+  const { data: allocationsFingerprintData } = useQuery<TableFingerprintRow>(
+    IDEAL_ALLOCATIONS_FINGERPRINT_QUERY,
   );
 
   const running = runningData.length > 0 ? runningData[0] : null;
@@ -125,6 +136,13 @@ export function useNotificationScheduler(): void {
   const fingerprintRow = fingerprintData.length > 0 ? fingerprintData[0] : null;
   const entriesFingerprint = fingerprintRow
     ? `${fingerprintRow.max_updated ?? ""}|${fingerprintRow.cnt}`
+    : "";
+  const allocationsFingerprintRow =
+    allocationsFingerprintData.length > 0
+      ? allocationsFingerprintData[0]
+      : null;
+  const allocationsFingerprint = allocationsFingerprintRow
+    ? `${allocationsFingerprintRow.max_updated ?? ""}|${allocationsFingerprintRow.cnt}`
     : "";
 
   const idleEnabled = prefs?.idle_reminder_enabled === 1;
@@ -368,7 +386,14 @@ export function useNotificationScheduler(): void {
       if (!granted) return;
       await reconcileGoalAlertForEntry(running, prefs, weekStartDay);
     })();
-  }, [entriesFingerprint, goalAlertsEnabled, prefs, running, weekStartDay]);
+  }, [
+    entriesFingerprint,
+    allocationsFingerprint,
+    goalAlertsEnabled,
+    prefs,
+    running,
+    weekStartDay,
+  ]);
 
   // Re-reconcile when quiet-hours fields change so an active schedule shifts
   // to (or away from) the deferred fire time without waiting for the next
@@ -509,7 +534,13 @@ async function reconcileGoalAlertForEntry(
     row.category_id,
     dayOfWeek,
   );
-  if (!allocation) return;
+  if (!allocation) {
+    // Allocation removed (or never set). Drop any pending goal alert so a
+    // mid-session deletion of the allocation doesn't leave a stale buzz
+    // queued. Idempotent — cancels nothing if nothing's scheduled.
+    await cancelGoalAlertForCategory(row.category_id);
+    return;
+  }
 
   const periodKind: GoalAlertPeriodKind = allocation.period_kind;
   const goalType: GoalType = allocation.goal_direction;
