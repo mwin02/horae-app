@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useQuery } from '@powersync/react';
-import { startEntry, stopEntry, switchEntry } from '@/db/queries';
+import { resumeEntry, startEntry, stopEntry, switchEntry } from '@/db/queries';
 import type { RunningTimer } from '@/db/models';
 import { useElapsedTime } from './useElapsedTime';
 import { getCurrentTimezone } from '@/lib/timezone';
@@ -48,6 +48,8 @@ export interface UseTimerResult {
   stopActivity: () => Promise<void>;
   /** Stop current timer and immediately start a new one (single transaction). */
   switchActivity: (newActivityId: string) => Promise<void>;
+  /** Re-open a previously stopped entry. No-op if a timer is already running. */
+  resumeActivity: (entryId: string) => Promise<void>;
 }
 
 /**
@@ -111,11 +113,17 @@ export function useTimer(): UseTimerResult {
     });
   }, [row]);
 
+  const resumeActivity = useCallback(async (entryId: string): Promise<void> => {
+    if (row !== null) return;
+    await resumeEntry(entryId);
+  }, [row]);
+
   return {
     runningEntry,
     isLoading,
     startActivity,
     stopActivity,
     switchActivity: switchActivityFn,
+    resumeActivity,
   };
 }

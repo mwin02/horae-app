@@ -1,8 +1,10 @@
 import { ForgottenTimerModal } from "@/components/timer/forgotten-timer-modal";
 import { HomeHeader } from "@/components/home/home-header";
+import { ResumeBanner } from "@/components/home/resume-banner";
 import { RingTimerHero } from "@/components/home/ring-timer-hero";
 import { QuickStartGrid } from "@/components/home/quick-start-grid";
 import { SuggestedRow } from "@/components/home/suggested-row";
+import { UndoToast } from "@/components/common/undo-toast";
 import { COLORS, SPACING } from "@/constants/theme";
 import {
   endForgottenEntry,
@@ -12,6 +14,7 @@ import {
 } from "@/db/queries";
 import { useTimer } from "@/hooks/useTimer";
 import { useForgottenTimer } from "@/hooks/useForgottenTimer";
+import { useResumableEntry } from "@/hooks/useResumableEntry";
 import { useCategoriesWithActivities } from "@/hooks/useCategoriesWithActivities";
 import { useQuickStartActivities } from "@/hooks/useQuickStartActivities";
 import { useRecommendedActivity } from "@/hooks/useRecommendedActivity";
@@ -34,7 +37,9 @@ export default function HomeScreen(): React.ReactElement {
     startActivity,
     stopActivity,
     switchActivity,
+    resumeActivity,
   } = useTimer();
+  const resumableEntry = useResumableEntry();
   const { categories, isLoading: categoriesLoading } =
     useCategoriesWithActivities();
   const { activities: quickStartActivities } = useQuickStartActivities();
@@ -45,6 +50,10 @@ export default function HomeScreen(): React.ReactElement {
   const { forgottenEntry, recommendedEndAt, snoozeForgotten } =
     useForgottenTimer();
   const [modalVisible, setModalVisible] = useState(false);
+  const [undoToast, setUndoToast] = useState<{
+    entryId: string;
+    activityName: string;
+  } | null>(null);
   const pendingHomeAction = useUIStore((s) => s.pendingHomeAction);
   const setPendingHomeAction = useUIStore((s) => s.setPendingHomeAction);
 
@@ -56,6 +65,34 @@ export default function HomeScreen(): React.ReactElement {
       setPendingHomeAction(null);
     }
   }, [pendingHomeAction, setPendingHomeAction]);
+
+  // Drop the undo toast if a different timer starts — undoing the previous
+  // stop would silently no-op since a timer is already running.
+  useEffect(() => {
+    if (runningEntry && undoToast && runningEntry.entryId !== undoToast.entryId) {
+      setUndoToast(null);
+    }
+  }, [runningEntry, undoToast]);
+
+  const handleStop = useCallback(async (): Promise<void> => {
+    const stopping = runningEntry
+      ? { entryId: runningEntry.entryId, activityName: runningEntry.activityName }
+      : null;
+    await stopActivity();
+    if (stopping) setUndoToast(stopping);
+  }, [runningEntry, stopActivity]);
+
+  const handleUndoStop = useCallback((): void => {
+    if (undoToast) {
+      void resumeActivity(undoToast.entryId);
+    }
+  }, [undoToast, resumeActivity]);
+
+  const handleResumeBanner = useCallback((): void => {
+    if (resumableEntry) {
+      void resumeActivity(resumableEntry.entryId);
+    }
+  }, [resumableEntry, resumeActivity]);
 
   const handleForgottenStop = useCallback(
     async (endedAt: Date): Promise<void> => {
@@ -130,9 +167,19 @@ export default function HomeScreen(): React.ReactElement {
             nowMinutes={nowMinutes}
             runningEntry={runningEntry}
             onStartPress={() => setModalVisible(true)}
-            onStop={stopActivity}
+            onStop={handleStop}
           />
         </View>
+
+        {/* Resume affordance — only shown when no timer is running and the
+            most recent stop is within the resumable window. */}
+        {!runningEntry && resumableEntry && (
+          <ResumeBanner
+            activityName={resumableEntry.activityName}
+            categoryColor={resumableEntry.categoryColor}
+            onPress={handleResumeBanner}
+          />
+        )}
 
         {/* Suggested for you */}
         <SuggestedRow
@@ -163,6 +210,15 @@ export default function HomeScreen(): React.ReactElement {
         onConfirmStop={handleForgottenStop}
         onDismiss={snoozeForgotten}
         onDiscard={handleForgottenDiscard}
+      />
+
+      {/* Undo toast for accidental stops */}
+      <UndoToast
+        message={undoToast ? `Stopped ${undoToast.activityName}` : null}
+        actionLabel="Resume"
+        actionIcon="rotate-ccw"
+        onAction={handleUndoStop}
+        onDismiss={() => setUndoToast(null)}
       />
     </SafeAreaView>
   );
