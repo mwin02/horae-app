@@ -26,6 +26,7 @@ export default function NotificationsSettingsScreen(): React.ReactElement {
 
   const idleEnabled = prefs?.idle_reminder_enabled === 1;
   const longRunningEnabled = prefs?.long_running_enabled === 1;
+  const goalAlertsEnabled = prefs?.goal_alerts_enabled === 1;
   const thresholdOverride = prefs?.threshold_override_seconds ?? null;
   const permissionDenied = granted === false;
 
@@ -38,6 +39,12 @@ export default function NotificationsSettingsScreen(): React.ReactElement {
   const handleToggleLongRunning = useCallback((value: boolean) => {
     void updateNotificationPreferences({
       long_running_enabled: value ? 1 : 0,
+    });
+  }, []);
+
+  const handleToggleGoalAlerts = useCallback((value: boolean) => {
+    void updateNotificationPreferences({
+      goal_alerts_enabled: value ? 1 : 0,
     });
   }, []);
 
@@ -97,6 +104,20 @@ export default function NotificationsSettingsScreen(): React.ReactElement {
               <Switch
                 value={longRunningEnabled}
                 onValueChange={handleToggleLongRunning}
+                disabled={permissionDenied}
+                trackColor={{ true: COLORS.primary, false: COLORS.outlineVariant }}
+                thumbColor={COLORS.surfaceContainerLowest}
+              />
+            }
+          />
+          <SettingRow
+            title="Goal alerts"
+            description="Notify me when a running session approaches or hits a category time goal."
+            disabled={permissionDenied}
+            trailing={
+              <Switch
+                value={goalAlertsEnabled}
+                onValueChange={handleToggleGoalAlerts}
                 disabled={permissionDenied}
                 trackColor={{ true: COLORS.primary, false: COLORS.outlineVariant }}
                 thumbColor={COLORS.surfaceContainerLowest}

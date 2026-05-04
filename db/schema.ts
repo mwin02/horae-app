@@ -106,11 +106,33 @@ const notification_preferences = new Table(
     quiet_hours_enabled: column.integer,         // 0 or 1, null treated as 0
     quiet_hours_start: column.text,              // 'HH:MM' 24h local time
     quiet_hours_end: column.text,                // 'HH:MM'; if end <= start, window wraps midnight
+    goal_alerts_enabled: column.integer,         // 0 or 1, null treated as 0
     created_at: column.text,
     updated_at: column.text,
     deleted_at: column.text,
   },
   { localOnly: true }
+);
+
+// Per-day record that a goal alert has fired for a (category, goal_type) pair.
+// Used purely for dedup so a stop/restart in the same category doesn't re-fire
+// the alert. We record on schedule (JS can't observe delivery in background).
+const notification_fires = new Table(
+  {
+    user_id: column.text,
+    category_id: column.text,
+    goal_type: column.text,        // 'at_most' | 'around' | 'at_least'
+    local_date: column.text,       // 'YYYY-MM-DD' in the entry's timezone
+    scheduled_for: column.text,    // ISO 8601 UTC; if in the future, the alert hasn't fired yet and dedup can be cleared
+    fired_at: column.text,         // ISO 8601 UTC of the schedule call
+    created_at: column.text,
+    updated_at: column.text,
+    deleted_at: column.text,
+  },
+  {
+    localOnly: true,
+    indexes: { by_lookup: ['category_id', 'goal_type', 'local_date'] },
+  }
 );
 
 const tags = new Table(
@@ -180,6 +202,7 @@ export const AppSchema = new Schema({
   time_entries,
   ideal_allocations,
   notification_preferences,
+  notification_fires,
   tags,
   entry_tags,
   user_preferences,
@@ -192,6 +215,7 @@ export type ActivityRecord = Database['activities'];
 export type TimeEntryRecord = Database['time_entries'];
 export type IdealAllocationRecord = Database['ideal_allocations'];
 export type NotificationPreferencesRecord = Database['notification_preferences'];
+export type NotificationFireRecord = Database['notification_fires'];
 export type TagRecord = Database['tags'];
 export type EntryTagRecord = Database['entry_tags'];
 export type UserPreferencesRecord = Database['user_preferences'];
