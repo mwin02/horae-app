@@ -9,8 +9,24 @@ const IDLE_REMINDER_ID = "idle-reminder";
 /** Prefix for per-entry long-running reminder identifiers. */
 const LONG_RUNNING_PREFIX = "long-running-";
 
+/** Prefix for goal-alert identifiers. ID shape: `goal-alert-${categoryId}`. */
+export const GOAL_ALERT_PREFIX = "goal-alert-";
+
 function longRunningId(entryId: string): string {
   return `${LONG_RUNNING_PREFIX}${entryId}`;
+}
+
+function goalAlertId(categoryId: string): string {
+  return `${GOAL_ALERT_PREFIX}${categoryId}`;
+}
+
+export type GoalAlertType = "at_most" | "around" | "at_least";
+
+export interface GoalAlertParams {
+  categoryId: string;
+  categoryName: string;
+  goalType: GoalAlertType;
+  fireAt: Date;
 }
 
 /**
@@ -124,6 +140,58 @@ export async function scheduleLongRunningReminder(
 
 export async function cancelLongRunningReminder(entryId: string): Promise<void> {
   await Notifications.cancelScheduledNotificationAsync(longRunningId(entryId));
+}
+
+function goalAlertCopy(
+  goalType: GoalAlertType,
+  categoryName: string,
+): { title: string; body: string } {
+  switch (goalType) {
+    case "at_most":
+      return {
+        title: `${categoryName}: 15 minutes left`,
+        body: `You're 15 minutes away from your daily ${categoryName} limit.`,
+      };
+    case "around":
+      return {
+        title: `${categoryName} target reached`,
+        body: `You've hit your ${categoryName} target for today.`,
+      };
+    case "at_least":
+      return {
+        title: `${categoryName} goal reached`,
+        body: `Nice — you've hit your ${categoryName} goal for today.`,
+      };
+  }
+}
+
+/**
+ * Schedule (or replace) the goal alert for a category. One alert per category
+ * per day; the deterministic ID means re-scheduling overwrites the prior one.
+ */
+export async function scheduleGoalAlert(params: GoalAlertParams): Promise<void> {
+  const id = goalAlertId(params.categoryId);
+  await Notifications.cancelScheduledNotificationAsync(id);
+  const { title, body } = goalAlertCopy(params.goalType, params.categoryName);
+  await scheduleAt(id, title, body, params.fireAt);
+}
+
+export async function cancelGoalAlertForCategory(
+  categoryId: string,
+): Promise<void> {
+  await Notifications.cancelScheduledNotificationAsync(
+    goalAlertId(categoryId),
+  );
+}
+
+/** Cancel every scheduled goal alert (e.g. when the toggle flips off). */
+export async function cancelAllGoalAlerts(): Promise<void> {
+  const ids = await getScheduledIds();
+  for (const id of ids) {
+    if (id.startsWith(GOAL_ALERT_PREFIX)) {
+      await Notifications.cancelScheduledNotificationAsync(id);
+    }
+  }
 }
 
 /** Cancel every notification this app has scheduled. */

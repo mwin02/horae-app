@@ -6,29 +6,60 @@ import {
   IDLE_REMINDER_DELAY_SECONDS,
   NOTIFICATION_PREFERENCES_QUERY,
   deferForQuietHours,
+  getCategoryDailyTotalSeconds,
+  getDailyAllocationForCategory,
+  hasGoalAlertFiredToday,
+  isInQuietHours,
+  localDayBoundsUTC,
+  recordGoalAlertFire,
   resolveLongRunningThreshold,
   updateNotificationPreferences,
+  type GoalType,
 } from "@/db/queries";
 import type { NotificationPreferencesRecord } from "@/db/schema";
+import { getTodayDate } from "@/lib/timezone";
 import {
+  cancelAllGoalAlerts,
+  cancelGoalAlertForCategory,
   cancelIdleReminder,
   cancelLongRunningReminder,
   configureNotificationHandler,
+  GOAL_ALERT_PREFIX,
   getScheduledIds,
   hasNotificationPermission,
   requestPermissionsIfNeeded,
+  scheduleGoalAlert,
   scheduleIdleReminder,
   scheduleLongRunningReminder,
 } from "@/lib/notifications";
+
+// Aggregate fingerprint over time_entries — `MAX(updated_at)` shifts on
+// every insert/update (including soft deletes, which set updated_at), and
+// `COUNT(*)` catches any hard insert. Subscribing keeps the goal-alert
+// reconciler in sync when entries are added/edited/deleted *outside* the
+// running entry.
+const TIME_ENTRIES_FINGERPRINT_QUERY = `
+  SELECT MAX(updated_at) AS max_updated, COUNT(*) AS cnt
+  FROM time_entries
+`;
+
+interface TimeEntriesFingerprintRow {
+  max_updated: string | null;
+  cnt: number;
+}
 
 const RUNNING_ENTRY_FOR_SCHEDULER_QUERY = `
   SELECT
     te.id          AS entry_id,
     te.activity_id AS activity_id,
     te.started_at  AS started_at,
-    a.name         AS activity_name
+    te.timezone    AS timezone,
+    a.name         AS activity_name,
+    c.id           AS category_id,
+    c.name         AS category_name
   FROM time_entries te
   JOIN activities a ON a.id = te.activity_id
+  JOIN categories c ON c.id = a.category_id
   WHERE te.ended_at IS NULL
     AND te.deleted_at IS NULL
   ORDER BY te.started_at DESC
@@ -39,7 +70,10 @@ interface RunningRow {
   entry_id: string;
   activity_id: string;
   started_at: string;
+  timezone: string;
   activity_name: string;
+  category_id: string;
+  category_name: string;
 }
 
 const LONG_RUNNING_PREFIX = "long-running-";
@@ -66,12 +100,20 @@ export function useNotificationScheduler(): void {
   const { data: prefsData } = useQuery<NotificationPreferencesRecord>(
     NOTIFICATION_PREFERENCES_QUERY,
   );
+  const { data: fingerprintData } = useQuery<TimeEntriesFingerprintRow>(
+    TIME_ENTRIES_FINGERPRINT_QUERY,
+  );
 
   const running = runningData.length > 0 ? runningData[0] : null;
   const prefs = prefsData.length > 0 ? prefsData[0] : null;
+  const fingerprintRow = fingerprintData.length > 0 ? fingerprintData[0] : null;
+  const entriesFingerprint = fingerprintRow
+    ? `${fingerprintRow.max_updated ?? ""}|${fingerprintRow.cnt}`
+    : "";
 
   const idleEnabled = prefs?.idle_reminder_enabled === 1;
   const longRunningEnabled = prefs?.long_running_enabled === 1;
+  const goalAlertsEnabled = prefs?.goal_alerts_enabled === 1;
   const thresholdOverride = prefs?.threshold_override_seconds ?? null;
   const quietHoursEnabled = prefs?.quiet_hours_enabled === 1;
   const quietHoursStart = prefs?.quiet_hours_start ?? null;
@@ -79,8 +121,11 @@ export function useNotificationScheduler(): void {
 
   const prevEntryIdRef = useRef<string | null | undefined>(undefined);
   const prevStartedAtRef = useRef<string | null | undefined>(undefined);
+  const prevCategoryIdRef = useRef<string | null | undefined>(undefined);
+  const prevActivityIdRef = useRef<string | null | undefined>(undefined);
   const prevIdleEnabledRef = useRef<boolean | undefined>(undefined);
   const prevLongRunningEnabledRef = useRef<boolean | undefined>(undefined);
+  const prevGoalAlertsEnabledRef = useRef<boolean | undefined>(undefined);
   const prevQuietHoursKeyRef = useRef<string | undefined>(undefined);
   const permissionAskedRef = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
@@ -117,13 +162,23 @@ export function useNotificationScheduler(): void {
         return;
       }
 
+      const prevCategoryId = prevCategoryIdRef.current;
+      const currCategoryId = running?.category_id ?? null;
+      const prevActivityId = prevActivityIdRef.current;
+      const currActivityId = running?.activity_id ?? null;
+
       // First observation after mount: only ensure long-running is in place.
       if (prev === undefined) {
         if (running !== null && longRunningEnabled) {
           await scheduleLongRunningForEntry(running, prefs);
         }
+        if (running !== null && goalAlertsEnabled) {
+          await reconcileGoalAlertForEntry(running, prefs);
+        }
         prevEntryIdRef.current = currId;
         prevStartedAtRef.current = running?.started_at ?? null;
+        prevCategoryIdRef.current = currCategoryId;
+        prevActivityIdRef.current = currActivityId;
         return;
       }
 
@@ -132,8 +187,14 @@ export function useNotificationScheduler(): void {
         if (longRunningEnabled) {
           await scheduleLongRunningForEntry(running, prefs);
         }
+        if (goalAlertsEnabled) {
+          await reconcileGoalAlertForEntry(running, prefs);
+        }
       } else if (prev !== null && currId === null) {
         await cancelLongRunningReminder(prev);
+        if (prevCategoryId) {
+          await cancelGoalAlertForCategory(prevCategoryId);
+        }
         if (idleEnabled) {
           await scheduleIdleAt(prefs);
         }
@@ -147,24 +208,60 @@ export function useNotificationScheduler(): void {
         if (longRunningEnabled) {
           await scheduleLongRunningForEntry(running, prefs);
         }
+        // Cancel only if category changed — switching activities within the
+        // same category leaves the existing goal alert intact.
+        if (prevCategoryId && prevCategoryId !== currCategoryId) {
+          await cancelGoalAlertForCategory(prevCategoryId);
+        }
+        if (goalAlertsEnabled) {
+          await reconcileGoalAlertForEntry(running, prefs);
+        }
       } else if (
         prev !== null &&
         currId !== null &&
         prev === currId &&
-        running !== null &&
-        prevStartedAtRef.current !== undefined &&
-        prevStartedAtRef.current !== running.started_at
+        running !== null
       ) {
-        // started_at edited on the running entry — re-anchor the long-running
-        // reminder so it fires relative to the new start, not the old one.
-        await cancelLongRunningReminder(currId);
-        if (longRunningEnabled) {
-          await scheduleLongRunningForEntry(running, prefs);
+        // In-place edit on the running entry. Detect what changed and only
+        // do the work needed for that change.
+        const startedAtChanged =
+          prevStartedAtRef.current !== undefined &&
+          prevStartedAtRef.current !== running.started_at;
+        const activityChanged =
+          prevActivityId !== undefined &&
+          prevActivityId !== null &&
+          prevActivityId !== currActivityId;
+        const categoryChanged =
+          prevCategoryId !== undefined &&
+          prevCategoryId !== null &&
+          prevCategoryId !== currCategoryId;
+
+        // Long-running re-anchors on started_at edits OR activity changes
+        // (the threshold is per-activity median).
+        if (startedAtChanged || activityChanged) {
+          await cancelLongRunningReminder(currId);
+          if (longRunningEnabled) {
+            await scheduleLongRunningForEntry(running, prefs);
+          }
+        }
+
+        // Goal alert: drop the old category's pending alert when the
+        // category changed mid-entry, then reconcile for the new context.
+        if (categoryChanged && prevCategoryId) {
+          await cancelGoalAlertForCategory(prevCategoryId);
+        }
+        if (
+          (startedAtChanged || categoryChanged) &&
+          goalAlertsEnabled
+        ) {
+          await reconcileGoalAlertForEntry(running, prefs);
         }
       }
 
       prevEntryIdRef.current = currId;
       prevStartedAtRef.current = running?.started_at ?? null;
+      prevCategoryIdRef.current = currCategoryId;
+      prevActivityIdRef.current = currActivityId;
     })();
   }, [
     prefs,
@@ -172,8 +269,10 @@ export function useNotificationScheduler(): void {
     running?.started_at,
     running?.activity_name,
     running?.activity_id,
+    running?.category_id,
     idleEnabled,
     longRunningEnabled,
+    goalAlertsEnabled,
     thresholdOverride,
     running,
   ]);
@@ -185,13 +284,21 @@ export function useNotificationScheduler(): void {
     if (!prefs) return;
     const prevIdle = prevIdleEnabledRef.current;
     const prevLongRunning = prevLongRunningEnabledRef.current;
+    const prevGoalAlerts = prevGoalAlertsEnabledRef.current;
     prevIdleEnabledRef.current = idleEnabled;
     prevLongRunningEnabledRef.current = longRunningEnabled;
-    if (prevIdle === undefined || prevLongRunning === undefined) return;
+    prevGoalAlertsEnabledRef.current = goalAlertsEnabled;
+    if (
+      prevIdle === undefined ||
+      prevLongRunning === undefined ||
+      prevGoalAlerts === undefined
+    )
+      return;
 
     const idleChanged = prevIdle !== idleEnabled;
     const longRunningChanged = prevLongRunning !== longRunningEnabled;
-    if (!idleChanged && !longRunningChanged) return;
+    const goalAlertsChanged = prevGoalAlerts !== goalAlertsEnabled;
+    if (!idleChanged && !longRunningChanged && !goalAlertsChanged) return;
 
     void (async () => {
       const granted = await hasNotificationPermission();
@@ -212,8 +319,32 @@ export function useNotificationScheduler(): void {
           await cancelLongRunningReminder(running.entry_id);
         }
       }
+
+      if (goalAlertsChanged) {
+        if (!goalAlertsEnabled) {
+          await cancelAllGoalAlerts();
+        } else if (running !== null) {
+          await reconcileGoalAlertForEntry(running, prefs);
+        }
+      }
     })();
-  }, [idleEnabled, longRunningEnabled, prefs, running]);
+  }, [idleEnabled, longRunningEnabled, goalAlertsEnabled, prefs, running]);
+
+  // Re-reconcile goal alerts when *any* time_entries row changes — retro
+  // adds/edits/deletes shift today's cumulative for the running category and
+  // therefore the projected fire time. Time-aware dedup
+  // (`hasGoalAlertFiredToday` checks `scheduled_for <= now`) means a still-
+  // pending schedule gets overwritten with the new fire time, while a
+  // delivered alert stays deduped.
+  useEffect(() => {
+    if (!prefs || !goalAlertsEnabled || running === null) return;
+    if (entriesFingerprint === "") return; // initial mount, no data yet
+    void (async () => {
+      const granted = await hasNotificationPermission();
+      if (!granted) return;
+      await reconcileGoalAlertForEntry(running, prefs);
+    })();
+  }, [entriesFingerprint, goalAlertsEnabled, prefs, running]);
 
   // Re-reconcile when quiet-hours fields change so an active schedule shifts
   // to (or away from) the deferred fire time without waiting for the next
@@ -230,6 +361,9 @@ export function useNotificationScheduler(): void {
       if (!granted) return;
       if (running !== null && longRunningEnabled) {
         await scheduleLongRunningForEntry(running, prefs);
+      }
+      if (running !== null && goalAlertsEnabled) {
+        await reconcileGoalAlertForEntry(running, prefs);
       }
       if (running === null && idleEnabled) {
         // Only reschedule the idle reminder if one is already pending —
@@ -248,6 +382,7 @@ export function useNotificationScheduler(): void {
     quietHoursEnd,
     idleEnabled,
     longRunningEnabled,
+    goalAlertsEnabled,
     running,
   ]);
 
@@ -262,6 +397,7 @@ export function useNotificationScheduler(): void {
         const granted = await hasNotificationPermission();
         if (!granted) return;
         const currId = running?.entry_id ?? null;
+        const currCategoryId = running?.category_id ?? null;
         const ids = await getScheduledIds();
         for (const id of ids) {
           if (id === IDLE_REMINDER_ID && currId !== null) {
@@ -270,6 +406,11 @@ export function useNotificationScheduler(): void {
             const entryId = id.slice(LONG_RUNNING_PREFIX.length);
             if (entryId !== currId) {
               await cancelLongRunningReminder(entryId);
+            }
+          } else if (id.startsWith(GOAL_ALERT_PREFIX)) {
+            const categoryId = id.slice(GOAL_ALERT_PREFIX.length);
+            if (categoryId !== currCategoryId) {
+              await cancelGoalAlertForCategory(categoryId);
             }
           }
         }
@@ -304,4 +445,68 @@ async function scheduleLongRunningForEntry(
 function scheduleIdleAt(prefs: NotificationPreferencesRecord | null): Promise<void> {
   const rawFireAt = new Date(Date.now() + IDLE_REMINDER_DELAY_SECONDS * 1000);
   return scheduleIdleReminder(deferForQuietHours(rawFireAt, prefs));
+}
+
+/** Mon=0 … Sun=6 for a `YYYY-MM-DD` string (matches schema convention). */
+function weekdayMondayZero(dateStr: string): number {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const jsDay = new Date(Date.UTC(y, m - 1, d, 12)).getUTCDay(); // 0=Sun
+  return (jsDay + 6) % 7;
+}
+
+/**
+ * Compute & schedule the goal alert for the running entry's category, if any.
+ * Bails on: no allocation, already-fired today, fire time inside quiet hours.
+ *
+ * `at_most`: fires 15 min before target. If target ≤ 15 min, fires
+ *   immediately (the warning window has already closed).
+ * `around` / `at_least`: fires when cumulative reaches target.
+ *
+ * Records the fire in `notification_fires` at schedule time — JS can't
+ * observe delivery in background, and this prevents re-firing within the
+ * same local day across stop/restart cycles.
+ */
+async function reconcileGoalAlertForEntry(
+  row: RunningRow,
+  prefs: NotificationPreferencesRecord | null,
+): Promise<void> {
+  const localDate = getTodayDate(row.timezone);
+  const dayOfWeek = weekdayMondayZero(localDate);
+  const allocation = await getDailyAllocationForCategory(
+    row.category_id,
+    dayOfWeek,
+  );
+  if (!allocation) return;
+
+  const goalType: GoalType = allocation.goal_direction;
+  if (await hasGoalAlertFiredToday(row.category_id, goalType, localDate))
+    return;
+
+  const targetSeconds = allocation.target_minutes_per_day * 60;
+  const thresholdSeconds =
+    goalType === "at_most"
+      ? Math.max(0, targetSeconds - 15 * 60)
+      : targetSeconds;
+
+  const { startUTC, endUTC } = localDayBoundsUTC(localDate, row.timezone);
+  const cumulative = await getCategoryDailyTotalSeconds(
+    row.category_id,
+    startUTC,
+    endUTC,
+  );
+  const remaining = thresholdSeconds - cumulative;
+  const fireAt =
+    remaining > 0
+      ? new Date(Date.now() + remaining * 1000)
+      : new Date(Date.now() + 1000);
+
+  if (isInQuietHours(fireAt, prefs)) return;
+
+  await scheduleGoalAlert({
+    categoryId: row.category_id,
+    categoryName: row.category_name,
+    goalType,
+    fireAt,
+  });
+  await recordGoalAlertFire(row.category_id, goalType, localDate, fireAt);
 }
