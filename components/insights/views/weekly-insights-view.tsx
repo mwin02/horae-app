@@ -8,6 +8,7 @@ import {
 import { DayOfWeekBars } from "@/components/insights/day-of-week-bars";
 import { TrackingCoverage } from "@/components/insights/tracking-coverage";
 import { WeekOverWeekDelta } from "@/components/insights/week-over-week-delta";
+import { WeeklyStreak } from "@/components/insights/weekly-streak";
 import { SPACING } from "@/constants/theme";
 import type { CategoryInsight, DayCoverage } from "@/db/models";
 import React, { useMemo } from "react";
@@ -28,6 +29,10 @@ export function WeeklyInsightsView({
 }: WeeklyInsightsViewProps): React.ReactElement {
   const cards = useMemo<CardEntry[]>(
     () => [
+      {
+        id: "weekly-streak",
+        node: <WeeklyStreak weekDate={selectedDate} />,
+      },
       {
         id: "day-of-week-bars",
         node: <DayOfWeekBars weekDate={selectedDate} />,
