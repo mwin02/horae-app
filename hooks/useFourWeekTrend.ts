@@ -1,3 +1,4 @@
+import { resolveWeeklyTargetSeconds } from "@/components/insights/delta-polarity";
 import type { GoalDirection } from "@/db/models";
 import {
   IDEAL_ALLOCATIONS_QUERY,
@@ -45,6 +46,8 @@ export interface CategoryTrend {
    * `useInsightsData`'s resolveDirection).
    */
   goalDirection: GoalDirection | null;
+  /** Weekly target in seconds; null if no daily/weekly allocation maps. */
+  weeklyTargetSeconds: number | null;
 }
 
 export interface UseFourWeekTrendResult {
@@ -131,6 +134,11 @@ export function useFourWeekTrend(
     }
     return resolved;
   }, [allocationRows]);
+
+  const weeklyTargetByCategory = useMemo(
+    () => resolveWeeklyTargetSeconds(allocationRows),
+    [allocationRows],
+  );
 
   const result = useMemo(() => {
     // Precompute bucket boundaries in ms for quick day→bucket lookup.
@@ -228,6 +236,7 @@ export function useFourWeekTrend(
         values: perBucket.slice(trimFrom),
         totalSeconds: total,
         goalDirection: goalDirectionByCategory.get(meta.id) ?? null,
+        weeklyTargetSeconds: weeklyTargetByCategory.get(meta.id) ?? null,
       }),
     );
 
@@ -243,7 +252,7 @@ export function useFourWeekTrend(
       maxBucketSeconds,
       buckets: trimmedBuckets,
     };
-  }, [rows, buckets, timezone, monthStart, monthEnd, limit, goalDirectionByCategory]);
+  }, [rows, buckets, timezone, monthStart, monthEnd, limit, goalDirectionByCategory, weeklyTargetByCategory]);
 
   return {
     buckets: result.buckets,

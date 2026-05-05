@@ -89,7 +89,7 @@ function TrendRow({
   completeFlags,
   showDivider,
 }: TrendRowProps): React.ReactElement {
-  const { values, category, goalDirection } = trend;
+  const { values, category, goalDirection, weeklyTargetSeconds } = trend;
 
   // Compare first non-zero *complete* week vs most-recent non-zero complete
   // week. Leading zero weeks are skipped so a category that only started
@@ -113,14 +113,22 @@ function TrendRow({
   const pctChange =
     haveDelta && first > 0 ? Math.round(((last - first) / first) * 100) : 0;
 
-  // Polarity is driven by the goal direction. `around` and missing goals
-  // render neutral so we don't editorialize when the user hasn't told us
-  // which way they want this category to go. New-category appearance is
-  // treated as an "up" delta for polarity purposes.
+  // Polarity is driven by the goal direction. For `around` we compare the
+  // first vs last complete week's distance to the weekly target — green if
+  // the latest week is closer, red if farther. Without a target (or with
+  // no goal at all) the chip stays neutral.
+  const aroundCtx =
+    goalDirection === "around" && weeklyTargetSeconds != null
+      ? {
+          thisSeconds: last,
+          lastSeconds: first,
+          targetSeconds: weeklyTargetSeconds,
+        }
+      : undefined;
   const polarity = haveDelta
-    ? deltaPolarity(goalDirection, trendUp)
+    ? deltaPolarity(goalDirection, trendUp, aroundCtx)
     : isNew
-      ? deltaPolarity(goalDirection, true)
+      ? deltaPolarity(goalDirection, true, aroundCtx)
       : "neutral";
   const { fg: chipColor, bg: chipBg } = deltaPalette(polarity);
   const arrow = trendUp ? "▲" : "▼";
