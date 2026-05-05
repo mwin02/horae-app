@@ -1,22 +1,18 @@
 import { Feather } from "@expo/vector-icons";
-import React, { useCallback, useMemo, useState } from "react";
-import {
-  LayoutChangeEvent,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import * as Haptics from "expo-haptics";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import DraggableFlatList, {
+  type DragEndParams,
+  type RenderItemParams,
+} from "react-native-draggable-flatlist";
 import Animated, {
-  runOnJS,
   useAnimatedStyle,
-  useSharedValue,
   withTiming,
-  type SharedValue,
 } from "react-native-reanimated";
 import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import {
+  restoreDefaultsForPeriod,
   toggleHidden,
   updateOrder,
   type InsightCardId,
@@ -26,6 +22,8 @@ import type { InsightsPeriod } from "@/db/queries/user-preferences";
 
 export interface CardEntry {
   id: InsightCardId;
+  /** Human label shown in the hidden-cards list. Falls back to id. */
+  label?: string;
   node: React.ReactNode;
 }
 
@@ -33,35 +31,55 @@ interface CustomizableCardListProps {
   period: InsightsPeriod;
   /** Source of truth: every card the view can render. Order in the array is irrelevant. */
   cards: CardEntry[];
+  /** Optional header rendered above the list (e.g. Daily's collapsing WeekStrip). */
+  ListHeaderComponent?: React.ReactElement | null;
+  /** Forwarded to the underlying list — fires on every scroll with the latest y offset (JS thread). */
+  onScrollOffsetChange?: (offset: number) => void;
+  /** Edit mode is owned by the parent screen so the period toggle + date header can hide while editing. */
+  editMode: boolean;
+  onEditModeChange: (editing: boolean) => void;
 }
 
 /**
  * Renders a list of insight cards in user-customizable order. Long-press
- * any card to enter edit mode where each card grows a drag grip + hide
- * toggle, and a sticky "Done" button exits edit mode.
- *
- * Drag is implemented hand-rolled on top of Pan + LongPress gestures with
- * Reanimated shared values. Lists are short (≤8 cards), so a simple
- * absolute-translate-on-pan approach is enough — no FlatList needed.
+ * any card to enter edit mode where the drag grip + hide toggle appear,
+ * and a sticky "Done" button exits edit mode. Reorder + auto-scroll are
+ * delegated to react-native-draggable-flatlist.
  */
 export function CustomizableCardList({
   period,
   cards,
+  ListHeaderComponent,
+  onScrollOffsetChange,
+  editMode,
+  onEditModeChange,
 }: CustomizableCardListProps): React.ReactElement {
   const { preferences } = useInsightPreferences();
   const order = preferences.orders[period];
   const hidden = preferences.hidden[period];
 
-  const [editMode, setEditMode] = useState(false);
+  // Local mirror of the persisted order. Reorder updates this synchronously
+  // so the list's `data` prop matches where the user dropped the card; the
+  // PowerSync write happens in the background. Without this, the dropped
+  // card visually springs back to its original slot until the reactive
+  // query roundtrips.
+  const [localOrder, setLocalOrder] = useState<InsightCardId[]>(order);
+  const pendingWrites = useRef<Set<string>>(new Set());
 
-  // Resolve render order: stored order first, then any new cards from the
-  // source of truth that haven't been ordered yet (so adding a card in code
-  // doesn't require a migration).
+  useEffect(() => {
+    const key = JSON.stringify(order);
+    if (pendingWrites.current.has(key)) {
+      pendingWrites.current.delete(key);
+      return;
+    }
+    setLocalOrder(order);
+  }, [order]);
+
   const visibleCards = useMemo<CardEntry[]>(() => {
     const byId = new Map(cards.map((c) => [c.id, c]));
     const ordered: CardEntry[] = [];
     const seen = new Set<InsightCardId>();
-    for (const id of order) {
+    for (const id of localOrder) {
       const c = byId.get(id);
       if (c && !hidden.has(id)) {
         ordered.push(c);
@@ -73,53 +91,30 @@ export function CustomizableCardList({
       ordered.push(c);
     }
     return ordered;
-  }, [cards, order, hidden]);
+  }, [cards, localOrder, hidden]);
 
   const hiddenCards = useMemo<CardEntry[]>(
     () => cards.filter((c) => hidden.has(c.id)),
     [cards, hidden],
   );
 
-  // Heights captured per index from onLayout. Lives in a SharedValue so the
-  // Pan worklet on the UI thread can read it without crossing the bridge.
-  const heights = useSharedValue<number[]>([]);
-  const onItemLayout = useCallback(
-    (index: number, e: LayoutChangeEvent) => {
-      const next = [...heights.value];
-      next[index] = e.nativeEvent.layout.height;
-      heights.value = next;
-    },
-    [heights],
-  );
-
-  // Persist the list of visible card ids in the requested new order.
-  // Hidden cards are appended so we don't lose their stored position
-  // relative to other visible cards on next un-hide.
-  const persistOrder = useCallback(
-    (newVisibleIds: InsightCardId[]) => {
-      const visibleSet = new Set(newVisibleIds);
+  const handleDragEnd = useCallback(
+    ({ data }: DragEndParams<CardEntry>) => {
+      const newVisible = data.map((c) => c.id);
+      const visibleSet = new Set(newVisible);
       const tail: InsightCardId[] = [];
-      // Preserve previously-stored hidden ids, then any cards not yet ordered.
-      for (const id of order) {
+      for (const id of localOrder) {
         if (!visibleSet.has(id)) tail.push(id);
       }
       for (const c of cards) {
         if (!visibleSet.has(c.id) && !tail.includes(c.id)) tail.push(c.id);
       }
-      void updateOrder(period, [...newVisibleIds, ...tail]);
+      const next = [...newVisible, ...tail];
+      pendingWrites.current.add(JSON.stringify(next));
+      setLocalOrder(next);
+      void updateOrder(period, next);
     },
-    [cards, order, period],
-  );
-
-  const handleReorder = useCallback(
-    (fromIndex: number, toIndex: number) => {
-      if (fromIndex === toIndex) return;
-      const next = visibleCards.map((c) => c.id);
-      const [moved] = next.splice(fromIndex, 1);
-      next.splice(toIndex, 0, moved);
-      persistOrder(next);
-    },
-    [persistOrder, visibleCards],
+    [cards, localOrder, period],
   );
 
   const handleHide = useCallback(
@@ -129,39 +124,51 @@ export function CustomizableCardList({
     [period],
   );
 
-  return (
-    <View style={styles.container}>
-      {editMode ? (
-        <View style={styles.editToolbar}>
-          <Text style={styles.editToolbarLabel}>Edit cards</Text>
-          <Pressable
-            onPress={() => setEditMode(false)}
-            hitSlop={12}
-            style={({ pressed }) => [
-              styles.doneButton,
-              pressed && styles.doneButtonPressed,
-            ]}
-          >
-            <Text style={styles.doneButtonText}>Done</Text>
-          </Pressable>
+  const handleEnterEditMode = useCallback(() => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onEditModeChange(true);
+  }, [onEditModeChange]);
+
+  const handleRestoreDefaults = useCallback(() => {
+    void Haptics.selectionAsync();
+    void restoreDefaultsForPeriod(period);
+  }, [period]);
+
+  const renderItem = useCallback(
+    ({ item, drag, isActive }: RenderItemParams<CardEntry>) => (
+      <CardCell
+        card={item}
+        editMode={editMode}
+        isActive={isActive}
+        drag={drag}
+        onLongPressEnter={handleEnterEditMode}
+        onHide={handleHide}
+      />
+    ),
+    [editMode, handleEnterEditMode, handleHide],
+  );
+
+  const keyExtractor = useCallback((item: CardEntry) => item.id, []);
+
+  const allHidden = visibleCards.length === 0 && hiddenCards.length > 0;
+
+  const header = (
+    <>
+      {ListHeaderComponent ?? null}
+      {allHidden ? (
+        <View style={styles.emptyState}>
+          <Feather name="eye-off" size={28} color={COLORS.onSurfaceVariant} />
+          <Text style={styles.emptyTitle}>No cards visible</Text>
+          <Text style={styles.emptySubtitle}>
+            Show a card from the list below or restore defaults.
+          </Text>
         </View>
       ) : null}
+    </>
+  );
 
-      {visibleCards.map((card, index) => (
-        <DraggableCardItem
-          key={card.id}
-          index={index}
-          totalItems={visibleCards.length}
-          card={card}
-          editMode={editMode}
-          onLongPressEnter={() => setEditMode(true)}
-          onLayoutMeasured={onItemLayout}
-          heights={heights}
-          onReorder={handleReorder}
-          onHide={() => handleHide(card.id)}
-        />
-      ))}
-
+  const footer = (
+    <>
       {editMode && hiddenCards.length > 0 ? (
         <View style={styles.hiddenSection}>
           <Text style={styles.hiddenHeader}>Hidden</Text>
@@ -174,164 +181,165 @@ export function CustomizableCardList({
                 pressed && styles.hiddenRowPressed,
               ]}
             >
-              <Feather name="eye-off" size={16} color={COLORS.onSurfaceVariant} />
-              <Text style={styles.hiddenRowLabel}>{card.id}</Text>
+              <Feather
+                name="eye-off"
+                size={16}
+                color={COLORS.onSurfaceVariant}
+              />
+              <Text style={styles.hiddenRowLabel}>
+                {card.label ?? card.id}
+              </Text>
               <Text style={styles.hiddenRowAction}>Show</Text>
             </Pressable>
           ))}
         </View>
       ) : null}
+      {editMode ? (
+        <View style={styles.footerActions}>
+          <Pressable
+            onPress={handleRestoreDefaults}
+            hitSlop={8}
+            style={({ pressed }) => [
+              styles.restoreButton,
+              pressed && styles.restoreButtonPressed,
+            ]}
+          >
+            <Feather
+              name="rotate-ccw"
+              size={14}
+              color={COLORS.onSurfaceVariant}
+            />
+            <Text style={styles.restoreButtonText}>Restore defaults</Text>
+          </Pressable>
+        </View>
+      ) : null}
+    </>
+  );
+
+  return (
+    <View style={styles.root}>
+      {editMode ? (
+        <View style={styles.editToolbar}>
+          <Text style={styles.editToolbarLabel}>Edit cards</Text>
+          <Pressable
+            onPress={() => onEditModeChange(false)}
+            hitSlop={12}
+            style={({ pressed }) => [
+              styles.doneButton,
+              pressed && styles.doneButtonPressed,
+            ]}
+          >
+            <Text style={styles.doneButtonText}>Done</Text>
+          </Pressable>
+        </View>
+      ) : null}
+      <DraggableFlatList
+        data={visibleCards}
+        keyExtractor={keyExtractor}
+        renderItem={renderItem}
+        onDragEnd={handleDragEnd}
+        onScrollOffsetChange={onScrollOffsetChange}
+        ListHeaderComponent={header}
+        ListFooterComponent={footer}
+        contentContainerStyle={styles.contentContainer}
+        ItemSeparatorComponent={Separator}
+        showsVerticalScrollIndicator={false}
+        activationDistance={10}
+        containerStyle={styles.listContainer}
+      />
     </View>
   );
 }
 
-interface DraggableCardItemProps {
-  index: number;
-  totalItems: number;
-  card: CardEntry;
-  editMode: boolean;
-  onLongPressEnter: () => void;
-  onLayoutMeasured: (index: number, e: LayoutChangeEvent) => void;
-  heights: SharedValue<number[]>;
-  onReorder: (fromIndex: number, toIndex: number) => void;
-  onHide: () => void;
+function Separator(): React.ReactElement {
+  return <View style={styles.separator} />;
 }
 
-function DraggableCardItem({
-  index,
-  totalItems,
+interface CardCellProps {
+  card: CardEntry;
+  editMode: boolean;
+  isActive: boolean;
+  drag: () => void;
+  onLongPressEnter: () => void;
+  onHide: (id: InsightCardId) => void;
+}
+
+function CardCell({
   card,
   editMode,
+  isActive,
+  drag,
   onLongPressEnter,
-  onLayoutMeasured,
-  heights,
-  onReorder,
   onHide,
-}: DraggableCardItemProps): React.ReactElement {
-  const translateY = useSharedValue(0);
-  const isDragging = useSharedValue(0);
-
-  // Drag-grip pan: only active in edit mode. Translates the card vertically,
-  // then on release computes the destination index from cumulative heights
-  // of siblings.
-  const panGesture = useMemo(
-    () =>
-      Gesture.Pan()
-        .enabled(editMode)
-        .onStart(() => {
-          isDragging.value = 1;
-        })
-        .onUpdate((e) => {
-          translateY.value = e.translationY;
-        })
-        .onEnd(() => {
-          "worklet";
-          const hs = heights.value;
-          const offset = translateY.value;
-          let targetIndex = index;
-          if (offset < 0) {
-            // moving up
-            let acc = 0;
-            for (let i = index - 1; i >= 0; i--) {
-              const h = hs[i] ?? 0;
-              acc += h;
-              if (Math.abs(offset) > acc / 2 + (hs[i + 1] ?? 0) / 4) {
-                targetIndex = i;
-              } else {
-                break;
-              }
-            }
-          } else if (offset > 0) {
-            let acc = 0;
-            for (let i = index + 1; i < totalItems; i++) {
-              const h = hs[i] ?? 0;
-              acc += h;
-              if (offset > acc / 2 + (hs[i - 1] ?? 0) / 4) {
-                targetIndex = i;
-              } else {
-                break;
-              }
-            }
-          }
-          translateY.value = withTiming(0, { duration: 180 });
-          isDragging.value = 0;
-          if (targetIndex !== index) {
-            runOnJS(onReorder)(index, targetIndex);
-          }
-        }),
-    [editMode, heights, index, isDragging, onReorder, totalItems, translateY],
-  );
-
-  // Long-press on the whole card enters edit mode. Disabled while already
-  // editing so the press doesn't conflict with the drag.
-  const longPress = useMemo(
-    () =>
-      Gesture.LongPress()
-        .minDuration(380)
-        .enabled(!editMode)
-        .onStart(() => {
-          runOnJS(onLongPressEnter)();
-        }),
-    [editMode, onLongPressEnter],
-  );
-
+}: CardCellProps): React.ReactElement {
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-    zIndex: isDragging.value === 1 ? 10 : 1,
-    opacity: isDragging.value === 1 ? 0.95 : 1,
+    transform: [{ scale: withTiming(isActive ? 1.03 : 1, { duration: 140 }) }],
+    shadowOpacity: withTiming(isActive ? 0.35 : 0, { duration: 140 }),
+    shadowRadius: isActive ? 18 : 0,
+    shadowOffset: { width: 0, height: isActive ? 12 : 0 },
+    elevation: isActive ? 8 : 0,
   }));
 
   return (
-    <GestureDetector gesture={longPress}>
-      <Animated.View
-        style={[styles.cardWrapper, animatedStyle]}
-        onLayout={(e) => onLayoutMeasured(index, e)}
-      >
+    <Pressable
+      onLongPress={editMode ? undefined : onLongPressEnter}
+      delayLongPress={380}
+    >
+      <Animated.View style={[styles.cardWrapper, animatedStyle]}>
         {card.node}
 
         {editMode ? (
           <View pointerEvents="box-none" style={styles.overlay}>
             <Pressable
-              onPress={onHide}
+              onPress={() => onHide(card.id)}
               hitSlop={8}
               style={({ pressed }) => [
                 styles.overlayButton,
-                styles.overlayButtonLeft,
                 pressed && styles.overlayButtonPressed,
               ]}
               accessibilityLabel="Hide card"
             >
               <Feather name="eye-off" size={16} color={COLORS.onSurface} />
             </Pressable>
-
-            <GestureDetector gesture={panGesture}>
-              <Animated.View
-                style={[styles.overlayButton, styles.overlayButtonRight]}
-              >
-                <Feather name="menu" size={18} color={COLORS.onSurface} />
-              </Animated.View>
-            </GestureDetector>
+            <Pressable
+              onPressIn={drag}
+              hitSlop={8}
+              accessibilityLabel="Drag to reorder"
+              style={styles.overlayButton}
+            >
+              <Feather name="menu" size={18} color={COLORS.onSurface} />
+            </Pressable>
           </View>
         ) : null}
       </Animated.View>
-    </GestureDetector>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    gap: SPACING.lg,
+  root: {
+    flex: 1,
+  },
+  listContainer: {
+    flex: 1,
+  },
+  contentContainer: {
+    paddingHorizontal: SPACING.xl,
+    paddingBottom: SPACING["5xl"],
+  },
+  separator: {
+    height: SPACING.lg,
   },
   cardWrapper: {
     position: "relative",
+    shadowColor: "#000",
   },
   overlay: {
     position: "absolute",
     top: SPACING.sm,
-    left: SPACING.sm,
     right: SPACING.sm,
     flexDirection: "row",
-    justifyContent: "space-between",
+    gap: SPACING.sm,
   },
   overlayButton: {
     width: 32,
@@ -341,8 +349,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  overlayButtonLeft: {},
-  overlayButtonRight: {},
   overlayButtonPressed: {
     backgroundColor: COLORS.surfaceContainerHigh,
   },
@@ -350,7 +356,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: SPACING.sm,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.sm,
+    backgroundColor: COLORS.surface,
   },
   editToolbarLabel: {
     ...TYPOGRAPHY.labelSm,
@@ -399,5 +407,40 @@ const styles = StyleSheet.create({
   hiddenRowAction: {
     ...TYPOGRAPHY.labelSm,
     color: COLORS.primary,
+  },
+  footerActions: {
+    marginTop: SPACING.lg,
+    alignItems: "center",
+  },
+  restoreButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.surfaceContainerLow,
+  },
+  restoreButtonPressed: {
+    backgroundColor: COLORS.surfaceContainer,
+  },
+  restoreButtonText: {
+    ...TYPOGRAPHY.labelSm,
+    color: COLORS.onSurfaceVariant,
+  },
+  emptyState: {
+    alignItems: "center",
+    paddingVertical: SPACING["2xl"],
+    gap: SPACING.sm,
+  },
+  emptyTitle: {
+    ...TYPOGRAPHY.titleMd,
+    color: COLORS.onSurface,
+  },
+  emptySubtitle: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.onSurfaceVariant,
+    textAlign: "center",
+    paddingHorizontal: SPACING.xl,
   },
 });
