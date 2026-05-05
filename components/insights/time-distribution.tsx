@@ -156,6 +156,7 @@ const styles = StyleSheet.create({
   heroRow: {
     flexDirection: "row",
     alignItems: "baseline",
+    flexWrap: "wrap",
     gap: SPACING.sm,
     marginBottom: SPACING.md,
   },
