@@ -173,7 +173,7 @@ function ComparisonRow({
             style={[styles.goalLabelWrap, { left: `${goalPct}%` }]}
           >
             <Text style={styles.goalLabel} numberOfLines={1}>
-              GOAL
+              {direction === "at_most" ? "LIMIT" : "GOAL"}
             </Text>
           </View>
         </View>
