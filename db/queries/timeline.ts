@@ -11,6 +11,7 @@ export interface TimelineEntryRow {
   note: string | null;
   source: TimeEntrySource;
   activity_name: string;
+  category_id: string;
   category_name: string;
   category_color: string;
   category_icon: string | null;
@@ -31,6 +32,7 @@ export const TIMELINE_ENTRIES_QUERY = `
     te.note           AS note,
     te.source         AS source,
     a.name            AS activity_name,
+    c.id              AS category_id,
     c.name            AS category_name,
     c.color           AS category_color,
     COALESCE(a.icon, c.icon) AS category_icon
