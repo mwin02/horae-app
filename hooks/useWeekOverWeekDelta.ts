@@ -1,5 +1,8 @@
+import type { GoalDirection } from "@/db/models";
 import {
+  IDEAL_ALLOCATIONS_QUERY,
   INSIGHTS_CATEGORY_QUERY,
+  type IdealAllocationRow,
   type InsightsCategoryRow,
 } from "@/db/queries";
 import { getCurrentTimezone, getEndOfDay, getStartOfDay } from "@/lib/timezone";
@@ -16,6 +19,8 @@ export interface WeekOverWeekRow {
   lastWeekSeconds: number;
   /** thisWeek - lastWeek (seconds). Positive = increase. */
   deltaSeconds: number;
+  /** Goal polarity if any allocation exists for this category; null otherwise. */
+  goalDirection: GoalDirection | null;
 }
 
 export interface UseWeekOverWeekDeltaResult {
@@ -73,6 +78,28 @@ export function useWeekOverWeekDelta(
       ranges.prevStart,
     ]);
 
+  const { data: allocationRows } = useQuery<IdealAllocationRow>(
+    IDEAL_ALLOCATIONS_QUERY,
+  );
+
+  const goalDirectionByCategory = useMemo(() => {
+    const directionsById = new Map<string, GoalDirection[]>();
+    for (const row of allocationRows) {
+      if (row.goal_direction == null) continue;
+      const list = directionsById.get(row.category_id) ?? [];
+      list.push(row.goal_direction);
+      directionsById.set(row.category_id, list);
+    }
+    const resolved = new Map<string, GoalDirection>();
+    for (const [id, directions] of directionsById) {
+      if (directions.length === 0) continue;
+      const first = directions[0];
+      const allSame = directions.every((d) => d === first);
+      resolved.set(id, allSame ? first : "around");
+    }
+    return resolved;
+  }, [allocationRows]);
+
   const rows = useMemo<WeekOverWeekRow[]>(() => {
     const byId = new Map<
       string,
@@ -115,13 +142,14 @@ export function useWeekOverWeekDelta(
         thisWeekSeconds: v.thisSeconds,
         lastWeekSeconds: v.lastSeconds,
         deltaSeconds: v.thisSeconds - v.lastSeconds,
+        goalDirection: goalDirectionByCategory.get(categoryId) ?? null,
       }),
     );
 
     // Sort by this-week time desc; categories only in last week sink below.
     result.sort((a, b) => b.thisWeekSeconds - a.thisWeekSeconds);
     return result;
-  }, [thisRows, lastRows]);
+  }, [thisRows, lastRows, goalDirectionByCategory]);
 
   return { rows, isLoading: thisLoading || lastLoading };
 }
