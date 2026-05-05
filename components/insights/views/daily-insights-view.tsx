@@ -10,7 +10,7 @@ import { TrackingCoverage } from "@/components/insights/tracking-coverage";
 import { WeekStrip } from "@/components/timeline/week-strip";
 import { SPACING } from "@/constants/theme";
 import type { CategoryInsight, DayCoverage } from "@/db/models";
-import React, { useMemo, useRef } from "react";
+import React, { useCallback, useMemo, useRef } from "react";
 import { Animated, StyleSheet } from "react-native";
 
 const WEEK_STRIP_HEIGHT = 88;
@@ -21,6 +21,8 @@ interface DailyInsightsViewProps {
   categoryInsights: CategoryInsight[];
   coverage: DayCoverage;
   totalTrackedMinutes: number;
+  editMode: boolean;
+  onEditModeChange: (editing: boolean) => void;
 }
 
 export function DailyInsightsView({
@@ -29,8 +31,20 @@ export function DailyInsightsView({
   categoryInsights,
   coverage,
   totalTrackedMinutes,
+  editMode,
+  onEditModeChange,
 }: DailyInsightsViewProps): React.ReactElement {
+  // DraggableFlatList owns the scroll handler internally and only forwards
+  // the offset via the JS callback `onScrollOffsetChange`. We push that into
+  // a legacy Animated.Value to drive the WeekStrip collapse cheaply.
   const scrollY = useRef(new Animated.Value(0)).current;
+  const handleScrollOffsetChange = useCallback(
+    (offset: number) => {
+      scrollY.setValue(offset);
+    },
+    [scrollY],
+  );
+
   const weekStripHeight = scrollY.interpolate({
     inputRange: [0, WEEK_STRIP_HEIGHT],
     outputRange: [WEEK_STRIP_HEIGHT, 0],
@@ -46,10 +60,12 @@ export function DailyInsightsView({
     () => [
       {
         id: "day-rhythm-strip",
+        label: "Day rhythm",
         node: <DayRhythmStrip date={selectedDate} />,
       },
       {
         id: "category-breakdown",
+        label: "Time distribution",
         node: (
           <TimeDistribution
             categoryInsights={categoryInsights}
@@ -61,10 +77,12 @@ export function DailyInsightsView({
       },
       {
         id: "actual-vs-ideal",
+        label: "Actual vs ideal",
         node: <ActualVsIdeal categoryInsights={categoryInsights} />,
       },
       {
         id: "activity-breakdown",
+        label: "Activity breakdown",
         node: (
           <ActivityBreakdown
             categoryInsights={categoryInsights}
@@ -75,48 +93,40 @@ export function DailyInsightsView({
       },
       {
         id: "tracking-coverage",
+        label: "Tracking coverage",
         node: <TrackingCoverage coverage={coverage} period="daily" />,
       },
     ],
     [categoryInsights, coverage, selectedDate, totalTrackedMinutes],
   );
 
-  return (
-    <Animated.ScrollView
-      style={styles.scrollView}
-      contentContainerStyle={styles.scrollContent}
-      showsVerticalScrollIndicator={false}
-      onScroll={Animated.event(
-        [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-        { useNativeDriver: false },
-      )}
-      scrollEventThrottle={16}
+  const header = (
+    <Animated.View
+      style={[
+        styles.weekStripWrapper,
+        { height: weekStripHeight, opacity: weekStripOpacity },
+      ]}
     >
-      <Animated.View
-        style={[
-          styles.weekStripWrapper,
-          { height: weekStripHeight, opacity: weekStripOpacity },
-        ]}
-      >
-        <WeekStrip selectedDate={selectedDate} onDateChange={onDateChange} />
-      </Animated.View>
+      <WeekStrip selectedDate={selectedDate} onDateChange={onDateChange} />
+    </Animated.View>
+  );
 
-      <CustomizableCardList period="daily" cards={cards} />
-    </Animated.ScrollView>
+  return (
+    <CustomizableCardList
+      period="daily"
+      cards={cards}
+      ListHeaderComponent={header}
+      onScrollOffsetChange={handleScrollOffsetChange}
+      editMode={editMode}
+      onEditModeChange={onEditModeChange}
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: SPACING.xl,
-    paddingBottom: SPACING["5xl"],
-    gap: SPACING.lg,
-  },
   weekStripWrapper: {
     marginHorizontal: -SPACING.xl,
+    marginBottom: SPACING.lg,
     overflow: "hidden",
   },
 });

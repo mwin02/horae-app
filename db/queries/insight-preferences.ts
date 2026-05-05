@@ -24,8 +24,8 @@ export const INSIGHT_CARD_IDS = [
 
 export type InsightCardId = (typeof INSIGHT_CARD_IDS)[number];
 
-// Block 1 keeps the *current* per-view order so nothing visibly moves.
-// Block 8 will replace these with the redesign defaults.
+// Default per-period orderings finalized in Block 8. The streak card is
+// rendered on the Home screen, not Insights, so it is not listed here.
 export const DEFAULT_DAILY_ORDER: InsightCardId[] = [
   "day-rhythm-strip",
   "category-breakdown",
@@ -35,21 +35,20 @@ export const DEFAULT_DAILY_ORDER: InsightCardId[] = [
 ];
 
 export const DEFAULT_WEEKLY_ORDER: InsightCardId[] = [
-  "day-of-week-bars",
   "week-over-week",
   "category-breakdown",
   "actual-vs-ideal",
-  "activity-breakdown",
+  "day-of-week-bars",
   "tracking-coverage",
 ];
 
 export const DEFAULT_MONTHLY_ORDER: InsightCardId[] = [
   "calendar-heatmap",
+  "top-activities",
+  "four-week-trend",
   "category-breakdown",
   "actual-vs-ideal",
   "activity-breakdown",
-  "four-week-trend",
-  "top-activities",
   "tracking-coverage",
 ];
 
@@ -113,6 +112,25 @@ export async function updateOrder(
        SET ${orderColumn(period)} = ?, updated_at = ?
      WHERE deleted_at IS NULL`,
     [JSON.stringify(cardIds), now],
+  );
+}
+
+/**
+ * Reset a single period's order + hidden list to the built-in defaults.
+ * Other periods are untouched.
+ */
+export async function restoreDefaultsForPeriod(
+  period: InsightsPeriod,
+): Promise<void> {
+  await ensureRow();
+  const now = nowUTC();
+  await db.execute(
+    `UPDATE insight_preferences
+       SET ${orderColumn(period)} = NULL,
+           ${hiddenColumn(period)} = NULL,
+           updated_at = ?
+     WHERE deleted_at IS NULL`,
+    [now],
   );
 }
 

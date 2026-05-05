@@ -21,6 +21,7 @@ export default function InsightsScreen(): React.ReactElement {
   // loading we hydrate from `defaultInsightsPeriod`; from then on the value
   // is whatever the user toggles to (no snap-back to the saved default).
   const [period, setPeriod] = useState<InsightsPeriod | null>(null);
+  const [editMode, setEditMode] = useState(false);
   useEffect(() => {
     if (prefsLoading || period !== null) return;
     setPeriod(preferences.defaultInsightsPeriod);
@@ -44,17 +45,23 @@ export default function InsightsScreen(): React.ReactElement {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <PeriodToggle period={effectivePeriod} onPeriodChange={setPeriod} />
-
-      {effectivePeriod === "daily" ? (
-        <DateHeader selectedDate={dailyDate} onDateChange={setDailyDate} />
-      ) : effectivePeriod === "weekly" ? (
-        <WeekNavHeader selectedDate={weeklyDate} onDateChange={setWeeklyDate} />
-      ) : (
-        <MonthNavHeader
-          selectedDate={monthlyDate}
-          onDateChange={setMonthlyDate}
-        />
+      {editMode ? null : (
+        <>
+          <PeriodToggle period={effectivePeriod} onPeriodChange={setPeriod} />
+          {effectivePeriod === "daily" ? (
+            <DateHeader selectedDate={dailyDate} onDateChange={setDailyDate} />
+          ) : effectivePeriod === "weekly" ? (
+            <WeekNavHeader
+              selectedDate={weeklyDate}
+              onDateChange={setWeeklyDate}
+            />
+          ) : (
+            <MonthNavHeader
+              selectedDate={monthlyDate}
+              onDateChange={setMonthlyDate}
+            />
+          )}
+        </>
       )}
 
       {isLoading ? (
@@ -78,6 +85,8 @@ export default function InsightsScreen(): React.ReactElement {
           categoryInsights={categoryInsights}
           coverage={coverage}
           totalTrackedMinutes={totalTrackedMinutes}
+          editMode={editMode}
+          onEditModeChange={setEditMode}
         />
       ) : effectivePeriod === "weekly" ? (
         <WeeklyInsightsView
@@ -85,6 +94,8 @@ export default function InsightsScreen(): React.ReactElement {
           categoryInsights={categoryInsights}
           coverage={coverage}
           totalTrackedMinutes={totalTrackedMinutes}
+          editMode={editMode}
+          onEditModeChange={setEditMode}
         />
       ) : (
         <MonthlyInsightsView
@@ -96,6 +107,8 @@ export default function InsightsScreen(): React.ReactElement {
             setDailyDate(d);
             setPeriod("daily");
           }}
+          editMode={editMode}
+          onEditModeChange={setEditMode}
         />
       )}
     </SafeAreaView>
