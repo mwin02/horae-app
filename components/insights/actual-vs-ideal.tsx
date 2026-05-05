@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 import React, { useCallback } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Defs, Pattern, Path, Rect } from "react-native-svg";
+import { deltaPalette, type DeltaPolarity } from "./delta-polarity";
 
 interface ActualVsIdealProps {
   categoryInsights: CategoryInsight[];
@@ -75,7 +76,6 @@ interface ComparisonRowProps {
 
 const BAR_HEIGHT = 10;
 const OVERSHOOT_WIDTH = 10;
-const GOAL_LABEL_WIDTH = 28;
 
 function ComparisonRow({
   insight,
@@ -85,22 +85,20 @@ function ComparisonRow({
   const target = insight.targetMinutes ?? 0;
   const delta = actual - target;
 
-  const direction = insight.goalDirection ?? "around";
-  let onTrack: boolean;
-  if (target <= 0) {
-    onTrack = actual === 0;
+  const direction = insight.goalDirection;
+  let polarity: DeltaPolarity;
+  if (direction == null) {
+    polarity = "neutral";
+  } else if (target <= 0) {
+    polarity = actual === 0 ? "good" : "bad";
   } else if (direction === "at_least") {
-    onTrack = actual >= target;
+    polarity = actual >= target ? "good" : "bad";
   } else if (direction === "at_most") {
-    onTrack = actual <= target;
+    polarity = actual <= target ? "good" : "bad";
   } else {
-    onTrack = Math.abs(delta) <= target * 0.2;
+    polarity = Math.abs(delta) <= target * 0.2 ? "good" : "bad";
   }
-
-  // Miss color: error for at_most overruns, tertiary (warning) otherwise.
-  const missColor = direction === "at_most" ? COLORS.error : COLORS.tertiary;
-  const barColor = onTrack ? insight.categoryColor : missColor;
-  const chipColor = onTrack ? COLORS.secondary : missColor;
+  const chipPalette = deltaPalette(polarity);
 
   // Bar scale: 1.5x goal so the goal marker sits at ~66%.
   const scaleMax = target > 0 ? target * 1.5 : Math.max(actual, 1);
@@ -139,9 +137,9 @@ function ComparisonRow({
           </Text>
         </View>
         <View
-          style={[styles.diffChip, { backgroundColor: chipColor + "1F" }]}
+          style={[styles.diffChip, { backgroundColor: chipPalette.bg }]}
         >
-          <Text style={[styles.diffText, { color: chipColor }]}>
+          <Text style={[styles.diffText, { color: chipPalette.fg }]}>
             {sign}
             {formatDuration(Math.abs(delta) * 60)}
           </Text>
@@ -152,16 +150,11 @@ function ComparisonRow({
       <View style={styles.barArea}>
         <View style={styles.goalLabelRow}>
           <View
-            style={[
-              styles.goalLabelWrap,
-              {
-                left: `${goalPct}%`,
-                marginLeft: -GOAL_LABEL_WIDTH / 2,
-                width: GOAL_LABEL_WIDTH,
-              },
-            ]}
+            style={[styles.goalLabelWrap, { left: `${goalPct}%` }]}
           >
-            <Text style={styles.goalLabel}>GOAL</Text>
+            <Text style={styles.goalLabel} numberOfLines={1}>
+              GOAL
+            </Text>
           </View>
         </View>
 
@@ -172,7 +165,7 @@ function ComparisonRow({
               styles.barFill,
               {
                 width: `${actualPct}%`,
-                backgroundColor: barColor,
+                backgroundColor: insight.categoryColor,
                 minWidth: actual > 0 ? 4 : 0,
               },
             ]}
@@ -197,7 +190,7 @@ function ComparisonRow({
                   >
                     <Path
                       d="M0,0 L0,6"
-                      stroke={COLORS.error}
+                      stroke={insight.categoryColor}
                       strokeWidth="3"
                     />
                   </Pattern>
@@ -323,6 +316,8 @@ const styles = StyleSheet.create({
   goalLabelWrap: {
     position: "absolute",
     top: -12,
+    width: 40,
+    marginLeft: -20,
     alignItems: "center",
   },
   goalLabel: {
