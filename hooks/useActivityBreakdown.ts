@@ -5,7 +5,7 @@ import {
   type InsightsActivityRow,
 } from '@/db/queries';
 import { getCurrentTimezone, getEndOfDay, getStartOfDay } from '@/lib/timezone';
-import { getWeekRange, type InsightsPeriod } from './useInsightsData';
+import { getMonthRange, getWeekRange, type InsightsPeriod } from './useInsightsData';
 import { useUserPreferences } from './useUserPreferences';
 
 // ──────────────────────────────────────────────
@@ -86,6 +86,13 @@ export function useActivityBreakdown(
       return {
         startOfRangeUTC: getStartOfDay(selectedDate, timezone).toISOString(),
         endOfRangeUTC: getEndOfDay(selectedDate, timezone).toISOString(),
+      };
+    }
+    if (period === 'monthly') {
+      const { monthStart, monthEnd } = getMonthRange(selectedDate);
+      return {
+        startOfRangeUTC: getStartOfDay(monthStart, timezone).toISOString(),
+        endOfRangeUTC: getEndOfDay(monthEnd, timezone).toISOString(),
       };
     }
     const { weekStart, weekEnd } = getWeekRange(selectedDate, weekStartDay);
