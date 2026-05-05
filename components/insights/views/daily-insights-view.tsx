@@ -1,12 +1,16 @@
 import { ActivityBreakdown } from "@/components/insights/activity-breakdown";
 import { ActualVsIdeal } from "@/components/insights/actual-vs-ideal";
 import { CategoryBreakdown } from "@/components/insights/category-breakdown";
+import {
+  CustomizableCardList,
+  type CardEntry,
+} from "@/components/insights/customizable-card-list";
 import { DayRhythmStrip } from "@/components/insights/day-rhythm-strip";
 import { TrackingCoverage } from "@/components/insights/tracking-coverage";
 import { WeekStrip } from "@/components/timeline/week-strip";
 import { SPACING } from "@/constants/theme";
 import type { CategoryInsight, DayCoverage } from "@/db/models";
-import React, { useRef } from "react";
+import React, { useMemo, useRef } from "react";
 import { Animated, StyleSheet } from "react-native";
 
 const WEEK_STRIP_HEIGHT = 88;
@@ -38,6 +42,43 @@ export function DailyInsightsView({
     extrapolate: "clamp",
   });
 
+  const cards = useMemo<CardEntry[]>(
+    () => [
+      {
+        id: "day-rhythm-strip",
+        node: <DayRhythmStrip date={selectedDate} />,
+      },
+      {
+        id: "category-breakdown",
+        node: (
+          <CategoryBreakdown
+            categoryInsights={categoryInsights}
+            totalTrackedMinutes={totalTrackedMinutes}
+          />
+        ),
+      },
+      {
+        id: "actual-vs-ideal",
+        node: <ActualVsIdeal categoryInsights={categoryInsights} />,
+      },
+      {
+        id: "activity-breakdown",
+        node: (
+          <ActivityBreakdown
+            categoryInsights={categoryInsights}
+            selectedDate={selectedDate}
+            period="daily"
+          />
+        ),
+      },
+      {
+        id: "tracking-coverage",
+        node: <TrackingCoverage coverage={coverage} period="daily" />,
+      },
+    ],
+    [categoryInsights, coverage, selectedDate, totalTrackedMinutes],
+  );
+
   return (
     <Animated.ScrollView
       style={styles.scrollView}
@@ -58,22 +99,7 @@ export function DailyInsightsView({
         <WeekStrip selectedDate={selectedDate} onDateChange={onDateChange} />
       </Animated.View>
 
-      <DayRhythmStrip date={selectedDate} />
-
-      <CategoryBreakdown
-        categoryInsights={categoryInsights}
-        totalTrackedMinutes={totalTrackedMinutes}
-      />
-
-      <ActualVsIdeal categoryInsights={categoryInsights} />
-
-      <ActivityBreakdown
-        categoryInsights={categoryInsights}
-        selectedDate={selectedDate}
-        period="daily"
-      />
-
-      <TrackingCoverage coverage={coverage} period="daily" />
+      <CustomizableCardList period="daily" cards={cards} />
     </Animated.ScrollView>
   );
 }
