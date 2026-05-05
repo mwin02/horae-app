@@ -13,9 +13,9 @@ import { runOnJS } from "react-native-reanimated";
 import Svg, { Circle } from "react-native-svg";
 
 const SWIPE_THRESHOLD = 40;
-const RING_RADIUS = 26;
+const RING_RADIUS = 36;
 const RING_STROKE = 5;
-const RING_SIZE = 64;
+const RING_SIZE = 84;
 const RING_CIRC = 2 * Math.PI * RING_RADIUS;
 const HISTORY_BAR_MAX = 22;
 const HISTORY_BAR_NULL = 8;
@@ -128,32 +128,33 @@ interface NavProps {
 
 function CategoryRow({ cat, onPrev, onNext }: NavProps): React.ReactElement {
   return (
-    <View style={styles.categoryRow}>
-      <View style={styles.categoryRowLeft}>
+    <View style={styles.categoryBlock}>
+      <View style={styles.categoryNavRow}>
         <Pressable
           onPress={onPrev}
-          hitSlop={8}
+          hitSlop={10}
           style={({ pressed }) => [styles.chevron, pressed && styles.chevronPressed]}
           accessibilityLabel="Previous category"
         >
-          <Feather name="chevron-left" size={14} color={COLORS.onSurfaceVariant} />
+          <Feather name="chevron-left" size={16} color={COLORS.onSurfaceVariant} />
         </Pressable>
-        <View style={[styles.dot, { backgroundColor: cat.categoryColor }]} />
-        <CategoryIcon
-          icon={cat.categoryIcon}
-          size={14}
-          color={cat.categoryColor}
-        />
-        <Text style={styles.categoryName} numberOfLines={1}>
-          {cat.categoryName}
-        </Text>
+        <View style={styles.categoryNameWrap}>
+          <CategoryIcon
+            icon={cat.categoryIcon}
+            size={16}
+            color={cat.categoryColor}
+          />
+          <Text style={styles.categoryName} numberOfLines={1}>
+            {cat.categoryName}
+          </Text>
+        </View>
         <Pressable
           onPress={onNext}
-          hitSlop={8}
+          hitSlop={10}
           style={({ pressed }) => [styles.chevron, pressed && styles.chevronPressed]}
           accessibilityLabel="Next category"
         >
-          <Feather name="chevron-right" size={14} color={COLORS.onSurfaceVariant} />
+          <Feather name="chevron-right" size={16} color={COLORS.onSurfaceVariant} />
         </Pressable>
       </View>
       <Text style={styles.goalLabel} numberOfLines={1}>
@@ -296,9 +297,8 @@ function HistorySection({
                   styles.barLabel,
                   isCurrent && styles.barLabelCurrent,
                 ]}
-                numberOfLines={1}
               >
-                {isCurrent ? "now" : `−${STREAK_WEEKS - 1 - i}`}
+                {isCurrent ? "n" : `${STREAK_WEEKS - 1 - i}`}
               </Text>
             </View>
           );
@@ -423,24 +423,28 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.outlineVariant,
   },
 
-  categoryRow: {
+  categoryBlock: {
+    marginBottom: SPACING.md,
+    gap: 4,
+  },
+  categoryNavRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: SPACING.sm,
-    marginBottom: SPACING.md,
   },
-  categoryRowLeft: {
+  categoryNameWrap: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    flexShrink: 1,
+    justifyContent: "center",
+    gap: 8,
     minWidth: 0,
   },
   chevron: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: COLORS.surfaceContainer,
     alignItems: "center",
     justifyContent: "center",
@@ -448,24 +452,19 @@ const styles = StyleSheet.create({
   chevronPressed: {
     backgroundColor: COLORS.surfaceContainerHigh,
   },
-  dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-  },
   categoryName: {
     ...TYPOGRAPHY.titleMd,
-    fontSize: 15,
+    fontSize: 17,
+    lineHeight: 22,
     color: COLORS.onSurface,
     flexShrink: 1,
   },
   goalLabel: {
     fontFamily: FONTS.jakartaMedium,
-    fontSize: 11,
-    lineHeight: 14,
+    fontSize: 12,
+    lineHeight: 16,
     color: COLORS.outline,
-    flexShrink: 1,
-    textAlign: "right",
+    textAlign: "center",
   },
 
   heroRow: {
@@ -569,12 +568,12 @@ const styles = StyleSheet.create({
   barsRow: {
     flexDirection: "row",
     alignItems: "flex-end",
-    gap: 4,
+    gap: 3,
   },
   barCol: {
     flex: 1,
     alignItems: "center",
-    gap: 3,
+    gap: 4,
   },
   barSlot: {
     width: "100%",
@@ -583,8 +582,8 @@ const styles = StyleSheet.create({
   },
   barLabel: {
     fontFamily: FONTS.jakartaMedium,
-    fontSize: 8,
-    lineHeight: 10,
+    fontSize: 9,
+    lineHeight: 11,
     color: COLORS.outline,
   },
   barLabelCurrent: {
