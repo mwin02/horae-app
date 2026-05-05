@@ -1,6 +1,6 @@
 import { ActivityBreakdown } from "@/components/insights/activity-breakdown";
 import { ActualVsIdeal } from "@/components/insights/actual-vs-ideal";
-import { CategoryBreakdown } from "@/components/insights/category-breakdown";
+import { TimeDistribution } from "@/components/insights/time-distribution";
 import {
   CustomizableCardList,
   type CardEntry,
@@ -51,9 +51,11 @@ export function DailyInsightsView({
       {
         id: "category-breakdown",
         node: (
-          <CategoryBreakdown
+          <TimeDistribution
             categoryInsights={categoryInsights}
             totalTrackedMinutes={totalTrackedMinutes}
+            period="daily"
+            selectedDate={selectedDate}
           />
         ),
       },
