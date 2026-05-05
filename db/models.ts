@@ -143,6 +143,7 @@ export interface CategoryInsight {
   categoryId: string;
   categoryName: string;
   categoryColor: string;
+  categoryIcon: string | null;
   actualMinutes: number;
   targetMinutes: number | null;
   differenceMinutes: number | null;

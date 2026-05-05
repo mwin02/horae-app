@@ -1,9 +1,10 @@
+import { CategoryIcon } from "@/components/common/category-icon";
 import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import type { CategoryInsight } from "@/db/models";
 import { formatDuration } from "@/lib/timezone";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Defs, Pattern, Path, Rect } from "react-native-svg";
 import { deltaPalette, type DeltaPolarity } from "./delta-polarity";
@@ -113,28 +114,47 @@ function ComparisonRow({
 
   const sign = delta >= 0 ? "+" : "−";
 
-  const kind = insight.goalPeriodKind;
-  const cadenceLabel =
-    kind === "weekly"
-      ? "weekly"
-      : kind === "monthly"
-        ? "monthly"
-        : "daily";
+  const [showName, setShowName] = useState(false);
+  useEffect(() => {
+    if (!showName) return;
+    const t = setTimeout(() => setShowName(false), 1800);
+    return () => clearTimeout(t);
+  }, [showName]);
+
+  const toggleName = useCallback(() => {
+    setShowName((v) => !v);
+  }, []);
 
   return (
     <View style={[styles.row, !isFirst && styles.rowDivider]}>
       <View style={styles.rowHeader}>
         <View style={styles.rowHeaderLeft}>
-          <View
-            style={[styles.colorDot, { backgroundColor: insight.categoryColor }]}
-          />
-          <Text style={styles.categoryName} numberOfLines={1}>
-            {insight.categoryName}
-          </Text>
-          <Text style={styles.amountText} numberOfLines={1}>
-            {formatDuration(actual * 60)} / {formatDuration(target * 60)}{" "}
-            <Text style={styles.cadenceText}>· {cadenceLabel}</Text>
-          </Text>
+          <Pressable
+            onPress={toggleName}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={insight.categoryName}
+            style={({ pressed }) => [
+              styles.iconSwatch,
+              { backgroundColor: insight.categoryColor + "26" },
+              pressed && styles.iconSwatchPressed,
+            ]}
+          >
+            <CategoryIcon
+              icon={insight.categoryIcon}
+              size={14}
+              color={insight.categoryColor}
+            />
+          </Pressable>
+          {showName ? (
+            <Text style={styles.categoryName} numberOfLines={1}>
+              {insight.categoryName}
+            </Text>
+          ) : (
+            <Text style={styles.amountText} numberOfLines={1}>
+              {formatDuration(actual * 60)} / {formatDuration(target * 60)}
+            </Text>
+          )}
         </View>
         <View
           style={[styles.diffChip, { backgroundColor: chipPalette.bg }]}
@@ -273,10 +293,15 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
-  colorDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  iconSwatch: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconSwatchPressed: {
+    opacity: 0.7,
   },
   categoryName: {
     fontFamily: FONTS.jakartaSemiBold,
@@ -287,13 +312,10 @@ const styles = StyleSheet.create({
   },
   amountText: {
     fontFamily: FONTS.jakartaMedium,
-    fontSize: 11,
-    lineHeight: 16,
-    color: COLORS.onSurfaceVariant,
+    fontSize: 12,
+    lineHeight: 18,
+    color: COLORS.onSurface,
     flexShrink: 1,
-  },
-  cadenceText: {
-    color: COLORS.outlineVariant,
   },
   diffChip: {
     paddingHorizontal: 7,
