@@ -51,23 +51,17 @@ export function WeekOverWeekDelta({
         <Text style={styles.eyebrowTitle}>WEEK OVER WEEK</Text>
         {hasData ? (
           <View style={styles.legend}>
-            <LegendSwatch color={COLORS.outlineVariant} label="last week" />
+            <LegendSwatch color={COLORS.outlineVariant} label="previous week" />
           </View>
         ) : null}
       </View>
 
       {!hasData ? (
-        <Text style={styles.emptyText}>
-          No tracked time this week or last
-        </Text>
+        <Text style={styles.emptyText}>No tracked time this week or last</Text>
       ) : (
         <View>
           {rows.map((row, i) => (
-            <DeltaRow
-              key={row.categoryId}
-              row={row}
-              showDivider={i > 0}
-            />
+            <DeltaRow key={row.categoryId} row={row} showDivider={i > 0} />
           ))}
         </View>
       )}
@@ -172,9 +166,7 @@ function DeltaRow({ row, showDivider }: DeltaRowProps): React.ReactElement {
   return (
     <View style={[styles.row, showDivider && styles.rowDivider]}>
       <View style={styles.labelCol}>
-        <View
-          style={[styles.dot, { backgroundColor: row.categoryColor }]}
-        />
+        <View style={[styles.dot, { backgroundColor: row.categoryColor }]} />
         <Text style={styles.nameText} numberOfLines={1}>
           {row.categoryName}
         </Text>
@@ -208,10 +200,7 @@ function DeltaRow({ row, showDivider }: DeltaRowProps): React.ReactElement {
       </View>
 
       <View style={[styles.chip, { backgroundColor: chip.bg }]}>
-        <Text
-          style={[styles.chipText, { color: chip.fg }]}
-          numberOfLines={1}
-        >
+        <Text style={[styles.chipText, { color: chip.fg }]} numberOfLines={1}>
           {chip.text}
         </Text>
       </View>
