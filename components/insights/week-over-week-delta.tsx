@@ -106,19 +106,24 @@ function resolveChip(row: WeekOverWeekRow): ChipStyle {
     return { ...deltaPalette("neutral"), text: "—" };
   }
 
+  // For `around` goals we compare distance-to-target between the two weeks
+  // so the chip reflects "did we move closer to or farther from the target".
+  const target = row.weeklyTargetSeconds;
+  const aroundCtx =
+    row.goalDirection === "around" && target != null
+      ? { thisSeconds: now, lastSeconds: prev, targetSeconds: target }
+      : undefined;
+
   if (newWeek) {
     return {
-      ...deltaPalette(deltaPolarity(row.goalDirection, true)),
+      ...deltaPalette(deltaPolarity(row.goalDirection, true, aroundCtx)),
       text: "new",
     };
   }
 
   if (dropped) {
-    // Dropping to zero is "down" relative to last week. Polarity follows
-    // the goal: a cap-style goal treats this as good, an at_least goal as
-    // bad. With no goal or `around`, it's neutral.
     return {
-      ...deltaPalette(deltaPolarity(row.goalDirection, false)),
+      ...deltaPalette(deltaPolarity(row.goalDirection, false, aroundCtx)),
       text: "0m",
     };
   }
@@ -127,7 +132,7 @@ function resolveChip(row: WeekOverWeekRow): ChipStyle {
   const up = delta > 0;
   const symbol = up ? "+" : "−";
   return {
-    ...deltaPalette(deltaPolarity(row.goalDirection, up)),
+    ...deltaPalette(deltaPolarity(row.goalDirection, up, aroundCtx)),
     text: `${symbol}${formatCompactDuration(Math.abs(delta))}`,
   };
 }

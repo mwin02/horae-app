@@ -1,3 +1,4 @@
+import { resolveWeeklyTargetSeconds } from "@/components/insights/delta-polarity";
 import type { GoalDirection } from "@/db/models";
 import {
   IDEAL_ALLOCATIONS_QUERY,
@@ -21,6 +22,8 @@ export interface WeekOverWeekRow {
   deltaSeconds: number;
   /** Goal polarity if any allocation exists for this category; null otherwise. */
   goalDirection: GoalDirection | null;
+  /** Weekly target in seconds; null if no daily/weekly allocation maps. */
+  weeklyTargetSeconds: number | null;
 }
 
 export interface UseWeekOverWeekDeltaResult {
@@ -100,6 +103,11 @@ export function useWeekOverWeekDelta(
     return resolved;
   }, [allocationRows]);
 
+  const weeklyTargetByCategory = useMemo(
+    () => resolveWeeklyTargetSeconds(allocationRows),
+    [allocationRows],
+  );
+
   const rows = useMemo<WeekOverWeekRow[]>(() => {
     const byId = new Map<
       string,
@@ -143,13 +151,14 @@ export function useWeekOverWeekDelta(
         lastWeekSeconds: v.lastSeconds,
         deltaSeconds: v.thisSeconds - v.lastSeconds,
         goalDirection: goalDirectionByCategory.get(categoryId) ?? null,
+        weeklyTargetSeconds: weeklyTargetByCategory.get(categoryId) ?? null,
       }),
     );
 
     // Sort by this-week time desc; categories only in last week sink below.
     result.sort((a, b) => b.thisWeekSeconds - a.thisWeekSeconds);
     return result;
-  }, [thisRows, lastRows, goalDirectionByCategory]);
+  }, [thisRows, lastRows, goalDirectionByCategory, weeklyTargetByCategory]);
 
   return { rows, isLoading: thisLoading || lastLoading };
 }
