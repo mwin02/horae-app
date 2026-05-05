@@ -4,6 +4,7 @@ import { ResumeBanner } from "@/components/home/resume-banner";
 import { RingTimerHero } from "@/components/home/ring-timer-hero";
 import { QuickStartGrid } from "@/components/home/quick-start-grid";
 import { SuggestedRow } from "@/components/home/suggested-row";
+import { WeeklyStreak } from "@/components/home/weekly-streak";
 import { UndoToast } from "@/components/common/undo-toast";
 import { COLORS, SPACING } from "@/constants/theme";
 import {
@@ -19,6 +20,7 @@ import { useCategoriesWithActivities } from "@/hooks/useCategoriesWithActivities
 import { useQuickStartActivities } from "@/hooks/useQuickStartActivities";
 import { useRecommendedActivity } from "@/hooks/useRecommendedActivity";
 import { useTodayClockArcs } from "@/hooks/useTodayClockArcs";
+import { getCurrentTimezone, getTodayDate } from "@/lib/timezone";
 import { NewSessionModal } from "@/components/timer/new-session-modal";
 import { useUIStore } from "@/store/uiStore";
 import React, { useCallback, useEffect, useState } from "react";
@@ -193,6 +195,10 @@ export default function HomeScreen(): React.ReactElement {
           activeActivityId={runningEntry?.activityId ?? null}
           onActivityPress={handleActivityPress}
         />
+
+        {/* Weekly streak — current-week progress against weekly goals.
+            Renders null when the user has no weekly goals yet. */}
+        <WeeklyStreak weekDate={getTodayDate(getCurrentTimezone())} />
       </ScrollView>
 
       {/* New Session Modal */}
