@@ -1,7 +1,7 @@
-import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import React, { useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { CategoryIcon } from "@/components/common/category-icon";
 import type { CategoryInsight } from "@/db/models";
-import { formatDuration } from "@/lib/timezone";
 import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 
 const MINUTES_PER_DAY = 24 * 60;
@@ -21,6 +21,7 @@ export function TimeDistribution({
   period,
   selectedDate,
 }: TimeDistributionProps): React.ReactElement {
+  const [showPercent, setShowPercent] = useState(false);
   const periodTotalMinutes = getPeriodTotalMinutes(period, selectedDate);
   const tracked = Math.min(totalTrackedMinutes, periodTotalMinutes);
   const untracked = Math.max(0, periodTotalMinutes - tracked);
@@ -45,9 +46,11 @@ export function TimeDistribution({
       </View>
 
       <View style={styles.heroRow}>
-        <Text style={styles.heroNumber}>{formatDuration(tracked * 60)}</Text>
+        <Text style={styles.heroNumber}>
+          {formatSmartDuration(tracked, period)}
+        </Text>
         <Text style={styles.heroSub}>
-          tracked · {formatDuration(untracked * 60)} untracked
+          tracked · {formatSmartDuration(untracked, period)} untracked
         </Text>
       </View>
 
@@ -65,27 +68,53 @@ export function TimeDistribution({
         )}
       </View>
 
-      <View style={styles.legend}>
+      <Pressable
+        onPress={() => setShowPercent((v) => !v)}
+        style={styles.legend}
+      >
         {slices.map((s) => {
           const pct =
             tracked > 0 ? Math.round((s.actualMinutes / tracked) * 100) : 0;
           return (
             <View key={s.categoryId} style={styles.legendItem}>
-              <View
-                style={[styles.legendSwatch, { backgroundColor: s.categoryColor }]}
+              <CategoryIcon
+                icon={s.categoryIcon}
+                size={14}
+                color={s.categoryColor}
               />
               <Text style={styles.legendName} numberOfLines={1}>
                 {s.categoryName}
               </Text>
               <Text style={styles.legendMeta}>
-                {pct}% · {formatDuration(s.actualMinutes * 60)}
+                {showPercent
+                  ? `${pct}%`
+                  : formatSmartDuration(s.actualMinutes, period)}
               </Text>
             </View>
           );
         })}
-      </View>
+      </Pressable>
     </View>
   );
+}
+
+/**
+ * Daily values fit in "Hh Mm" (max 24h). Weekly drops minutes once ≥10h.
+ * Monthly always rounds to whole hours.
+ */
+function formatSmartDuration(minutes: number, period: Period): string {
+  if (minutes <= 0) return "0m";
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  const dropMinutes =
+    period === "monthly" || (period === "weekly" && hours >= 10);
+  if (dropMinutes) {
+    const rounded = Math.round(minutes / 60);
+    return `${rounded}h`;
+  }
+  if (hours === 0) return `${mins}m`;
+  if (mins === 0) return `${hours}h`;
+  return `${hours}h ${mins}m`;
 }
 
 function getPeriodTotalMinutes(period: Period, selectedDate: string): number {
@@ -163,11 +192,6 @@ const styles = StyleSheet.create({
     gap: SPACING.xs,
     paddingVertical: 3,
     paddingRight: SPACING.sm,
-  },
-  legendSwatch: {
-    width: 10,
-    height: 10,
-    borderRadius: 2,
   },
   legendName: {
     fontFamily: FONTS.jakartaMedium,
