@@ -5,6 +5,7 @@ import {
 } from "@/hooks/useWeekOverWeekDelta";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { deltaPalette, deltaPolarity } from "./delta-polarity";
 
 interface WeekOverWeekDeltaProps {
   weekDate: string;
@@ -102,50 +103,31 @@ function resolveChip(row: WeekOverWeekRow): ChipStyle {
   const dropped = now < NEAR_ZERO_SECONDS && prev >= NEAR_ZERO_SECONDS;
 
   if (noData) {
+    return { ...deltaPalette("neutral"), text: "—" };
+  }
+
+  if (newWeek) {
     return {
-      fg: COLORS.outline,
-      bg: COLORS.surfaceContainer,
-      text: "—",
+      ...deltaPalette(deltaPolarity(row.goalDirection, true)),
+      text: "new",
     };
   }
 
-  // For at_most goals, more time is bad. Otherwise more is good.
-  const moreIsBad = row.goalDirection === "at_most";
-  const goodChip = {
-    fg: COLORS.secondary,
-    bg: COLORS.secondaryContainer,
-  };
-  const badChip = {
-    fg: COLORS.error,
-    bg: COLORS.errorContainer,
-  };
-
-  if (newWeek) {
-    const palette = moreIsBad ? badChip : goodChip;
-    return { ...palette, text: "new" };
-  }
-
   if (dropped) {
-    // Going to zero is "better" for at_most categories. For at_least and
-    // around it's a regression — but we still show muted "0m" because the
-    // absent magnitude isn't meaningful as a delta.
-    if (moreIsBad) {
-      return { ...goodChip, text: "0m" };
-    }
+    // Dropping to zero is "down" relative to last week. Polarity follows
+    // the goal: a cap-style goal treats this as good, an at_least goal as
+    // bad. With no goal or `around`, it's neutral.
     return {
-      fg: COLORS.outline,
-      bg: COLORS.surfaceContainer,
+      ...deltaPalette(deltaPolarity(row.goalDirection, false)),
       text: "0m",
     };
   }
 
   const delta = now - prev;
   const up = delta > 0;
-  const isBad = up ? moreIsBad : !moreIsBad;
-  const palette = isBad ? badChip : goodChip;
   const symbol = up ? "+" : "−";
   return {
-    ...palette,
+    ...deltaPalette(deltaPolarity(row.goalDirection, up)),
     text: `${symbol}${formatCompactDuration(Math.abs(delta))}`,
   };
 }

@@ -7,6 +7,7 @@ import { formatDuration } from "@/lib/timezone";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
+import { deltaPalette, deltaPolarity } from "./delta-polarity";
 
 interface FourWeekTrendProps {
   monthDate: string;
@@ -112,26 +113,16 @@ function TrendRow({
   const pctChange =
     haveDelta && first > 0 ? Math.round(((last - first) / first) * 100) : 0;
 
-  // For a "new" category, treat the appearance as positive unless the goal
-  // says less is better (at_most) — in which case it's a regression.
-  const newIsBad = isNew && goalDirection === "at_most";
-  const isBad = haveDelta
-    ? trendUp
-      ? goalDirection === "at_most"
-      : goalDirection === "at_least"
-    : newIsBad;
-
-  const hasChipColor = haveDelta || isNew;
-  const chipColor = !hasChipColor
-    ? COLORS.outline
-    : isBad
-      ? COLORS.error
-      : COLORS.secondary;
-  const chipBg = !hasChipColor
-    ? COLORS.surfaceContainer
-    : isBad
-      ? COLORS.errorContainer
-      : COLORS.secondaryContainer;
+  // Polarity is driven by the goal direction. `around` and missing goals
+  // render neutral so we don't editorialize when the user hasn't told us
+  // which way they want this category to go. New-category appearance is
+  // treated as an "up" delta for polarity purposes.
+  const polarity = haveDelta
+    ? deltaPolarity(goalDirection, trendUp)
+    : isNew
+      ? deltaPolarity(goalDirection, true)
+      : "neutral";
+  const { fg: chipColor, bg: chipBg } = deltaPalette(polarity);
   const arrow = trendUp ? "▲" : "▼";
 
   return (
