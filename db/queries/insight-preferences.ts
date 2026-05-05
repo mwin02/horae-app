@@ -20,7 +20,6 @@ export const INSIGHT_CARD_IDS = [
   "calendar-heatmap",
   "four-week-trend",
   "top-activities",
-  "weekly-streak",
 ] as const;
 
 export type InsightCardId = (typeof INSIGHT_CARD_IDS)[number];
@@ -36,7 +35,6 @@ export const DEFAULT_DAILY_ORDER: InsightCardId[] = [
 ];
 
 export const DEFAULT_WEEKLY_ORDER: InsightCardId[] = [
-  "weekly-streak",
   "day-of-week-bars",
   "week-over-week",
   "category-breakdown",

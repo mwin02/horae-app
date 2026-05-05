@@ -32,7 +32,7 @@ export function WeeklyStreak({
   const [idx, setIdx] = useState(0);
 
   if (isLoading) return null;
-  if (categories.length === 0) return <EmptyState />;
+  if (categories.length === 0) return null;
 
   const safeIdx = Math.min(idx, categories.length - 1);
   const cat = categories[safeIdx];
@@ -350,25 +350,6 @@ function FooterRow({
 
 // ──────────────────────────────────────────────
 
-function EmptyState(): React.ReactElement {
-  return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.eyebrowTitle}>WEEKLY STREAK</Text>
-      </View>
-      <View style={styles.emptyBody}>
-        <Feather name="target" size={20} color={COLORS.onSurfaceVariant} />
-        <Text style={styles.emptyTitle}>No weekly goals yet</Text>
-        <Text style={styles.emptyBodyText}>
-          Set a weekly goal on a category to track streaks here.
-        </Text>
-      </View>
-    </View>
-  );
-}
-
-// ──────────────────────────────────────────────
-
 function goalLabel(cat: WeeklyStreakCategory): string {
   const hours = cat.goalSeconds / 3600;
   const rounded = Number.isInteger(hours) ? hours.toString() : hours.toFixed(1);
@@ -395,6 +376,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceContainerLow,
     borderRadius: RADIUS.xl,
     padding: SPACING.lg,
+    marginTop: SPACING["3xl"],
     overflow: "hidden",
   },
   header: {
@@ -623,21 +605,5 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 12,
     fontVariant: ["tabular-nums"],
-  },
-
-  emptyBody: {
-    alignItems: "center",
-    paddingVertical: SPACING.lg,
-    gap: 6,
-  },
-  emptyTitle: {
-    ...TYPOGRAPHY.titleMd,
-    fontSize: 14,
-    color: COLORS.onSurface,
-  },
-  emptyBodyText: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
-    textAlign: "center",
   },
 });
