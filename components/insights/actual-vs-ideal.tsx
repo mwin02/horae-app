@@ -1,10 +1,13 @@
+import { CategoryIcon } from "@/components/common/category-icon";
 import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import type { CategoryInsight } from "@/db/models";
 import { formatDuration } from "@/lib/timezone";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useRef } from "react";
-import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import Svg, { Defs, Pattern, Path, Rect } from "react-native-svg";
+import { deltaPalette, type DeltaPolarity } from "./delta-polarity";
 
 interface ActualVsIdealProps {
   categoryInsights: CategoryInsight[];
@@ -14,7 +17,6 @@ export function ActualVsIdeal({
   categoryInsights,
 }: ActualVsIdealProps): React.ReactElement {
   const router = useRouter();
-  // Only show categories that have an ideal allocation set
   const withTargets = categoryInsights.filter((c) => c.targetMinutes != null);
 
   const openSettings = useCallback(() => {
@@ -53,22 +55,13 @@ export function ActualVsIdeal({
   return (
     <View style={styles.container}>
       {Header}
-
-      {/* Legend */}
-      <View style={styles.legendRow}>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, styles.legendActual]} />
-          <Text style={styles.legendText}>Actual</Text>
-        </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, styles.legendIdeal]} />
-          <Text style={styles.legendText}>Goal</Text>
-        </View>
-      </View>
-
-      <View style={styles.rowsContainer}>
-        {withTargets.map((insight) => (
-          <ComparisonRow key={insight.categoryId} insight={insight} />
+      <View>
+        {withTargets.map((insight, i) => (
+          <ComparisonRow
+            key={insight.categoryId}
+            insight={insight}
+            isFirst={i === 0}
+          />
         ))}
       </View>
     </View>
@@ -79,121 +72,168 @@ export function ActualVsIdeal({
 
 interface ComparisonRowProps {
   insight: CategoryInsight;
+  isFirst: boolean;
 }
 
-function ComparisonRow({ insight }: ComparisonRowProps): React.ReactElement {
+const BAR_HEIGHT = 10;
+const OVERSHOOT_WIDTH = 10;
+
+function ComparisonRow({
+  insight,
+  isFirst,
+}: ComparisonRowProps): React.ReactElement {
   const actual = insight.actualMinutes;
   const target = insight.targetMinutes ?? 0;
-  const diff = insight.differenceMinutes ?? 0;
+  const delta = actual - target;
 
-  // Scale bars relative to the larger of actual or target
-  const maxVal = Math.max(actual, target, 1);
-  const actualPercent = (actual / maxVal) * 100;
-  const targetPercent = (target / maxVal) * 100;
-
-  const animatedActual = useRef(new Animated.Value(0)).current;
-  const animatedTarget = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(animatedActual, {
-        toValue: actualPercent,
-        duration: 600,
-        useNativeDriver: false,
-      }),
-      Animated.timing(animatedTarget, {
-        toValue: targetPercent,
-        duration: 600,
-        useNativeDriver: false,
-      }),
-    ]).start();
-  }, [actualPercent, targetPercent, animatedActual, animatedTarget]);
-
-  // Color depends on the goal's direction.
-  //   at_least → green when actual ≥ target − 10% (floor, overshoot is fine)
-  //   at_most  → green when actual ≤ target + 10% (cap, undershoot is fine)
-  //   around   → green when |actual − target| ≤ 10% of target (symmetric)
-  // Target of 0 only counts as on-goal when actual is also exactly 0.
-  const tolerance = target > 0 ? target * 0.1 : 0;
-  const direction = insight.goalDirection ?? "around";
-  const kind = insight.goalPeriodKind;
-  const cadenceLabel =
-    kind === "weekly"
-      ? "weekly target"
-      : kind === "monthly"
-        ? "monthly target"
-        : "daily target";
-  let onGoal: boolean;
-  if (direction === "at_least") {
-    onGoal = actual >= target - tolerance;
+  const direction = insight.goalDirection;
+  let polarity: DeltaPolarity;
+  if (direction == null) {
+    polarity = "neutral";
+  } else if (target <= 0) {
+    polarity = actual === 0 ? "good" : "bad";
+  } else if (direction === "at_least") {
+    polarity = actual >= target ? "good" : "bad";
   } else if (direction === "at_most") {
-    onGoal = actual <= target + tolerance;
+    polarity = actual <= target ? "good" : "bad";
   } else {
-    onGoal = Math.abs(diff) <= tolerance;
+    polarity = Math.abs(delta) <= target * 0.2 ? "good" : "bad";
   }
-  const diffColor = onGoal ? COLORS.secondary : COLORS.error;
-  const diffPrefix = diff > 0 ? "+" : "-";
+  const chipPalette = deltaPalette(polarity);
+
+  // Bar scale: 1.5x goal so the goal marker sits at ~66%.
+  const scaleMax = target > 0 ? target * 1.5 : Math.max(actual, 1);
+  const actualPct =
+    target > 0
+      ? (Math.min(actual, scaleMax) / scaleMax) * 100
+      : actual > 0
+        ? 100
+        : 0;
+  const goalPct = target > 0 ? (target / scaleMax) * 100 : 0;
+  const overshoot = target > 0 && actual > scaleMax;
+
+  const sign = delta >= 0 ? "+" : "−";
+
+  const [showName, setShowName] = useState(false);
+  useEffect(() => {
+    if (!showName) return;
+    const t = setTimeout(() => setShowName(false), 1800);
+    return () => clearTimeout(t);
+  }, [showName]);
+
+  const toggleName = useCallback(() => {
+    setShowName((v) => !v);
+  }, []);
 
   return (
-    <View style={styles.comparisonRow}>
-      {/* Category name + difference badge */}
-      <View style={styles.comparisonHeader}>
-        <View style={styles.categoryLabelRow}>
+    <View style={[styles.row, !isFirst && styles.rowDivider]}>
+      <View style={styles.rowHeader}>
+        <View style={styles.rowHeaderLeft}>
+          <Pressable
+            onPress={toggleName}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={insight.categoryName}
+            style={({ pressed }) => [
+              styles.iconSwatch,
+              { backgroundColor: insight.categoryColor + "26" },
+              pressed && styles.iconSwatchPressed,
+            ]}
+          >
+            <CategoryIcon
+              icon={insight.categoryIcon}
+              size={14}
+              color={insight.categoryColor}
+            />
+          </Pressable>
+          {showName ? (
+            <Text style={styles.categoryName} numberOfLines={1}>
+              {insight.categoryName}
+            </Text>
+          ) : (
+            <Text style={styles.amountText} numberOfLines={1}>
+              {formatDuration(actual * 60)} / {formatDuration(target * 60)}
+            </Text>
+          )}
+        </View>
+        <View
+          style={[styles.diffChip, { backgroundColor: chipPalette.bg }]}
+        >
+          <Text style={[styles.diffText, { color: chipPalette.fg }]}>
+            {sign}
+            {formatDuration(Math.abs(delta) * 60)}
+          </Text>
+        </View>
+      </View>
+
+      {/* Goal label sits above the marker */}
+      <View style={styles.barArea}>
+        <View style={styles.goalLabelRow}>
+          <View
+            style={[styles.goalLabelWrap, { left: `${goalPct}%` }]}
+          >
+            <Text style={styles.goalLabel} numberOfLines={1}>
+              {direction === "at_most" ? "LIMIT" : "GOAL"}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.barTrack}>
+          {/* Actual fill */}
           <View
             style={[
-              styles.colorDot,
-              { backgroundColor: insight.categoryColor },
-            ]}
-          />
-          <Text style={styles.categoryName} numberOfLines={1}>
-            {insight.categoryName}
-          </Text>
-          <Text style={styles.cadenceText}>· {cadenceLabel}</Text>
-        </View>
-        <View style={[styles.diffBadge, { backgroundColor: diffColor + "1A" }]}>
-          <Text style={[styles.diffText, { color: diffColor }]}>
-            {diffPrefix}
-            {formatDuration(Math.abs(diff) * 60)}
-          </Text>
-        </View>
-      </View>
-
-      {/* Actual bar */}
-      <View style={styles.barPair}>
-        <View style={styles.barTrack}>
-          <Animated.View
-            style={[
               styles.barFill,
               {
+                width: `${actualPct}%`,
                 backgroundColor: insight.categoryColor,
-                width: animatedActual.interpolate({
-                  inputRange: [0, 100],
-                  outputRange: ["0%", "100%"],
-                }),
+                minWidth: actual > 0 ? 4 : 0,
               },
             ]}
           />
-        </View>
-        <Text style={styles.barValue}>{formatDuration(actual * 60)}</Text>
-      </View>
-
-      {/* Target bar */}
-      <View style={styles.barPair}>
-        <View style={styles.barTrack}>
-          <Animated.View
+          {/* Overshoot stripes */}
+          {overshoot && (
+            <View
+              style={[
+                styles.overshoot,
+                { width: OVERSHOOT_WIDTH },
+              ]}
+              pointerEvents="none"
+            >
+              <Svg width="100%" height="100%">
+                <Defs>
+                  <Pattern
+                    id={`stripes-${insight.categoryId}`}
+                    patternUnits="userSpaceOnUse"
+                    width="6"
+                    height="6"
+                    patternTransform="rotate(45)"
+                  >
+                    <Path
+                      d="M0,0 L0,6"
+                      stroke={insight.categoryColor}
+                      strokeWidth="3"
+                    />
+                  </Pattern>
+                </Defs>
+                <Rect
+                  x="0"
+                  y="0"
+                  width="100%"
+                  height="100%"
+                  fill={`url(#stripes-${insight.categoryId})`}
+                />
+              </Svg>
+            </View>
+          )}
+          {/* Goal marker line */}
+          <View
             style={[
-              styles.barFill,
-              styles.targetBar,
-              {
-                width: animatedTarget.interpolate({
-                  inputRange: [0, 100],
-                  outputRange: ["0%", "100%"],
-                }),
-              },
+              styles.goalMarker,
+              { left: `${goalPct}%` },
             ]}
+            pointerEvents="none"
           />
         </View>
-        <Text style={styles.barValue}>{formatDuration(target * 60)}</Text>
       </View>
     </View>
   );
@@ -231,101 +271,111 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     color: COLORS.onSurfaceVariant,
   },
-  // Legend
-  legendRow: {
-    flexDirection: "row",
-    gap: SPACING.lg,
-    marginBottom: SPACING.xl,
+  row: {
+    paddingTop: SPACING.lg,
+    paddingBottom: SPACING.md,
   },
-  legendItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.xs,
+  rowDivider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: COLORS.outlineVariant,
   },
-  legendDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  legendActual: {
-    backgroundColor: COLORS.primary,
-  },
-  legendIdeal: {
-    backgroundColor: COLORS.outlineVariant,
-  },
-  legendText: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
-  },
-  rowsContainer: {
-    gap: SPACING.xl,
-  },
-  // Comparison row
-  comparisonRow: {
-    gap: SPACING.sm,
-  },
-  comparisonHeader: {
+  rowHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: SPACING.xs,
+    marginBottom: SPACING.md,
+    gap: SPACING.sm,
   },
-  categoryLabelRow: {
+  rowHeaderLeft: {
     flexDirection: "row",
     alignItems: "center",
     gap: SPACING.sm,
     flex: 1,
+    minWidth: 0,
   },
-  colorDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  iconSwatch: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconSwatchPressed: {
+    opacity: 0.7,
   },
   categoryName: {
-    ...TYPOGRAPHY.body,
+    fontFamily: FONTS.jakartaSemiBold,
+    fontSize: 13,
+    lineHeight: 18,
     color: COLORS.onSurface,
     flexShrink: 1,
   },
-  cadenceText: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
+  amountText: {
+    fontFamily: FONTS.jakartaMedium,
+    fontSize: 12,
+    lineHeight: 18,
+    color: COLORS.onSurface,
+    flexShrink: 1,
   },
-  diffBadge: {
-    paddingHorizontal: SPACING.sm,
+  diffChip: {
+    paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: RADIUS.sm,
   },
   diffText: {
-    fontFamily: FONTS.jakartaSemiBold,
-    fontSize: 11,
-    lineHeight: 16,
+    fontFamily: FONTS.jakartaBold,
+    fontSize: 10,
+    lineHeight: 14,
+    letterSpacing: 0.2,
   },
-  // Bars
-  barPair: {
-    flexDirection: "row",
+  barArea: {
+    paddingTop: 12,
+  },
+  goalLabelRow: {
+    height: 0,
+    position: "relative",
+  },
+  goalLabelWrap: {
+    position: "absolute",
+    top: -12,
+    width: 40,
+    marginLeft: -20,
     alignItems: "center",
-    gap: SPACING.sm,
+  },
+  goalLabel: {
+    fontFamily: FONTS.jakartaBold,
+    fontSize: 8,
+    lineHeight: 10,
+    letterSpacing: 0.5,
+    color: COLORS.onSurface,
   },
   barTrack: {
-    flex: 1,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.surfaceContainer,
+    position: "relative",
+    height: BAR_HEIGHT,
+    borderRadius: BAR_HEIGHT / 2,
+    backgroundColor: COLORS.outlineVariant,
     overflow: "hidden",
   },
   barFill: {
-    height: "100%",
-    borderRadius: 3,
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    borderRadius: BAR_HEIGHT / 2,
   },
-  targetBar: {
-    backgroundColor: COLORS.outlineVariant,
+  overshoot: {
+    position: "absolute",
+    right: 0,
+    top: 0,
+    bottom: 0,
   },
-  barValue: {
-    fontFamily: FONTS.jakartaMedium,
-    fontSize: 11,
-    lineHeight: 16,
-    color: COLORS.onSurfaceVariant,
-    minWidth: 40,
-    textAlign: "right",
+  goalMarker: {
+    position: "absolute",
+    top: -2,
+    bottom: -2,
+    width: 2,
+    marginLeft: -1,
+    backgroundColor: COLORS.onSurface,
+    borderRadius: 1,
   },
 });

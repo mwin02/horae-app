@@ -366,6 +366,7 @@ export function useInsightsData(
         categoryId: row.category_id,
         categoryName: row.category_name,
         categoryColor: row.category_color,
+        categoryIcon: row.category_icon,
         actualMinutes,
         targetMinutes,
         differenceMinutes,
