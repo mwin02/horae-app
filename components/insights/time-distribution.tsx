@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { CategoryIcon } from "@/components/common/category-icon";
+import { CategoryIconSwatch } from "./category-icon-swatch";
 import type { CategoryInsight } from "@/db/models";
 import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 
@@ -77,9 +77,8 @@ export function TimeDistribution({
             tracked > 0 ? Math.round((s.actualMinutes / tracked) * 100) : 0;
           return (
             <View key={s.categoryId} style={styles.legendItem}>
-              <CategoryIcon
+              <CategoryIconSwatch
                 icon={s.categoryIcon}
-                size={14}
                 color={s.categoryColor}
               />
               <Text style={styles.legendName} numberOfLines={1}>
