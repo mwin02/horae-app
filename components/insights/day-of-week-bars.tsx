@@ -4,7 +4,9 @@ import {
   useDayOfWeekBreakdown,
   type DayOfWeekBucket,
 } from "@/hooks/useDayOfWeekBreakdown";
-import React, { useState } from "react";
+import { useUIStore } from "@/store/uiStore";
+import { useRouter } from "expo-router";
+import React, { useCallback, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 interface DayOfWeekBarsProps {
@@ -21,7 +23,17 @@ export function DayOfWeekBars({
 }: DayOfWeekBarsProps): React.ReactElement | null {
   const { days, maxSeconds, legend, isLoading } =
     useDayOfWeekBreakdown(weekDate);
-  const [mode, setMode] = useState<Mode>("bars");
+  const [mode, setMode] = useState<Mode>("timeline");
+  const router = useRouter();
+  const setSelectedDate = useUIStore((s) => s.setSelectedDate);
+
+  const handleDayPress = useCallback(
+    (dateStr: string) => {
+      setSelectedDate(dateStr);
+      router.push("/(tabs)/timeline");
+    },
+    [router, setSelectedDate],
+  );
 
   if (isLoading) return null;
 
@@ -39,13 +51,22 @@ export function DayOfWeekBars({
       </View>
 
       <View style={styles.barsRow}>
-        {days.map((day) =>
-          mode === "bars" ? (
-            <BarsColumn key={day.dayIndex} day={day} maxSeconds={maxSeconds} />
-          ) : (
-            <TimelineColumn key={day.dayIndex} day={day} />
-          ),
-        )}
+        {days.map((day) => (
+          <Pressable
+            key={day.dayIndex}
+            onPress={() => handleDayPress(day.dateStr)}
+            style={({ pressed }) => [
+              styles.dayPressable,
+              pressed && styles.dayPressed,
+            ]}
+          >
+            {mode === "bars" ? (
+              <BarsColumn day={day} maxSeconds={maxSeconds} />
+            ) : (
+              <TimelineColumn day={day} />
+            )}
+          </Pressable>
+        ))}
       </View>
 
       {legend.length > 0 && (
@@ -223,6 +244,12 @@ const styles = StyleSheet.create({
   barColumn: {
     flex: 1,
     alignItems: "center",
+  },
+  dayPressable: {
+    flex: 1,
+  },
+  dayPressed: {
+    opacity: 0.6,
   },
   barTrack: {
     width: "100%",
