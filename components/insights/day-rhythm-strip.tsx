@@ -1,4 +1,4 @@
-import { CategoryIcon } from '@/components/common/category-icon';
+import { CategoryIconSwatch } from './category-icon-swatch';
 import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from '@/constants/theme';
 import { useDayRhythm } from '@/hooks/useDayRhythm';
 import React from 'react';
@@ -67,7 +67,7 @@ export function DayRhythmStrip({
         <View style={styles.legend}>
           {legend.map((cat) => (
             <View key={cat.id} style={styles.legendItem}>
-              <CategoryIcon icon={cat.icon} size={14} color={cat.color} />
+              <CategoryIconSwatch icon={cat.icon} color={cat.color} />
               <Text style={styles.legendText}>{cat.name}</Text>
             </View>
           ))}

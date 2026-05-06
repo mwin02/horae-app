@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { CategoryIcon } from '@/components/common/category-icon';
+import { CategoryIconSwatch } from './category-icon-swatch';
 import { DonutChart, type DonutSlice } from './donut-chart';
 import { useActivityBreakdown } from '@/hooks/useActivityBreakdown';
 import type { CategoryInsight } from '@/db/models';
@@ -125,9 +125,8 @@ export function ActivityBreakdown({
             {activities.map((activity) => (
               <View key={activity.activityId} style={styles.legendRow}>
                 <View style={styles.legendLeft}>
-                  <CategoryIcon
+                  <CategoryIconSwatch
                     icon={activity.activityIcon}
-                    size={14}
                     color={activity.color}
                   />
                   <Text style={styles.legendName} numberOfLines={1}>

@@ -1,4 +1,4 @@
-import { CategoryIcon } from "@/components/common/category-icon";
+import { CategoryIconSwatch } from "./category-icon-swatch";
 import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { useTopActivities, type TopActivity } from "@/hooks/useTopActivities";
 import { formatDuration } from "@/lib/timezone";
@@ -141,9 +141,8 @@ function DenseRow({
 
       <View style={styles.denseMiddle}>
         <View style={styles.denseNameRow}>
-          <CategoryIcon
+          <CategoryIconSwatch
             icon={activity.activityIcon}
-            size={14}
             color={activity.categoryColor}
           />
           <Text style={styles.denseName} numberOfLines={1}>

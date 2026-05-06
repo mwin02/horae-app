@@ -1,4 +1,4 @@
-import { CategoryIcon } from "@/components/common/category-icon";
+import { CategoryIconSwatch } from "./category-icon-swatch";
 import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import {
   useWeekOverWeekDelta,
@@ -154,9 +154,8 @@ function DeltaRow({ row, showDivider }: DeltaRowProps): React.ReactElement {
   return (
     <View style={[styles.row, showDivider && styles.rowDivider]}>
       <View style={styles.labelCol}>
-        <CategoryIcon
+        <CategoryIconSwatch
           icon={row.categoryIcon}
-          size={14}
           color={row.categoryColor}
         />
         <Text style={styles.nameText} numberOfLines={1}>

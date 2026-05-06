@@ -1,4 +1,4 @@
-import { CategoryIcon } from "@/components/common/category-icon";
+import { CategoryIconSwatch } from "./category-icon-swatch";
 import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import {
   useFourWeekTrend,
@@ -138,9 +138,8 @@ function TrendRow({
     <View style={[styles.row, showDivider && styles.rowDivider]}>
       <View style={styles.labelCol}>
         <View style={styles.nameRow}>
-          <CategoryIcon
+          <CategoryIconSwatch
             icon={category.icon}
-            size={14}
             color={category.color}
           />
           <Text style={styles.nameText} numberOfLines={1}>
