@@ -115,7 +115,7 @@ export function DailyInsightsView({
     <CustomizableCardList
       period="daily"
       cards={cards}
-      ListHeaderComponent={header}
+      ListHeaderComponent={editMode ? null : header}
       onScrollOffsetChange={handleScrollOffsetChange}
       editMode={editMode}
       onEditModeChange={onEditModeChange}
