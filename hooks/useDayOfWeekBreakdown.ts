@@ -33,6 +33,8 @@ export interface DayOfWeekBucket {
   dayIndex: number;
   /** Canonical weekday: 0=Mon … 6=Sun. Use for labelling. */
   weekdayMonZero: number;
+  /** Local YYYY-MM-DD for this column (week start + dayIndex days). */
+  dateStr: string;
   totalSeconds: number;
   /** Category segments sorted by seconds desc for stable stacking. */
   segments: DayOfWeekSegment[];
@@ -43,8 +45,6 @@ export interface DayOfWeekBucket {
 export interface UseDayOfWeekBreakdownResult {
   /** 7 buckets, Mon..Sun in order */
   days: DayOfWeekBucket[];
-  /** Tallest day's total seconds — for normalizing bar heights */
-  maxSeconds: number;
   /** Unique categories that appear in the week, ordered by total seconds desc */
   legend: DayOfWeekCategory[];
   isLoading: boolean;
@@ -190,25 +190,27 @@ export function useDayOfWeekBreakdown(
       );
 
       const weekdayMonZero = (weekStartDay + dayIndex) % 7;
-      return { dayIndex, weekdayMonZero, totalSeconds, segments, hours };
+      const dateStr = addDaysToDateStr(weekStartDateStr, dayIndex);
+      return {
+        dayIndex,
+        weekdayMonZero,
+        dateStr,
+        totalSeconds,
+        segments,
+        hours,
+      };
     });
-
-    const maxSeconds = days.reduce(
-      (max, d) => (d.totalSeconds > max ? d.totalSeconds : max),
-      0,
-    );
 
     const legend = Array.from(categoryMeta.values()).sort(
       (a, b) =>
         (categoryTotals.get(b.id) ?? 0) - (categoryTotals.get(a.id) ?? 0),
     );
 
-    return { days, maxSeconds, legend };
+    return { days, legend };
   }, [rows, weekStartIso, weekEndIso, weekStartDateStr, weekStartDay]);
 
   return {
     days: result.days,
-    maxSeconds: result.maxSeconds,
     legend: result.legend,
     isLoading,
   };
@@ -245,6 +247,13 @@ function getNextHourBoundaryMs(ms: number, tz: string): number {
     Number(parts.find((p) => p.type === t)?.value ?? 0);
   const msIntoHour = get("minute") * 60_000 + get("second") * 1000;
   return ms + (3_600_000 - msIntoHour);
+}
+
+/** Add N days to a YYYY-MM-DD (noon-anchored to avoid DST). */
+function addDaysToDateStr(dateStr: string, days: number): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const ms = Date.UTC(y, m - 1, d, 12) + days * 24 * 60 * 60 * 1000;
+  return new Date(ms).toISOString().slice(0, 10);
 }
 
 /** Days between two YYYY-MM-DD strings (noon-anchored to avoid DST). */
