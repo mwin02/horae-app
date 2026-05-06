@@ -128,6 +128,7 @@ export function ActivityBreakdown({
                   <CategoryIconSwatch
                     icon={activity.activityIcon}
                     color={activity.color}
+                    tintColor={categoryColor}
                   />
                   <Text style={styles.legendName} numberOfLines={1}>
                     {activity.activityName}
