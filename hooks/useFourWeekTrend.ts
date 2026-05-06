@@ -16,6 +16,7 @@ export interface TrendCategory {
   id: string;
   name: string;
   color: string;
+  icon: string | null;
 }
 
 export interface TrendBucket {
@@ -177,6 +178,7 @@ export function useFourWeekTrend(
             id: catKey,
             name: row.category_name,
             color: row.category_color,
+            icon: row.category_icon,
           },
           perBucket: Array(buckets.length).fill(0),
           total: 0,

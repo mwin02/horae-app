@@ -1,3 +1,4 @@
+import { CategoryIcon } from "@/components/common/category-icon";
 import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import {
   useFourWeekTrend,
@@ -137,8 +138,10 @@ function TrendRow({
     <View style={[styles.row, showDivider && styles.rowDivider]}>
       <View style={styles.labelCol}>
         <View style={styles.nameRow}>
-          <View
-            style={[styles.dot, { backgroundColor: category.color }]}
+          <CategoryIcon
+            icon={category.icon}
+            size={14}
+            color={category.color}
           />
           <Text style={styles.nameText} numberOfLines={1}>
             {category.name}
@@ -306,11 +309,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     marginBottom: 2,
-  },
-  dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
   },
   nameText: {
     fontFamily: FONTS.jakartaSemiBold,

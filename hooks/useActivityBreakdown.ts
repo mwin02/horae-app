@@ -15,6 +15,8 @@ import { useUserPreferences } from './useUserPreferences';
 export interface ActivitySlice {
   activityId: string;
   activityName: string;
+  /** Resolved activity icon (override or category fallback); null = no icon. */
+  activityIcon: string | null;
   totalSeconds: number;
   totalMinutes: number;
   percentage: number;
@@ -122,6 +124,7 @@ export function useActivityBreakdown(
       return {
         activityId: row.activity_id,
         activityName: row.activity_name,
+        activityIcon: row.activity_icon,
         totalSeconds: row.total_seconds,
         totalMinutes: Math.round(row.total_seconds / 60),
         percentage: totalSeconds > 0
