@@ -16,6 +16,7 @@ export interface WeekOverWeekRow {
   categoryId: string;
   categoryName: string;
   categoryColor: string;
+  categoryIcon: string | null;
   thisWeekSeconds: number;
   lastWeekSeconds: number;
   /** thisWeek - lastWeek (seconds). Positive = increase. */
@@ -114,6 +115,7 @@ export function useWeekOverWeekDelta(
       {
         name: string;
         color: string;
+        icon: string | null;
         thisSeconds: number;
         lastSeconds: number;
       }
@@ -123,6 +125,7 @@ export function useWeekOverWeekDelta(
       byId.set(row.category_id, {
         name: row.category_name,
         color: row.category_color,
+        icon: row.category_icon,
         thisSeconds: row.total_seconds,
         lastSeconds: 0,
       });
@@ -136,6 +139,7 @@ export function useWeekOverWeekDelta(
         byId.set(row.category_id, {
           name: row.category_name,
           color: row.category_color,
+          icon: row.category_icon,
           thisSeconds: 0,
           lastSeconds: row.total_seconds,
         });
@@ -147,6 +151,7 @@ export function useWeekOverWeekDelta(
         categoryId,
         categoryName: v.name,
         categoryColor: v.color,
+        categoryIcon: v.icon,
         thisWeekSeconds: v.thisSeconds,
         lastWeekSeconds: v.lastSeconds,
         deltaSeconds: v.thisSeconds - v.lastSeconds,

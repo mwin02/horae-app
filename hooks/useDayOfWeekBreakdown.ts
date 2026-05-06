@@ -13,6 +13,7 @@ export interface DayOfWeekCategory {
   id: string;
   name: string;
   color: string;
+  icon: string | null;
 }
 
 export interface DayOfWeekSegment {
@@ -111,6 +112,7 @@ export function useDayOfWeekBreakdown(
         id: catKey,
         name: row.category_name,
         color: row.category_color,
+        icon: row.category_icon,
       });
 
       // Walk day by day in the entry's own timezone, splitting at local

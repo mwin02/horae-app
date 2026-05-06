@@ -7,6 +7,8 @@ import { getMonthRange } from "./useInsightsData";
 export interface TopActivity {
   activityId: string;
   activityName: string;
+  /** Resolved activity icon (override or category fallback); null = no icon. */
+  activityIcon: string | null;
   categoryId: string;
   categoryName: string;
   categoryColor: string;
@@ -49,6 +51,7 @@ export function useTopActivities(
     const sliced = rows.slice(0, limit).map<TopActivity>((row) => ({
       activityId: row.activity_id,
       activityName: row.activity_name,
+      activityIcon: row.activity_icon,
       categoryId: row.category_id,
       categoryName: row.category_name,
       categoryColor: row.category_color,

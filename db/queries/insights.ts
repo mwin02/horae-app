@@ -74,6 +74,7 @@ export const INSIGHTS_INTERVALS_QUERY = `
 export interface InsightsActivityRow {
   activity_id: string;
   activity_name: string;
+  activity_icon: string | null;
   total_seconds: number;
 }
 
@@ -87,6 +88,7 @@ export const INSIGHTS_ACTIVITY_QUERY = `
   SELECT
     a.id              AS activity_id,
     a.name            AS activity_name,
+    COALESCE(a.icon, c.icon) AS activity_icon,
     COALESCE(SUM(
       MAX(0, CAST(
         (MIN(julianday(?), julianday(COALESCE(te.ended_at, 'now')))
@@ -94,6 +96,7 @@ export const INSIGHTS_ACTIVITY_QUERY = `
       ))
     ), 0) AS total_seconds
   FROM activities a
+  JOIN categories c ON c.id = a.category_id
   LEFT JOIN time_entries te ON te.activity_id = a.id
     AND te.deleted_at IS NULL
     AND te.started_at <= ?
@@ -112,6 +115,7 @@ export const INSIGHTS_ACTIVITY_QUERY = `
 export interface TopActivityRow {
   activity_id: string;
   activity_name: string;
+  activity_icon: string | null;
   category_id: string;
   category_name: string;
   category_color: string;
@@ -129,6 +133,7 @@ export const TOP_ACTIVITIES_QUERY = `
   SELECT
     a.id              AS activity_id,
     a.name            AS activity_name,
+    COALESCE(a.icon, c.icon) AS activity_icon,
     c.id              AS category_id,
     c.name            AS category_name,
     c.color           AS category_color,

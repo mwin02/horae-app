@@ -11,6 +11,7 @@ export interface RhythmCategory {
   id: string;
   name: string;
   color: string;
+  icon: string | null;
 }
 
 export interface RhythmHour {
@@ -78,6 +79,7 @@ export function useDayRhythm(selectedDate: string): UseDayRhythmResult {
         id: catId,
         name: row.category_name,
         color: row.category_color,
+        icon: row.category_icon,
       });
 
       // Walk each hour in the entry's local timezone. Use the entry's own

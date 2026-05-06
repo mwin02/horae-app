@@ -1,3 +1,4 @@
+import { CategoryIcon } from "@/components/common/category-icon";
 import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import {
   useWeekOverWeekDelta,
@@ -153,7 +154,11 @@ function DeltaRow({ row, showDivider }: DeltaRowProps): React.ReactElement {
   return (
     <View style={[styles.row, showDivider && styles.rowDivider]}>
       <View style={styles.labelCol}>
-        <View style={[styles.dot, { backgroundColor: row.categoryColor }]} />
+        <CategoryIcon
+          icon={row.categoryIcon}
+          size={14}
+          color={row.categoryColor}
+        />
         <Text style={styles.nameText} numberOfLines={1}>
           {row.categoryName}
         </Text>
@@ -301,11 +306,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     minWidth: 0,
-  },
-  dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
   },
   nameText: {
     fontFamily: FONTS.jakartaSemiBold,

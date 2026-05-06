@@ -1,3 +1,4 @@
+import { CategoryIcon } from '@/components/common/category-icon';
 import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from '@/constants/theme';
 import { useDayRhythm } from '@/hooks/useDayRhythm';
 import React from 'react';
@@ -66,9 +67,7 @@ export function DayRhythmStrip({
         <View style={styles.legend}>
           {legend.map((cat) => (
             <View key={cat.id} style={styles.legendItem}>
-              <View
-                style={[styles.legendDot, { backgroundColor: cat.color }]}
-              />
+              <CategoryIcon icon={cat.icon} size={14} color={cat.color} />
               <Text style={styles.legendText}>{cat.name}</Text>
             </View>
           ))}
@@ -128,11 +127,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.xs,
-  },
-  legendDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
   },
   legendText: {
     ...TYPOGRAPHY.bodySmall,
