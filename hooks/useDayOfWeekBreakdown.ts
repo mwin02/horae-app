@@ -45,8 +45,6 @@ export interface DayOfWeekBucket {
 export interface UseDayOfWeekBreakdownResult {
   /** 7 buckets, Mon..Sun in order */
   days: DayOfWeekBucket[];
-  /** Tallest day's total seconds — for normalizing bar heights */
-  maxSeconds: number;
   /** Unique categories that appear in the week, ordered by total seconds desc */
   legend: DayOfWeekCategory[];
   isLoading: boolean;
@@ -203,22 +201,16 @@ export function useDayOfWeekBreakdown(
       };
     });
 
-    const maxSeconds = days.reduce(
-      (max, d) => (d.totalSeconds > max ? d.totalSeconds : max),
-      0,
-    );
-
     const legend = Array.from(categoryMeta.values()).sort(
       (a, b) =>
         (categoryTotals.get(b.id) ?? 0) - (categoryTotals.get(a.id) ?? 0),
     );
 
-    return { days, maxSeconds, legend };
+    return { days, legend };
   }, [rows, weekStartIso, weekEndIso, weekStartDateStr, weekStartDay]);
 
   return {
     days: result.days,
-    maxSeconds: result.maxSeconds,
     legend: result.legend,
     isLoading,
   };

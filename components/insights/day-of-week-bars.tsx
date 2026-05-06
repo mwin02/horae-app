@@ -4,28 +4,26 @@ import {
   useDayOfWeekBreakdown,
   type DayOfWeekBucket,
 } from "@/hooks/useDayOfWeekBreakdown";
+import { getCurrentTimezone, getTodayDate } from "@/lib/timezone";
 import { useUIStore } from "@/store/uiStore";
 import { useRouter } from "expo-router";
-import React, { useCallback, useState } from "react";
+import React, { useCallback } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 interface DayOfWeekBarsProps {
   weekDate: string; // YYYY-MM-DD — any day in the target week
 }
 
-type Mode = "bars" | "timeline";
-
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const BAR_HEIGHT = 140;
+const TIMELINE_HEIGHT = 140;
 
 export function DayOfWeekBars({
   weekDate,
 }: DayOfWeekBarsProps): React.ReactElement | null {
-  const { days, maxSeconds, legend, isLoading } =
-    useDayOfWeekBreakdown(weekDate);
-  const [mode, setMode] = useState<Mode>("timeline");
+  const { days, legend, isLoading } = useDayOfWeekBreakdown(weekDate);
   const router = useRouter();
   const setSelectedDate = useUIStore((s) => s.setSelectedDate);
+  const today = getTodayDate(getCurrentTimezone());
 
   const handleDayPress = useCallback(
     (dateStr: string) => {
@@ -42,31 +40,32 @@ export function DayOfWeekBars({
       <View style={styles.header}>
         <View style={styles.titleBlock}>
           <Text style={styles.sectionLabel}>DAY-OF-WEEK PATTERN</Text>
-          <Text style={styles.subtitle}>
-            {maxSeconds < 0 && "No tracked time"}
-          </Text>
         </View>
-
-        <ModeToggle mode={mode} onChange={setMode} />
       </View>
 
       <View style={styles.barsRow}>
-        {days.map((day) => (
-          <Pressable
-            key={day.dayIndex}
-            onPress={() => handleDayPress(day.dateStr)}
-            style={({ pressed }) => [
-              styles.dayPressable,
-              pressed && styles.dayPressed,
-            ]}
-          >
-            {mode === "bars" ? (
-              <BarsColumn day={day} maxSeconds={maxSeconds} />
-            ) : (
+        {days.map((day) => {
+          const isFuture = day.dateStr > today;
+          if (isFuture) {
+            return (
+              <View key={day.dayIndex} style={styles.dayPressable}>
+                <TimelineColumn day={day} dimmed />
+              </View>
+            );
+          }
+          return (
+            <Pressable
+              key={day.dayIndex}
+              onPress={() => handleDayPress(day.dateStr)}
+              style={({ pressed }) => [
+                styles.dayPressable,
+                pressed && styles.dayPressed,
+              ]}
+            >
               <TimelineColumn day={day} />
-            )}
-          </Pressable>
-        ))}
+            </Pressable>
+          );
+        })}
       </View>
 
       {legend.length > 0 && (
@@ -85,83 +84,15 @@ export function DayOfWeekBars({
 
 // ──────────────────────────────────────────────
 
-function ModeToggle({
-  mode,
-  onChange,
-}: {
-  mode: Mode;
-  onChange: (m: Mode) => void;
-}): React.ReactElement {
-  return (
-    <View style={styles.modeToggle}>
-      {(["bars", "timeline"] as Mode[]).map((m) => {
-        const isActive = m === mode;
-        return (
-          <Pressable
-            key={m}
-            onPress={() => onChange(m)}
-            style={({ pressed }) => [
-              styles.modePill,
-              isActive && styles.modePillActive,
-              pressed && !isActive && styles.modePillPressed,
-            ]}
-          >
-            <Text
-              style={[
-                styles.modePillText,
-                isActive && styles.modePillTextActive,
-              ]}
-            >
-              {m === "bars" ? "Bars" : "Timeline"}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
-
-// ──────────────────────────────────────────────
-
-function BarsColumn({
+function TimelineColumn({
   day,
-  maxSeconds,
+  dimmed = false,
 }: {
   day: DayOfWeekBucket;
-  maxSeconds: number;
+  dimmed?: boolean;
 }): React.ReactElement {
-  const heightFraction = maxSeconds > 0 ? day.totalSeconds / maxSeconds : 0;
-  const barHeight = heightFraction * BAR_HEIGHT;
-
   return (
-    <View style={styles.barColumn}>
-      <View style={styles.barTrack}>
-        <View style={[styles.bar, { height: barHeight }]}>
-          {day.segments.map((seg, idx) => {
-            const segFraction =
-              day.totalSeconds > 0 ? seg.seconds / day.totalSeconds : 0;
-            return (
-              <View
-                key={`${seg.category.id}-${idx}`}
-                style={{
-                  height: `${segFraction * 100}%`,
-                  backgroundColor: seg.category.color,
-                }}
-              />
-            );
-          })}
-        </View>
-      </View>
-      <Text style={styles.dayLabel}>{DAY_LABELS[day.weekdayMonZero]}</Text>
-    </View>
-  );
-}
-
-// ──────────────────────────────────────────────
-
-function TimelineColumn({ day }: { day: DayOfWeekBucket }): React.ReactElement {
-  return (
-    <View style={styles.barColumn}>
+    <View style={[styles.barColumn, dimmed && styles.barColumnDimmed]}>
       <View style={styles.timelineTrack}>
         {day.hours.map((h) => {
           const color = h.dominant?.color ?? "transparent";
@@ -205,36 +136,6 @@ const styles = StyleSheet.create({
     color: COLORS.onSurfaceVariant,
     marginBottom: SPACING.xs,
   },
-  subtitle: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
-  },
-  modeToggle: {
-    flexDirection: "row",
-    backgroundColor: COLORS.surfaceContainer,
-    borderRadius: RADIUS.full,
-    padding: 3,
-  },
-  modePill: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: 6,
-    borderRadius: RADIUS.full,
-  },
-  modePillActive: {
-    backgroundColor: COLORS.surfaceContainerLowest,
-  },
-  modePillPressed: {
-    opacity: 0.6,
-  },
-  modePillText: {
-    fontFamily: FONTS.jakartaSemiBold,
-    fontSize: 12,
-    lineHeight: 16,
-    color: COLORS.onSurfaceVariant,
-  },
-  modePillTextActive: {
-    color: COLORS.primary,
-  },
   barsRow: {
     flexDirection: "row",
     alignItems: "flex-end",
@@ -245,28 +146,18 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
   },
+  barColumnDimmed: {
+    opacity: 0.35,
+  },
   dayPressable: {
     flex: 1,
   },
   dayPressed: {
     opacity: 0.6,
   },
-  barTrack: {
-    width: "100%",
-    height: BAR_HEIGHT,
-    justifyContent: "flex-end",
-    backgroundColor: COLORS.surfaceContainer,
-    borderRadius: RADIUS.sm,
-    overflow: "hidden",
-  },
-  bar: {
-    width: "100%",
-    flexDirection: "column-reverse",
-    overflow: "hidden",
-  },
   timelineTrack: {
     width: "100%",
-    height: BAR_HEIGHT,
+    height: TIMELINE_HEIGHT,
     flexDirection: "column",
     backgroundColor: COLORS.surfaceContainer,
     borderRadius: RADIUS.sm,
