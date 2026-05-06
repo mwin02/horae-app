@@ -58,6 +58,22 @@ export function CustomizableCardList({
   const order = preferences.orders[period];
   const hidden = preferences.hidden[period];
 
+  // Focus mode: tapping a card centers it and dims the rest. Tapping again
+  // (or tapping any other card) exits. Disabled while editing cards.
+  const [focusedId, setFocusedId] = useState<InsightCardId | null>(null);
+  type ScrollableList = {
+    scrollToIndex: (params: {
+      index: number;
+      viewPosition?: number;
+      animated?: boolean;
+    }) => void;
+  };
+  const listRef = useRef<ScrollableList | null>(null);
+
+  useEffect(() => {
+    if (editMode && focusedId !== null) setFocusedId(null);
+  }, [editMode, focusedId]);
+
   // Local mirror of the persisted order. Reorder updates this synchronously
   // so the list's `data` prop matches where the user dropped the card; the
   // PowerSync write happens in the background. Without this, the dropped
@@ -134,6 +150,28 @@ export function CustomizableCardList({
     void restoreDefaultsForPeriod(period);
   }, [period]);
 
+  const handleCardPress = useCallback(
+    (id: InsightCardId) => {
+      if (editMode) return;
+      if (focusedId === null) {
+        setFocusedId(id);
+        const index = visibleCards.findIndex((c) => c.id === id);
+        if (index >= 0) {
+          requestAnimationFrame(() => {
+            listRef.current?.scrollToIndex({
+              index,
+              viewPosition: 0.5,
+              animated: true,
+            });
+          });
+        }
+      } else {
+        setFocusedId(null);
+      }
+    },
+    [editMode, focusedId, visibleCards],
+  );
+
   const renderItem = useCallback(
     ({ item, drag, isActive }: RenderItemParams<CardEntry>) => (
       <CardCell
@@ -143,9 +181,11 @@ export function CustomizableCardList({
         drag={drag}
         onLongPressEnter={handleEnterEditMode}
         onHide={handleHide}
+        focusedId={focusedId}
+        onPress={handleCardPress}
       />
     ),
-    [editMode, handleEnterEditMode, handleHide],
+    [editMode, focusedId, handleCardPress, handleEnterEditMode, handleHide],
   );
 
   const keyExtractor = useCallback((item: CardEntry) => item.id, []);
@@ -234,6 +274,7 @@ export function CustomizableCardList({
         </View>
       ) : null}
       <DraggableFlatList
+        ref={listRef as unknown as React.RefObject<never>}
         data={visibleCards}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
@@ -246,6 +287,7 @@ export function CustomizableCardList({
         showsVerticalScrollIndicator={false}
         activationDistance={10}
         containerStyle={styles.listContainer}
+        scrollEnabled={focusedId === null}
       />
     </View>
   );
@@ -262,6 +304,8 @@ interface CardCellProps {
   drag: () => void;
   onLongPressEnter: () => void;
   onHide: (id: InsightCardId) => void;
+  focusedId: InsightCardId | null;
+  onPress: (id: InsightCardId) => void;
 }
 
 function CardCell({
@@ -271,22 +315,40 @@ function CardCell({
   drag,
   onLongPressEnter,
   onHide,
+  focusedId,
+  onPress,
 }: CardCellProps): React.ReactElement {
+  const isFocused = focusedId === card.id;
+  const isDimmed = focusedId !== null && !isFocused;
+
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: withTiming(isActive ? 1.03 : 1, { duration: 140 }) }],
-    shadowOpacity: withTiming(isActive ? 0.35 : 0, { duration: 140 }),
-    shadowRadius: isActive ? 18 : 0,
-    shadowOffset: { width: 0, height: isActive ? 12 : 0 },
-    elevation: isActive ? 8 : 0,
+    transform: [
+      {
+        scale: withTiming(isActive ? 1.03 : isFocused ? 1.02 : 1, {
+          duration: 180,
+        }),
+      },
+    ],
+    opacity: withTiming(isDimmed ? 0.22 : 1, { duration: 180 }),
+    shadowOpacity: withTiming(isActive ? 0.35 : isFocused ? 0.25 : 0, {
+      duration: 180,
+    }),
+    shadowRadius: isActive ? 18 : isFocused ? 16 : 0,
+    shadowOffset: {
+      width: 0,
+      height: isActive ? 12 : isFocused ? 8 : 0,
+    },
+    elevation: isActive ? 8 : isFocused ? 6 : 0,
   }));
 
   return (
     <Pressable
-      onLongPress={editMode ? undefined : onLongPressEnter}
+      onPress={editMode ? undefined : () => onPress(card.id)}
+      onLongPress={editMode || focusedId !== null ? undefined : onLongPressEnter}
       delayLongPress={380}
     >
       <Animated.View style={[styles.cardWrapper, animatedStyle]}>
-        {card.node}
+        <View pointerEvents={isDimmed ? "none" : "auto"}>{card.node}</View>
 
         {editMode ? (
           <View pointerEvents="box-none" style={styles.overlay}>
