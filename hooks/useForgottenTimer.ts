@@ -100,6 +100,12 @@ export function useForgottenTimer(): UseForgottenTimerResult {
   const prefs = prefsData.length > 0 ? prefsData[0] : null;
   const longRunningEnabled = prefs?.long_running_enabled === 1;
 
+  // Track the previous running entry id to detect resume transitions.
+  // `undefined` = first observation (e.g. app launch with a timer already
+  // running — we DO want the modal to show in that case). `null` = there was
+  // genuinely no running timer.
+  const prevEntryIdRef = useRef<string | null | undefined>(undefined);
+
   // Resolve the threshold asynchronously whenever the running activity changes.
   useEffect(() => {
     if (row === null) {
@@ -120,11 +126,32 @@ export function useForgottenTimer(): UseForgottenTimerResult {
   }, [row?.activity_id, prefs?.threshold_override_seconds]);
 
   // Drop the snooze if the running entry changes (stop, switch).
+  // Also detect resume: a null → non-null transition where the new entry's
+  // `started_at` is already in the past means the user resumed a previously-
+  // stopped entry. They're aware it's running, so auto-snooze the modal.
+  // (A fresh `startEntry` has `started_at ≈ now`, so the age check
+  // distinguishes resume from a regular start.)
   useEffect(() => {
-    if (snoozeRef.current && row?.entry_id !== snoozeRef.current.entryId) {
+    const prev = prevEntryIdRef.current;
+    const currId = row?.entry_id ?? null;
+    if (snoozeRef.current && currId !== snoozeRef.current.entryId) {
       snoozeRef.current = null;
     }
-  }, [row?.entry_id]);
+    if (prev === null && currId !== null && row !== null) {
+      const ageSeconds = (Date.now() - new Date(row.started_at).getTime()) / 1000;
+      if (ageSeconds > 5) {
+        const snoozedAt = new Date();
+        const snoozeSeconds = thresholdSeconds ?? FALLBACK_SNOOZE_SECONDS;
+        snoozeRef.current = {
+          entryId: currId,
+          snoozedAt,
+          snoozeUntil: new Date(snoozedAt.getTime() + snoozeSeconds * 1000),
+        };
+        setSnoozeTick((t) => t + 1);
+      }
+    }
+    prevEntryIdRef.current = currId;
+  }, [row?.entry_id, row?.started_at, thresholdSeconds]);
 
   // When a snooze is active, schedule a wake-up at expiry to re-evaluate.
   useEffect(() => {
