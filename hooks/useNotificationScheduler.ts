@@ -480,6 +480,11 @@ async function scheduleLongRunningForEntry(
   const threshold = await resolveLongRunningThreshold(row.activity_id);
   const startedAt = new Date(row.started_at).getTime();
   const rawFireAt = new Date(startedAt + threshold * 1000);
+  // Skip if the threshold has already elapsed — e.g. resuming a stopped entry
+  // past its long-running point, or retroactively backdating a running entry's
+  // start. Firing immediately in those cases is noisy and the "Xh so far"
+  // copy would be measured from the original start, not from now.
+  if (rawFireAt.getTime() <= Date.now()) return;
   const fireAt = deferForQuietHours(rawFireAt, prefs);
   // firesAfterSeconds drives the body copy ("Xh Ym so far") — keep it tied to
   // the threshold rather than the deferred wall-clock time so it stays
