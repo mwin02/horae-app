@@ -16,7 +16,7 @@ import {
 import { useTimer } from "@/hooks/useTimer";
 import { useForgottenTimer } from "@/hooks/useForgottenTimer";
 import { useResumableEntry } from "@/hooks/useResumableEntry";
-import { useCategoriesWithActivities } from "@/hooks/useCategoriesWithActivities";
+import { useCategoriesByUsage } from "@/hooks/useCategoriesByUsage";
 import { useQuickStartActivities } from "@/hooks/useQuickStartActivities";
 import { useRecommendedActivity } from "@/hooks/useRecommendedActivity";
 import { useTodayClockArcs } from "@/hooks/useTodayClockArcs";
@@ -43,7 +43,7 @@ export default function HomeScreen(): React.ReactElement {
   } = useTimer();
   const resumableEntry = useResumableEntry();
   const { categories, isLoading: categoriesLoading } =
-    useCategoriesWithActivities();
+    useCategoriesByUsage();
   const { activities: quickStartActivities } = useQuickStartActivities();
   const { recommendations } = useRecommendedActivity(
     runningEntry?.activityId ?? null,
