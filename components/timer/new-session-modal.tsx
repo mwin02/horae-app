@@ -1,4 +1,5 @@
 import { CategoryIcon } from "@/components/common/category-icon";
+import { CategoryIconSwatch } from "@/components/insights/category-icon-swatch";
 import { GradientButton } from "@/components/common/gradient-button";
 import { TagChip } from "@/components/common/tag-chip";
 import { TagPicker } from "@/components/common/tag-picker";
@@ -90,12 +91,6 @@ export function NewSessionModal({
     return allActivities;
   }, [categories, selectedCategoryId, searchQuery]);
 
-  // Build rows of 2 for the horizontal scrolling grid
-  const categoryRows: CategoryWithActivities[][] = [];
-  for (let i = 0; i < categories.length; i += 2) {
-    categoryRows.push(categories.slice(i, i + 2));
-  }
-
   const renderActivityItem = useCallback(
     ({ item }: { item: ActivityItem }): React.ReactElement => {
       const isSelected = item.id === selectedActivityId;
@@ -104,22 +99,23 @@ export function NewSessionModal({
           style={[styles.activityRow, isSelected && styles.activityRowSelected]}
           onPress={() => setSelectedActivityId(item.id)}
         >
-          <View
-            style={[
-              styles.activityDot,
-              { backgroundColor: item.categoryColor },
-            ]}
+          <CategoryIconSwatch
+            icon={item.icon}
+            color={item.categoryColor}
+            size={28}
+            iconSize={16}
           />
-          <View style={styles.activityInfo}>
-            <Text style={styles.activityName}>{item.name}</Text>
-            <Text
-              style={[styles.activityCategory, { color: item.categoryColor }]}
-            >
-              {item.categoryName}
-            </Text>
-          </View>
+          <Text style={styles.activityName} numberOfLines={1}>
+            {item.name}
+          </Text>
+          <Text
+            style={[styles.activityCategory, { color: item.categoryColor }]}
+            numberOfLines={1}
+          >
+            {item.categoryName}
+          </Text>
           {isSelected && (
-            <Feather name="check-circle" size={20} color={COLORS.primary} />
+            <Feather name="check-circle" size={18} color={COLORS.primary} />
           )}
         </Pressable>
       );
@@ -143,12 +139,8 @@ export function NewSessionModal({
           {/* Handle bar */}
           <View style={styles.handleBar} />
 
-          {/* Header */}
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.headerTitle}>Start Activity</Text>
-              <Text style={styles.headerSubtitle}>Ready to focus?</Text>
-            </View>
+          {/* Close */}
+          <View style={styles.closeRow}>
             <Pressable onPress={handleClose} style={styles.closeButton}>
               <Feather name="x" size={22} color={COLORS.onSurface} />
             </Pressable>
@@ -167,56 +159,51 @@ export function NewSessionModal({
             />
           </View>
 
-          {/* Category grid — horizontal scroll, 2 rows */}
-          <Text style={styles.sectionLabel}>Select Category</Text>
+          {/* Category grid — horizontal scroll, single row */}
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.categoryScrollContent}
             style={styles.categoryScroll}
           >
-            {categoryRows.map((row, rowIndex) => (
-              <View key={rowIndex} style={styles.categoryColumn}>
-                {row.map((category) => {
-                  const isSelected = category.id === selectedCategoryId;
-                  return (
-                    <Pressable
-                      key={category.id}
-                      style={[
-                        styles.categoryCard,
-                        {
-                          backgroundColor: isSelected
-                            ? category.color + "26"
-                            : category.color + "12",
-                        },
-                      ]}
-                      onPress={() => handleCategoryPress(category.id)}
-                    >
-                      <CategoryIcon
-                        icon={category.icon ?? "circle"}
-                        size={22}
-                        color={category.color}
-                      />
-                      <Text
-                        style={[
-                          styles.categoryCardName,
-                          { color: category.color },
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {category.name}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ))}
+            {categories.map((category) => {
+              const isSelected = category.id === selectedCategoryId;
+              return (
+                <Pressable
+                  key={category.id}
+                  style={[
+                    styles.categoryCard,
+                    {
+                      backgroundColor: isSelected
+                        ? category.color + "26"
+                        : category.color + "12",
+                    },
+                  ]}
+                  onPress={() => handleCategoryPress(category.id)}
+                >
+                  <CategoryIcon
+                    icon={category.icon ?? "circle"}
+                    size={22}
+                    color={category.color}
+                  />
+                  <Text
+                    style={[
+                      styles.categoryCardName,
+                      { color: category.color },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {category.name}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </ScrollView>
 
           {/* Activities list */}
           <View style={styles.activitiesHeader}>
             <Text style={styles.sectionLabel}>
-              {selectedCategoryId ? "Activities" : "Recent Activities"}
+              {selectedCategoryId ? "Activities" : "Top Activities"}
             </Text>
             {selectedCategoryId && (
               <Pressable onPress={() => setSelectedCategoryId(null)}>
@@ -303,20 +290,10 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     marginBottom: SPACING.lg,
   },
-  header: {
+  closeRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: SPACING["2xl"],
-  },
-  headerTitle: {
-    ...TYPOGRAPHY.headingXl,
-    color: COLORS.onSurface,
-  },
-  headerSubtitle: {
-    ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
-    marginTop: SPACING.xs,
+    justifyContent: "flex-end",
+    marginBottom: SPACING.lg,
   },
   closeButton: {
     padding: SPACING.sm,
@@ -349,9 +326,6 @@ const styles = StyleSheet.create({
     marginBottom: SPACING["2xl"],
   },
   categoryScrollContent: {
-    gap: SPACING.md,
-  },
-  categoryColumn: {
     gap: SPACING.md,
   },
   categoryCard: {
@@ -398,27 +372,21 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
     backgroundColor: COLORS.surfaceContainerLow,
     borderRadius: RADIUS.lg,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
   },
   activityRowSelected: {
     backgroundColor: COLORS.surfaceContainerHigh,
   },
-  activityDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  activityInfo: {
-    flex: 1,
-  },
   activityName: {
+    flex: 6,
     ...TYPOGRAPHY.titleMd,
     color: COLORS.onSurface,
   },
   activityCategory: {
+    flex: 4,
     ...TYPOGRAPHY.bodySmall,
-    marginTop: 2,
+    textAlign: "right",
   },
   tagsRow: {
     flexDirection: "row",
