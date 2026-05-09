@@ -131,6 +131,7 @@ export default function SettingsScreen(): React.ReactElement {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* Account section hidden until cloud sync ships. Keep auth code in place for the future update.
         <Text style={styles.sectionLabel}>Account</Text>
         {user ? (
           <SettingRow
@@ -153,6 +154,7 @@ export default function SettingsScreen(): React.ReactElement {
             }
           />
         )}
+        */}
 
         <Text style={styles.sectionLabel}>Preferences</Text>
         <SettingRow
