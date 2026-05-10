@@ -211,19 +211,3 @@ export async function deleteEntry(entryId: string): Promise<void> {
   );
 }
 
-/** Get time entries for a specific day (in local timezone date string 'YYYY-MM-DD') */
-export async function getEntriesForDay(date: string): Promise<TimeEntryRecord[]> {
-  // Get entries that overlap with the given day
-  // An entry overlaps if it started before end-of-day AND ended after start-of-day (or is still running)
-  const startOfDay = `${date}T00:00:00.000Z`;
-  const endOfDay = `${date}T23:59:59.999Z`;
-
-  return db.getAll<TimeEntryRecord>(
-    `SELECT * FROM time_entries
-     WHERE deleted_at IS NULL
-       AND started_at <= ?
-       AND (ended_at IS NULL OR ended_at >= ?)
-     ORDER BY started_at`,
-    [endOfDay, startOfDay]
-  );
-}

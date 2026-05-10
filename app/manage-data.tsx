@@ -89,8 +89,8 @@ export default function ManageDataScreen(): React.ReactElement {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Unknown error";
+      console.error("[manage-data] delete failed:", error);
       Alert.alert("Delete failed", message);
-      throw error;
     }
   }, [deleteScope]);
 
