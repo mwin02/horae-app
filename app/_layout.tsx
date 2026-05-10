@@ -20,9 +20,12 @@ import {
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
+
+import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 
 import { useColorScheme } from "@/components/useColorScheme";
 import {
@@ -63,7 +66,9 @@ export default function RootLayout() {
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
   });
-  const [dbReady, setDbReady] = useState(false);
+  const [dbStatus, setDbStatus] = useState<"loading" | "ready" | "error">(
+    "loading",
+  );
 
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
@@ -81,10 +86,10 @@ export default function RootLayout() {
         await seedNotificationPreferencesIfNeeded();
         await seedUserPreferencesIfNeeded();
         console.log("[Horae] Seed complete");
+        setDbStatus("ready");
       } catch (e) {
         console.error("[Horae] DB init failed:", e);
-      } finally {
-        setDbReady(true);
+        setDbStatus("error");
       }
     }
     console.log("[Horae] useEffect fired");
@@ -92,17 +97,53 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (loaded && dbReady) {
+    if (loaded && dbStatus !== "loading") {
       SplashScreen.hideAsync();
     }
-  }, [loaded, dbReady]);
+  }, [loaded, dbStatus]);
 
-  if (!loaded || !dbReady) {
+  if (!loaded || dbStatus === "loading") {
     return null;
+  }
+
+  if (dbStatus === "error") {
+    return <DBErrorScreen />;
   }
 
   return <RootLayoutNav />;
 }
+
+function DBErrorScreen(): React.ReactElement {
+  return (
+    <View style={errorStyles.container}>
+      <Text style={errorStyles.title}>Couldn&apos;t open your data</Text>
+      <Text style={errorStyles.body}>
+        Horae ran into a problem reading from local storage. Your tracked
+        time is still saved on this device. Please force-quit the app and
+        reopen it. If this keeps happening, contact support from your last
+        working session or reinstall the app.
+      </Text>
+    </View>
+  );
+}
+
+const errorStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.surface,
+    paddingHorizontal: SPACING.xl,
+    justifyContent: "center",
+    gap: SPACING.md,
+  },
+  title: {
+    ...TYPOGRAPHY.headingXl,
+    color: COLORS.onSurface,
+  },
+  body: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.onSurfaceVariant,
+  },
+});
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();

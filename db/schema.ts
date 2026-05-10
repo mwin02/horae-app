@@ -155,6 +155,9 @@ const tags = new Table(
 // in `setEntryTags` rather than relying on a DB-level UNIQUE constraint.
 const entry_tags = new Table(
   {
+    // Server fills user_id via trigger from the parent time_entries on upload
+    // (see supabase/DESIGN.md). Local rows leave it null until sync.
+    user_id: column.text,
     entry_id: column.text,
     tag_id: column.text,
     created_at: column.text,
