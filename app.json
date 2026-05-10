@@ -17,12 +17,19 @@
       "bundleIdentifier": "com.myozawwin.horae",
       "deploymentTarget": "16.1",
       "infoPlist": {
-        "NSSupportsLiveActivities": true
+        "NSSupportsLiveActivities": true,
+        "LSApplicationQueriesSchemes": ["mailto"]
       },
       "entitlements": {
         "com.apple.security.application-groups": [
           "group.com.myozawwin.horae.shared"
         ]
+      },
+      "privacyManifests": {
+        "NSPrivacyTracking": false,
+        "NSPrivacyTrackingDomains": [],
+        "NSPrivacyCollectedDataTypes": [],
+        "NSPrivacyAccessedAPITypes": []
       }
     },
     "android": {
@@ -51,7 +58,9 @@
         }
       ],
       "expo-sharing",
-      "@bacons/apple-targets"
+      "@bacons/apple-targets",
+      "@sentry/react-native",
+      "expo-mail-composer"
     ],
     "experiments": {
       "typedRoutes": true

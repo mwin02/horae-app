@@ -12,6 +12,7 @@ import { NOTIFICATION_PREFERENCES_QUERY } from "@/db/queries";
 import type { NotificationPreferencesRecord } from "@/db/schema";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { sendFeedback } from "@/lib/feedback";
 
 const WEEK_START_LABELS: Record<number, string> = {
   0: "Mon",
@@ -112,6 +113,20 @@ export default function SettingsScreen(): React.ReactElement {
   const goToManageData = useCallback(() => {
     router.push("/manage-data");
   }, [router]);
+
+  const handleReportBug = useCallback(() => {
+    void sendFeedback("bug");
+  }, []);
+
+  const handleRequestFeature = useCallback(() => {
+    void sendFeedback("feature");
+  }, []);
+
+  const handleSentryTest = useCallback(() => {
+    throw new Error(
+      `Horae Sentry test crash @ ${new Date().toISOString()}`,
+    );
+  }, []);
 
   const notificationSummary = useMemo(
     () => buildNotificationSummary(prefs),
@@ -220,6 +235,41 @@ export default function SettingsScreen(): React.ReactElement {
             <Feather name="database" size={20} color={COLORS.primary} />
           }
         />
+
+        <Text style={styles.sectionLabel}>Help us improve</Text>
+        <SettingRow
+          title="Report a bug"
+          description="Open your mail app with app info pre-filled"
+          onPress={handleReportBug}
+          iconBackground={COLORS.surfaceContainer}
+          iconChildren={
+            <Feather name="alert-circle" size={20} color={COLORS.primary} />
+          }
+        />
+        <SettingRow
+          title="Request a feature"
+          description="Tell us what would make Horae better"
+          onPress={handleRequestFeature}
+          iconBackground={COLORS.surfaceContainer}
+          iconChildren={
+            <Feather name="message-square" size={20} color={COLORS.primary} />
+          }
+        />
+
+        {process.env.EXPO_PUBLIC_ENABLE_DEBUG === "1" ? (
+          <>
+            <Text style={styles.sectionLabel}>Debug</Text>
+            <SettingRow
+              title="Trigger Sentry test crash"
+              description="Throws a known error — verify it lands in Sentry"
+              onPress={handleSentryTest}
+              iconBackground={COLORS.surfaceContainer}
+              iconChildren={
+                <Feather name="zap" size={20} color={COLORS.error} />
+              }
+            />
+          </>
+        ) : null}
       </ScrollView>
 
       <SignOutPromptModal
