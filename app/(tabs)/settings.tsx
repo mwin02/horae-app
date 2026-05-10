@@ -12,6 +12,7 @@ import { NOTIFICATION_PREFERENCES_QUERY } from "@/db/queries";
 import type { NotificationPreferencesRecord } from "@/db/schema";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { sendFeedback } from "@/lib/feedback";
 
 const WEEK_START_LABELS: Record<number, string> = {
   0: "Mon",
@@ -112,6 +113,14 @@ export default function SettingsScreen(): React.ReactElement {
   const goToManageData = useCallback(() => {
     router.push("/manage-data");
   }, [router]);
+
+  const handleReportBug = useCallback(() => {
+    void sendFeedback("bug");
+  }, []);
+
+  const handleRequestFeature = useCallback(() => {
+    void sendFeedback("feature");
+  }, []);
 
   const notificationSummary = useMemo(
     () => buildNotificationSummary(prefs),
@@ -218,6 +227,26 @@ export default function SettingsScreen(): React.ReactElement {
           iconBackground={COLORS.surfaceContainer}
           iconChildren={
             <Feather name="database" size={20} color={COLORS.primary} />
+          }
+        />
+
+        <Text style={styles.sectionLabel}>Help us improve</Text>
+        <SettingRow
+          title="Report a bug"
+          description="Open your mail app with app info pre-filled"
+          onPress={handleReportBug}
+          iconBackground={COLORS.surfaceContainer}
+          iconChildren={
+            <Feather name="alert-circle" size={20} color={COLORS.primary} />
+          }
+        />
+        <SettingRow
+          title="Request a feature"
+          description="Tell us what would make Horae better"
+          onPress={handleRequestFeature}
+          iconBackground={COLORS.surfaceContainer}
+          iconChildren={
+            <Feather name="message-square" size={20} color={COLORS.primary} />
           }
         />
       </ScrollView>

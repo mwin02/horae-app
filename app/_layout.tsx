@@ -39,6 +39,9 @@ import { useNotificationScheduler } from "@/hooks/useNotificationScheduler";
 import { useTimerDeepLinks } from "@/hooks/useTimerDeepLinks";
 import { useWidgetSnapshot } from "@/hooks/useWidgetSnapshot";
 import { db } from "@/lib/powersync";
+import { initSentry, wrap } from "@/lib/sentry";
+
+initSentry();
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -53,7 +56,7 @@ export const unstable_settings = {
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+export default wrap(function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
     Manrope_400Regular,
@@ -111,7 +114,7 @@ export default function RootLayout() {
   }
 
   return <RootLayoutNav />;
-}
+});
 
 function DBErrorScreen(): React.ReactElement {
   return (
