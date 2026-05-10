@@ -122,6 +122,12 @@ export default function SettingsScreen(): React.ReactElement {
     void sendFeedback("feature");
   }, []);
 
+  const handleSentryTest = useCallback(() => {
+    throw new Error(
+      `Horae Sentry test crash @ ${new Date().toISOString()}`,
+    );
+  }, []);
+
   const notificationSummary = useMemo(
     () => buildNotificationSummary(prefs),
     [prefs],
@@ -249,6 +255,21 @@ export default function SettingsScreen(): React.ReactElement {
             <Feather name="message-square" size={20} color={COLORS.primary} />
           }
         />
+
+        {process.env.EXPO_PUBLIC_ENABLE_DEBUG === "1" ? (
+          <>
+            <Text style={styles.sectionLabel}>Debug</Text>
+            <SettingRow
+              title="Trigger Sentry test crash"
+              description="Throws a known error — verify it lands in Sentry"
+              onPress={handleSentryTest}
+              iconBackground={COLORS.surfaceContainer}
+              iconChildren={
+                <Feather name="zap" size={20} color={COLORS.error} />
+              }
+            />
+          </>
+        ) : null}
       </ScrollView>
 
       <SignOutPromptModal
