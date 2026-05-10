@@ -17,7 +17,8 @@
       "bundleIdentifier": "com.myozawwin.horae",
       "deploymentTarget": "16.1",
       "infoPlist": {
-        "NSSupportsLiveActivities": true
+        "NSSupportsLiveActivities": true,
+        "LSApplicationQueriesSchemes": ["mailto"]
       },
       "entitlements": {
         "com.apple.security.application-groups": [

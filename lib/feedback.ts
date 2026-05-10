@@ -50,16 +50,15 @@ export async function sendFeedback(kind: FeedbackKind): Promise<void> {
     return;
   }
 
-  // Fallback: mailto URL. Some Android devices and iOS sims without a
-  // configured Mail account land here.
+  // Fallback: mailto URL. Hits when MailComposer is unavailable, e.g. an
+  // iOS simulator with no Mail account. Skip canOpenURL — iOS lies about
+  // mailto availability when there's no configured account, and the real
+  // failure mode (no email app at all) is rare enough on actual devices
+  // that surfacing the address in an Alert is the right escape hatch.
   const url = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  const canOpen = await Linking.canOpenURL(url);
-  if (!canOpen) {
-    Alert.alert(
-      "No mail app",
-      `Email us directly at ${SUPPORT_EMAIL}.`,
-    );
-    return;
+  try {
+    await Linking.openURL(url);
+  } catch {
+    Alert.alert("No mail app", `Email us directly at ${SUPPORT_EMAIL}.`);
   }
-  await Linking.openURL(url);
 }
