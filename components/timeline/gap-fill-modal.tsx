@@ -1,9 +1,8 @@
 import { CategoryChip } from "@/components/common/category-chip";
+import { CategoryIconSwatch } from "@/components/insights/category-icon-swatch";
 import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import { createRetroactiveEntry } from "@/db/queries";
-import {
-  useCategoriesWithActivities,
-} from "@/hooks/useCategoriesWithActivities";
+import { useCategoriesByUsage } from "@/hooks/useCategoriesByUsage";
 import {
   formatDuration,
   formatTimeInTimezone,
@@ -38,7 +37,7 @@ export function GapFillModal({
   onClose,
 }: GapFillModalProps): React.ReactElement | null {
   const insets = useSafeAreaInsets();
-  const { categories } = useCategoriesWithActivities();
+  const { categories } = useCategoriesByUsage();
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [editedStart, setEditedStart] = useState<Date>(new Date());
@@ -282,7 +281,9 @@ export function GapFillModal({
             </Text>
           )}
 
-          {/* Category filter */}
+          {/* Category filter — hidden while a time picker is open so it
+              doesn't get squeezed by the picker's vertical footprint. */}
+          {activePicker === null && (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -322,8 +323,10 @@ export function GapFillModal({
               </Pressable>
             ))}
           </ScrollView>
+          )}
 
-          {/* Activity list */}
+          {/* Activity list — also hidden during picker for the same reason. */}
+          {activePicker === null && (
           <FlatList
             data={filteredActivities}
             keyExtractor={(item) => item.id}
@@ -337,29 +340,31 @@ export function GapFillModal({
                 onPress={() => handleSelectActivity(item.id)}
                 disabled={saving || !isValid}
               >
-                <View
+                <CategoryIconSwatch
+                  icon={item.icon}
+                  color={item.categoryColor}
+                  size={28}
+                  iconSize={16}
+                />
+                <Text style={styles.activityName} numberOfLines={1}>
+                  {item.name}
+                </Text>
+                <Text
                   style={[
-                    styles.activityDot,
-                    { backgroundColor: item.categoryColor },
+                    styles.activityCategory,
+                    { color: item.categoryColor },
                   ]}
-                />
-                <View style={styles.activityInfo}>
-                  <Text style={styles.activityName}>{item.name}</Text>
-                  <Text style={styles.activityCategory}>
-                    {item.categoryName}
-                  </Text>
-                </View>
-                <Feather
-                  name="plus"
-                  size={18}
-                  color={COLORS.onSurfaceVariant}
-                />
+                  numberOfLines={1}
+                >
+                  {item.categoryName}
+                </Text>
               </Pressable>
             )}
             ListEmptyComponent={
               <Text style={styles.emptyText}>No activities found</Text>
             }
           />
+          )}
         </View>
       </View>
     </Modal>
@@ -490,28 +495,24 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: SPACING.md,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.sm,
+    backgroundColor: COLORS.surfaceContainerLow,
     borderRadius: RADIUS.lg,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   activityRowPressed: {
-    backgroundColor: COLORS.surfaceContainerLow,
-  },
-  activityDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  activityInfo: {
-    flex: 1,
+    backgroundColor: COLORS.surfaceContainerHigh,
   },
   activityName: {
+    flex: 6,
     ...TYPOGRAPHY.titleMd,
     color: COLORS.onSurface,
   },
   activityCategory: {
+    flex: 4,
     ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
+    textAlign: "right",
   },
   emptyText: {
     ...TYPOGRAPHY.body,
