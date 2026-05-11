@@ -1,0 +1,30 @@
+{
+  "name": "horae-landing",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "sync:docs": "mkdir -p content && cp ../docs/privacy-policy.md content/privacy-policy.md",
+    "predev": "npm run sync:docs",
+    "prebuild": "npm run sync:docs",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "^16.2.6",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-markdown": "9.0.1",
+    "remark-gfm": "4.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.0.0-beta.4",
+    "@types/node": "22.9.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "tailwindcss": "4.0.0-beta.4",
+    "typescript": "5.6.3"
+  }
+}
