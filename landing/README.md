@@ -68,11 +68,11 @@ Search the codebase for `TODO(launch)` to find these — there are a handful:
    Routing on `usehorae.com` to forward this address to your real inbox
    before submission. Apple verifies the address renders something
    reachable on the Support URL — `mailto:` is enough.
-4. **Hero screenshot** — the hero currently shows a code-reconstructed
-   mock of the Focus tab. The plan is to swap this for a real iOS
-   screenshot at `public/hero-screenshot.png`. See the comment block at
-   the top of `components/hero/AppHeroVisual.tsx` for the swap recipe;
-   the `<LiveTimer>` overlay stays.
+4. **App screenshots** — three real iOS screenshots live in
+   `public/`: `hero-screenshot.png` (full Focus tab), `feature-timer.png`
+   (cropped Start ring) and `feature-goals.png` (cropped Actual vs Ideal
+   panel). If the in-app UI changes meaningfully before launch, retake
+   and replace these.
 
 ## Deploy (Vercel + Cloudflare)
 
