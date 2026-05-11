@@ -1,9 +1,6 @@
 import Link from 'next/link';
 import { Logo } from './Logo';
 
-// TODO(launch): set up support@usehorae.com forwarding via Cloudflare Email
-// Routing before App Store submission. The address is referenced here and on
-// /support; both will pick up the change automatically.
 const SUPPORT_EMAIL = 'support@usehorae.com';
 
 export function Footer() {

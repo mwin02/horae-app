@@ -53,26 +53,23 @@ landing/
 
 ## Outstanding launch TODOs
 
-Search the codebase for `TODO(launch)` to find these — there are a handful:
+Search the codebase for `TODO(launch)` to find the one remaining item:
 
 1. **App Store URL** — `AppStoreBadge.tsx` links to `#`. Swap in the real
    App Store URL once Apple approves the app.
-2. **App Store badge artwork** — the current SVG is a hand-built recreation
-   of Apple's badge that matches the spec but isn't Apple's exact artwork.
-   Before launch, download the official SVG from
-   <https://developer.apple.com/app-store/marketing/guidelines/>, drop it
-   into `public/app-store-badge.svg`, and swap the inline SVG in
-   `AppStoreBadge.tsx` for an `<img>`/`<Image>`.
-3. **Support email** — `support@usehorae.com` is referenced in
-   `Footer.tsx` and `app/support/page.tsx`. Set up Cloudflare Email
-   Routing on `usehorae.com` to forward this address to your real inbox
-   before submission. Apple verifies the address renders something
-   reachable on the Support URL — `mailto:` is enough.
-4. **App screenshots** — three real iOS screenshots live in
-   `public/`: `hero-screenshot.png` (full Focus tab), `feature-timer.png`
-   (cropped Start ring) and `feature-goals.png` (cropped Actual vs Ideal
-   panel). If the in-app UI changes meaningfully before launch, retake
-   and replace these.
+
+The following items were resolved during build-out and are kept here as
+a record of what's already in place:
+
+- **App Store badge artwork** — Apple's official SVG is in
+  `public/app-store-badge.svg` and rendered by `AppStoreBadge.tsx`.
+- **Support email** — `support@usehorae.com` is live (Cloudflare Email
+  Routing on `usehorae.com`). Referenced in `Footer.tsx` and
+  `app/support/page.tsx`.
+- **App screenshots** — three real iOS screenshots live in `public/`:
+  `hero-screenshot.png`, `feature-timer.jpg`, `feature-goals.jpg`. If
+  the in-app UI changes meaningfully before launch, retake and replace
+  these.
 
 ## Deploy (Vercel + Cloudflare)
 
