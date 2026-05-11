@@ -281,7 +281,9 @@ export function GapFillModal({
             </Text>
           )}
 
-          {/* Category filter */}
+          {/* Category filter — hidden while a time picker is open so it
+              doesn't get squeezed by the picker's vertical footprint. */}
+          {activePicker === null && (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -321,8 +323,10 @@ export function GapFillModal({
               </Pressable>
             ))}
           </ScrollView>
+          )}
 
-          {/* Activity list */}
+          {/* Activity list — also hidden during picker for the same reason. */}
+          {activePicker === null && (
           <FlatList
             data={filteredActivities}
             keyExtractor={(item) => item.id}
@@ -360,6 +364,7 @@ export function GapFillModal({
               <Text style={styles.emptyText}>No activities found</Text>
             }
           />
+          )}
         </View>
       </View>
     </Modal>
