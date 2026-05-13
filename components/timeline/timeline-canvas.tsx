@@ -302,17 +302,96 @@ export function TimelineCanvas({
       totalColumnsPerGroup.set(g, columnBottoms.length);
     }
 
-    // Step 4: Build final positions with drift-based push-down.
+    // Step 4a: Pre-compute bidirectional gap shrinkage.
     //
-    // `drift` accumulates the visual overflow (visualHeight - naturalHeight)
-    // of every clamped block above the current item. Each block is placed at
-    // `naturalTop + drift`, so consecutive blocks stay glued and never visually
-    // collide with a clamped predecessor.
+    // Every clamped block's overshoot (visualHeight - naturalHeight) needs to
+    // be absorbed somewhere or it cascades downstream as drift, misaligning
+    // hour labels. Each clamped block looks at its immediate before-gap and
+    // after-gap (if any), splits its overshoot proportionally to each gap's
+    // remaining capacity, and registers the demand. Gaps absorb both upstream
+    // overshoot (entry before them) and downstream overshoot (entry after
+    // them) — symmetric, so a single clamped block sitting between two gaps
+    // pulls its visual bottom up AND its visual top down equally.
     //
-    // Gaps act as the drift sink: they shrink (down to MIN_GAP_VISUAL_HEIGHT)
-    // to absorb accumulated drift, which realigns subsequent blocks back onto
-    // the time axis. This keeps hour labels honest at the cost of slightly
-    // compressed gap visuals when the stretch above them was clamp-heavy.
+    // Capacity per gap is `visualHeight - MIN_GAP_VISUAL_HEIGHT`; demand is
+    // clamped to capacity (any leak is mopped up by the residual drift logic
+    // in step 4b — that's the safety net for genuinely-isolated short
+    // entries with no adjacent gap to help them).
+    const gapCapacity = new Array<number>(filteredItems.length).fill(0);
+    const gapShrink = new Array<number>(filteredItems.length).fill(0);
+
+    for (let i = 0; i < filteredItems.length; i++) {
+      if (filteredItems[i].type === "gap") {
+        gapCapacity[i] = Math.max(
+          0,
+          natural[i].visualHeight - MIN_GAP_VISUAL_HEIGHT,
+        );
+      }
+    }
+
+    for (let i = 0; i < filteredItems.length; i++) {
+      if (filteredItems[i].type === "gap") continue;
+      const overshoot = Math.max(
+        0,
+        natural[i].visualHeight - natural[i].naturalHeight,
+      );
+      if (overshoot <= 0) continue;
+
+      const beforeIdx =
+        i > 0 && filteredItems[i - 1].type === "gap" ? i - 1 : -1;
+      const afterIdx =
+        i < filteredItems.length - 1 && filteredItems[i + 1].type === "gap"
+          ? i + 1
+          : -1;
+      const capBefore =
+        beforeIdx >= 0
+          ? Math.max(0, gapCapacity[beforeIdx] - gapShrink[beforeIdx])
+          : 0;
+      const capAfter =
+        afterIdx >= 0
+          ? Math.max(0, gapCapacity[afterIdx] - gapShrink[afterIdx])
+          : 0;
+      const totalCap = capBefore + capAfter;
+      if (totalCap <= 0) continue;
+
+      let absorbBefore = 0;
+      let absorbAfter = 0;
+      if (capBefore === 0) {
+        absorbAfter = Math.min(capAfter, overshoot);
+      } else if (capAfter === 0) {
+        absorbBefore = Math.min(capBefore, overshoot);
+      } else {
+        absorbBefore = Math.min(
+          capBefore,
+          (overshoot * capBefore) / totalCap,
+        );
+        absorbAfter = Math.min(
+          capAfter,
+          overshoot - absorbBefore,
+        );
+        // If clamping above lost pixels (rare), let the other side pick them up
+        const leftover = overshoot - absorbBefore - absorbAfter;
+        if (leftover > 0) {
+          absorbBefore = Math.min(capBefore, absorbBefore + leftover);
+        }
+      }
+      if (beforeIdx >= 0) gapShrink[beforeIdx] += absorbBefore;
+      if (afterIdx >= 0) gapShrink[afterIdx] += absorbAfter;
+    }
+
+    // Step 4b: Build final positions.
+    //
+    // `drift` tracks the cumulative vertical offset between visual top and
+    // natural (time-based) top. Clamped entries add their overshoot; gaps
+    // subtract their pre-computed shrink. With the bidirectional pre-pass
+    // above, a gap can shrink *before* its overshoot is contributed by the
+    // entry after it — driving `drift` negative briefly so that entry's
+    // visual top sits slightly above its natural top (the desired "share
+    // the pain across both sides" effect).
+    //
+    // The residual logic at gaps still soaks up any leaked drift (e.g. an
+    // isolated short entry with no adjacent gap that pushed overshoot
+    // downstream).
     const positions: {
       top: number;
       height: number;
@@ -326,16 +405,24 @@ export function TimelineCanvas({
     for (let i = 0; i < filteredItems.length; i++) {
       const { naturalHeight, visualHeight, variant } = natural[i];
       const naturalTop = natural[i].top;
-      let top = naturalTop + drift;
+      const top = naturalTop + drift;
       let height = visualHeight;
       let colIndex = 0;
       let totalCols = 1;
 
       if (filteredItems[i].type === "gap") {
-        const absorbable = Math.max(0, visualHeight - MIN_GAP_VISUAL_HEIGHT);
-        const absorbed = Math.min(drift, absorbable);
-        height = visualHeight - absorbed;
-        drift -= absorbed;
+        const preShrink = gapShrink[i];
+        height = visualHeight - preShrink;
+        drift -= preShrink;
+        // Residual: any drift still positive after the pre-pass (overshoot
+        // that had no adjacent gap to absorb it) gets soaked here, down to
+        // MIN_GAP_VISUAL_HEIGHT.
+        if (drift > 0) {
+          const residualCap = Math.max(0, height - MIN_GAP_VISUAL_HEIGHT);
+          const residualAbsorbed = Math.min(drift, residualCap);
+          height -= residualAbsorbed;
+          drift -= residualAbsorbed;
+        }
       } else {
         const g = groupIndex[i];
         totalCols = totalColumnsPerGroup.get(g) ?? 1;
