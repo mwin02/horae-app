@@ -44,6 +44,12 @@ export interface TimelineCluster {
   totalDurationSeconds: number;
   /** True when every entry in the cluster is dimmed by the active tag filter. */
   dimmed?: boolean;
+  /**
+   * Id of the entry that should dominate the cluster's rendering (longest by
+   * real duration). Set when the cluster contains a mix of long and short
+   * entries; absent for all-short clusters (which use the summary-card path).
+   */
+  dominantEntryId?: string;
 }
 
 export type TimelineItem =
@@ -70,18 +76,6 @@ export interface UseTimelineDataResult {
 
 /** Minimum gap duration (in seconds) to show as an "Untracked" block */
 const MIN_GAP_SECONDS = 5 * 60; // 5 minutes
-
-/**
- * Entries shorter than this (in seconds) are candidates for clustering.
- * Catches stretches of short entries before they accumulate visual drift
- * (each one sits at MIN_BLOCK_HEIGHT, exceeding its natural temporal span).
- * Drift-absorbing gaps in the canvas mitigate this, but clustering is still
- * the cleaner UX for runs of brief activities.
- */
-const SHORT_ENTRY_THRESHOLD_SECONDS = 30 * 60; // 30 minutes
-
-/** Minimum number of consecutive short entries to form a cluster */
-const MIN_CLUSTER_SIZE = 2;
 
 /** Default axis range when there are no entries */
 const DEFAULT_RANGE_START_HOUR = 0; // 12 AM
@@ -142,75 +136,6 @@ function localMinutesToDate(
   return new Date(
     dayStartUTC.getTime() + (localMinutes - utcMidnightAsLocalMinutes) * 60_000,
   );
-}
-
-// ──────────────────────────────────────────────
-// Clustering
-// ──────────────────────────────────────────────
-
-/**
- * Groups consecutive short entries into cluster items.
- * Gaps and long entries pass through unchanged.
- * A "short" entry is one with duration < SHORT_ENTRY_THRESHOLD_SECONDS.
- */
-function clusterShortEntries(items: TimelineItem[]): TimelineItem[] {
-  const result: TimelineItem[] = [];
-  let pendingShort: TimelineEntryData[] = [];
-
-  const flushPending = (): void => {
-    if (pendingShort.length >= MIN_CLUSTER_SIZE) {
-      const first = pendingShort[0];
-      const last = pendingShort[pendingShort.length - 1];
-      const totalDuration = pendingShort.reduce(
-        (sum, e) => sum + (e.durationSeconds ?? 0),
-        0,
-      );
-      const allDimmed = pendingShort.every((e) => e.dimmed === true);
-      result.push({
-        type: "cluster",
-        data: {
-          entries: pendingShort,
-          startedAt: first.startedAt,
-          endedAt: last.endedAt ?? last.startedAt,
-          totalDurationSeconds: totalDuration,
-          dimmed: allDimmed,
-        },
-      });
-    } else {
-      // Not enough to cluster — emit individually
-      for (const entry of pendingShort) {
-        result.push({ type: "entry", data: entry });
-      }
-    }
-    pendingShort = [];
-  };
-
-  for (const item of items) {
-    if (item.type === "entry") {
-      // Running entries always render individually so they can live-grow
-      // and stay anchored to the "now" indicator.
-      if (item.data.isRunning) {
-        flushPending();
-        result.push(item);
-        continue;
-      }
-      const duration = item.data.durationSeconds ?? 0;
-      if (duration < SHORT_ENTRY_THRESHOLD_SECONDS) {
-        pendingShort.push(item.data);
-        continue;
-      }
-      // Long entry — flush any pending short entries first
-      flushPending();
-      result.push(item);
-    } else {
-      // Gap — flush pending, then pass through
-      flushPending();
-      result.push(item);
-    }
-  }
-  flushPending();
-
-  return result;
 }
 
 // ──────────────────────────────────────────────
@@ -463,10 +388,9 @@ export function useTimelineData(
       pushGap(entries[entries.length - 1].clampedEnd, gapRangeEnd);
     }
 
-    // Cluster consecutive short entries to prevent overlap
-    const clusteredItems = clusterShortEntries(items);
-
-    return { items: clusteredItems, rangeStartMinutes, rangeEndMinutes };
+    // Clustering is performed downstream in the canvas (it needs the
+    // pixels-per-minute factor to decide which entries actually overshoot).
+    return { items, rangeStartMinutes, rangeEndMinutes };
   }, [
     rows,
     dayStart,

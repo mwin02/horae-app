@@ -15,6 +15,7 @@ import {
   View,
 } from "react-native";
 import { ACTIVE_CHIP_HEIGHT, ActiveSessionChip } from "./active-session-chip";
+import { clusterTimelineItems } from "./cluster-items";
 import { ClusterBlock } from "./cluster-block";
 import { CurrentTimeIndicator } from "./current-time-indicator";
 import { GapBlock } from "./gap-block";
@@ -119,9 +120,25 @@ export function TimelineCanvas({
   // Live-ticking "now" — single source of truth for both the current-time
   // indicator and the running entry's end position. Ticks every 1s on today.
   const [liveNow, setLiveNow] = useState(() => new Date());
-  const filteredItems = useMemo(
+  // Strip running entries — they render as a separate ActiveSessionChip and
+  // are never clustered.
+  const closedItems = useMemo(
     () => items.filter((item) => item.data.endedAt !== null),
     [items],
+  );
+  // Capacity-driven clustering: merge short entries whose overshoot can't be
+  // absorbed by neighboring gaps. The pre-pass in `resolvedPositions` then
+  // distributes any remaining overshoot bidirectionally.
+  const filteredItems = useMemo(
+    () =>
+      clusterTimelineItems(closedItems, {
+        pixelsPerMinute: PIXELS_PER_MINUTE,
+        minBlockHeight: MIN_BLOCK_HEIGHT,
+        minGapVisualHeight: MIN_GAP_VISUAL_HEIGHT,
+        chipMaxMinutes: CHIP_MAX_MINUTES,
+        chipHeight: CHIP_HEIGHT,
+      }),
+    [closedItems, PIXELS_PER_MINUTE],
   );
   useEffect(() => {
     if (!isToday) return;
