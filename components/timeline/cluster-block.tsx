@@ -5,6 +5,12 @@ import { formatDuration } from "@/lib/timezone";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { TimelineBlock } from "./timeline-block";
+
+/** Per-tail strip height in the mixed-cluster render. */
+const TAIL_HEIGHT = 22;
+/** Below this dominant-entry height, the mixed layout collapses to summary. */
+const MIN_DOMINANT_HEIGHT = 36;
 
 interface ClusterBlockProps {
   cluster: TimelineCluster;
@@ -23,6 +29,105 @@ export function ClusterBlock({
   onToggle,
   onEntryPress,
 }: ClusterBlockProps): React.ReactElement {
+  // Mixed cluster (long dominant + short tail[s]) — renders the dominant
+  // entry as a normal block with thin tail strips above/below for the short
+  // attachments. Falls back to the all-short summary path if there isn't
+  // enough vertical room.
+  const dominantIdx = cluster.dominantEntryId
+    ? cluster.entries.findIndex((e) => e.id === cluster.dominantEntryId)
+    : -1;
+  if (!expanded && dominantIdx >= 0 && !compact) {
+    const tailsBefore = cluster.entries.slice(0, dominantIdx);
+    const dominant = cluster.entries[dominantIdx];
+    const tailsAfter = cluster.entries.slice(dominantIdx + 1);
+    const totalTails = tailsBefore.length + tailsAfter.length;
+    const dominantHeight = height - totalTails * TAIL_HEIGHT;
+    if (dominantHeight >= MIN_DOMINANT_HEIGHT) {
+      return (
+        <View style={{ height }}>
+          {tailsBefore.map((entry) => (
+            <Pressable
+              key={entry.id}
+              onPress={() => onEntryPress(entry.id)}
+              style={({ pressed }) => [
+                styles.tailStrip,
+                {
+                  height: TAIL_HEIGHT,
+                  backgroundColor: entry.categoryColor + "26",
+                },
+                pressed && styles.pressed,
+              ]}
+            >
+              <View
+                style={[
+                  styles.tailDot,
+                  { backgroundColor: entry.categoryColor },
+                ]}
+              />
+              <Text
+                style={[styles.tailName, { color: entry.categoryColor }]}
+                numberOfLines={1}
+              >
+                {entry.activityName}
+              </Text>
+              <Text style={styles.tailDuration}>
+                {entry.durationSeconds != null
+                  ? formatDuration(entry.durationSeconds)
+                  : "—"}
+              </Text>
+            </Pressable>
+          ))}
+          <TimelineBlock
+            activityName={dominant.activityName}
+            categoryName={dominant.categoryName}
+            categoryColor={dominant.categoryColor}
+            categoryIcon={dominant.categoryIcon}
+            durationSeconds={dominant.durationSeconds}
+            note={dominant.note}
+            isRunning={dominant.isRunning}
+            continuesBefore={dominant.continuesBefore}
+            continuesAfter={dominant.continuesAfter}
+            height={dominantHeight}
+            variant="normal"
+            onPress={() => onEntryPress(dominant.id)}
+          />
+          {tailsAfter.map((entry) => (
+            <Pressable
+              key={entry.id}
+              onPress={() => onEntryPress(entry.id)}
+              style={({ pressed }) => [
+                styles.tailStrip,
+                {
+                  height: TAIL_HEIGHT,
+                  backgroundColor: entry.categoryColor + "26",
+                },
+                pressed && styles.pressed,
+              ]}
+            >
+              <View
+                style={[
+                  styles.tailDot,
+                  { backgroundColor: entry.categoryColor },
+                ]}
+              />
+              <Text
+                style={[styles.tailName, { color: entry.categoryColor }]}
+                numberOfLines={1}
+              >
+                {entry.activityName}
+              </Text>
+              <Text style={styles.tailDuration}>
+                {entry.durationSeconds != null
+                  ? formatDuration(entry.durationSeconds)
+                  : "—"}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      );
+    }
+  }
+
   if (expanded) {
     return (
       <View style={styles.expandedContainer}>
@@ -188,6 +293,29 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   expandedDuration: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.onSurfaceVariant,
+  },
+  // Mixed-cluster tail strip
+  tailStrip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderRadius: RADIUS.sm,
+    marginVertical: 1,
+    overflow: "hidden",
+  },
+  tailDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  tailName: {
+    ...TYPOGRAPHY.labelSm,
+    flex: 1,
+  },
+  tailDuration: {
     ...TYPOGRAPHY.bodySmall,
     color: COLORS.onSurfaceVariant,
   },
