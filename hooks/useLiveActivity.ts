@@ -58,6 +58,15 @@ export function useLiveActivity(): void {
   // entry running"; a string means an entry id.
   const prevEntryIdRef = useRef<string | null | undefined>(undefined);
 
+  // Mirrors the ContentState last pushed to ActivityKit so we can detect
+  // content-only changes (e.g. user edits the running entry's started_at)
+  // and re-push without dismissing the activity.
+  const prevContentRef = useRef<{
+    startedAt: string;
+    activityName: string;
+    categoryColor: string | null;
+  } | null>(null);
+
   // Defensive cleanup on first mount: if a prior app instance crashed mid-
   // timer, an orphaned Live Activity may still be visible. The bridge's
   // start() auto-upgrades to update() when an activity already exists, but
@@ -86,6 +95,11 @@ export function useLiveActivity(): void {
             categoryColorHex: running.category_color ?? FALLBACK_COLOR_HEX,
             startedAtMs: new Date(running.started_at).getTime(),
           });
+          prevContentRef.current = {
+            startedAt: running.started_at,
+            activityName: running.activity_name,
+            categoryColor: running.category_color,
+          };
         }
         prevEntryIdRef.current = currId;
         return;
@@ -98,9 +112,15 @@ export function useLiveActivity(): void {
           categoryColorHex: running.category_color ?? FALLBACK_COLOR_HEX,
           startedAtMs: new Date(running.started_at).getTime(),
         });
+        prevContentRef.current = {
+          startedAt: running.started_at,
+          activityName: running.activity_name,
+          categoryColor: running.category_color,
+        };
       } else if (prev !== null && currId === null) {
         // entry → none
         await endLiveActivity();
+        prevContentRef.current = null;
       } else if (
         prev !== null &&
         currId !== null &&
@@ -113,6 +133,33 @@ export function useLiveActivity(): void {
           categoryColorHex: running.category_color ?? FALLBACK_COLOR_HEX,
           startedAtMs: new Date(running.started_at).getTime(),
         });
+        prevContentRef.current = {
+          startedAt: running.started_at,
+          activityName: running.activity_name,
+          categoryColor: running.category_color,
+        };
+      } else if (
+        prev !== null &&
+        currId !== null &&
+        prev === currId &&
+        running !== null &&
+        prevContentRef.current !== null &&
+        (prevContentRef.current.startedAt !== running.started_at ||
+          prevContentRef.current.activityName !== running.activity_name ||
+          prevContentRef.current.categoryColor !== running.category_color)
+      ) {
+        // Same entry, content changed (e.g. user edited started_at). Re-push
+        // ContentState so the lock-screen timer re-anchors to the new start.
+        await updateLiveActivity({
+          activityName: running.activity_name,
+          categoryColorHex: running.category_color ?? FALLBACK_COLOR_HEX,
+          startedAtMs: new Date(running.started_at).getTime(),
+        });
+        prevContentRef.current = {
+          startedAt: running.started_at,
+          activityName: running.activity_name,
+          categoryColor: running.category_color,
+        };
       }
 
       prevEntryIdRef.current = currId;
