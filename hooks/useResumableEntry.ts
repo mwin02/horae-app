@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { AppState } from 'react-native';
 import { useQuery } from '@powersync/react';
 
 /** How recent (ms) a stopped entry must be to be considered resumable. */
@@ -67,6 +68,16 @@ export function useResumableEntry(): ResumableEntry | null {
     const handle = setTimeout(() => forceTick((n) => n + 1), remaining);
     return () => clearTimeout(handle);
   }, [row]);
+
+  // JS timers can be throttled or paused while the app is backgrounded or the
+  // device is asleep, so the setTimeout above may not fire on time. Re-check
+  // the window whenever the app returns to the foreground.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') forceTick((n) => n + 1);
+    });
+    return () => sub.remove();
+  }, []);
 
   return useMemo(() => {
     if (!row) return null;
