@@ -31,7 +31,7 @@ export interface UseRecommendedActivityResult {
 const HOUR_WINDOW = 1;
 const RECENCY_HALF_LIFE_DAYS = 14;
 const MIN_QUALIFYING_ENTRIES = 2;
-const MAX_RECOMMENDATIONS = 5;
+const MAX_RECOMMENDATIONS = 6;
 const RECENT_EXCLUSION_COUNT = 3;
 const WEEKDAY_FALLBACK_WEIGHT = 0.5;
 const MS_PER_DAY = 86_400_000;
@@ -47,6 +47,7 @@ const FOLLOW_UP_LOOKBACK = 20;
 const FOLLOW_UP_MIN_OCCURRENCES = 3;
 const FOLLOW_UP_MIN_SHARE = 0.3;
 const FOLLOW_UP_MAX_GAP_MS = 60 * 60 * 1000;
+const FOLLOW_UP_MAX_SLOTS = 3;
 
 interface RoutineSlot {
   /** Lower-case activity name to match against the user's catalog. */
@@ -148,19 +149,20 @@ function isHourInSlot(hour: number, slot: RoutineSlot): boolean {
 }
 
 /**
- * Find the activity that most commonly follows `prevActivityId` based on the
- * last FOLLOW_UP_LOOKBACK occurrences in history. Returns null when there
- * isn't enough signal (count + share thresholds), or when the top candidate
- * is the previous activity itself.
+ * Find the activities that most commonly follow `prevActivityId` based on
+ * the last FOLLOW_UP_LOOKBACK occurrences in history. Returns up to
+ * FOLLOW_UP_MAX_SLOTS candidates (ranked by count) that clear both the
+ * min-count and min-share thresholds. Same-activity follow-ups are
+ * excluded, as are activities already in `excluded`.
  *
  * `historyDesc` is expected ordered newest-first (matches RECOMMENDATION_QUERY).
  */
-function computeFollowUpRecommendation(
+function computeFollowUpRecommendations(
   historyDesc: readonly FlatRow[],
   prevActivityId: string,
   prevActivityName: string,
   excluded: ReadonlySet<string>,
-): RecommendedActivity | null {
+): RecommendedActivity[] {
   // Walk asc so "the next entry" is index+1. Sort defensively in case the
   // query order ever changes.
   const asc = [...historyDesc].sort(
@@ -175,7 +177,7 @@ function computeFollowUpRecommendation(
     occurrenceIndices.push(i);
     if (occurrenceIndices.length >= FOLLOW_UP_LOOKBACK) break;
   }
-  if (occurrenceIndices.length === 0) return null;
+  if (occurrenceIndices.length === 0) return [];
 
   const tallies = new Map<string, { count: number; row: FlatRow }>();
   for (const idx of occurrenceIndices) {
@@ -194,28 +196,28 @@ function computeFollowUpRecommendation(
     else tallies.set(next.activity_id, { count: 1, row: next });
   }
 
-  if (tallies.size === 0) return null;
+  if (tallies.size === 0) return [];
 
-  let top: { activityId: string; count: number; row: FlatRow } | null = null;
-  for (const [id, t] of tallies) {
-    if (!top || t.count > top.count) {
-      top = { activityId: id, count: t.count, row: t.row };
-    }
-  }
-  if (!top) return null;
-  if (top.count < FOLLOW_UP_MIN_OCCURRENCES) return null;
-  if (top.count / occurrenceIndices.length < FOLLOW_UP_MIN_SHARE) return null;
-  if (excluded.has(top.activityId)) return null;
+  const ranked = Array.from(tallies.entries())
+    .map(([activityId, t]) => ({ activityId, count: t.count, row: t.row }))
+    .filter(
+      (c) =>
+        c.count >= FOLLOW_UP_MIN_OCCURRENCES &&
+        c.count / occurrenceIndices.length >= FOLLOW_UP_MIN_SHARE &&
+        !excluded.has(c.activityId),
+    )
+    .sort((a, b) => b.count - a.count)
+    .slice(0, FOLLOW_UP_MAX_SLOTS);
 
-  return {
-    activityId: top.activityId,
-    activityName: top.row.activity_name,
-    categoryName: top.row.category_name,
-    categoryColor: top.row.category_color,
-    categoryIcon: top.row.category_icon,
+  return ranked.map((c) => ({
+    activityId: c.activityId,
+    activityName: c.row.activity_name,
+    categoryName: c.row.category_name,
+    categoryColor: c.row.category_color,
+    categoryIcon: c.row.category_icon,
     reason: 'follow_up',
     subtitle: `You often do this after ${prevActivityName}`,
-  };
+  }));
 }
 
 interface Score {
@@ -331,7 +333,7 @@ export function useRecommendedActivity(
     // --- Follow-up: what usually comes after the most recent activity?
     // When a timer is running, that activity is the "previous"; otherwise
     // fall back to the most-recent ended entry in history.
-    let followUpRec: RecommendedActivity | null = null;
+    let followUpRecs: RecommendedActivity[] = [];
     if (historyData && historyData.length > 0) {
       let prevId: string | null = null;
       let prevName: string | null = null;
@@ -352,7 +354,12 @@ export function useRecommendedActivity(
         prevName = last.activity_name;
       }
       if (prevId && prevName) {
-        followUpRec = computeFollowUpRecommendation(historyData, prevId, prevName, excluded);
+        followUpRecs = computeFollowUpRecommendations(
+          historyData,
+          prevId,
+          prevName,
+          excluded,
+        );
       }
     }
 
@@ -405,15 +412,14 @@ export function useRecommendedActivity(
     // Follow-up first (strongest contextual signal — what usually comes
     // after the activity the user just did / is doing), then routines, then
     // history fills the rest.
-    const followUpPool = followUpRec ? [followUpRec] : [];
-    pickRound(followUpPool, true);
+    pickRound(followUpRecs, true);
     pickRound(routineRecs, true);
     pickRound(historyRanked, true);
     if (merged.length < MAX_RECOMMENDATIONS) {
       // Relax the diversity cap if we still have empty slots.
       pickRound(historyRanked, false);
       pickRound(routineRecs, false);
-      pickRound(followUpPool, false);
+      pickRound(followUpRecs, false);
     }
 
     return merged;
