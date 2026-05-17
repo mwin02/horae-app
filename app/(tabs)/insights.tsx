@@ -107,6 +107,10 @@ export default function InsightsScreen(): React.ReactElement {
             setDailyDate(d);
             setPeriod("daily");
           }}
+          onWeekPress={(d) => {
+            setWeeklyDate(d);
+            setPeriod("weekly");
+          }}
           editMode={editMode}
           onEditModeChange={setEditMode}
         />

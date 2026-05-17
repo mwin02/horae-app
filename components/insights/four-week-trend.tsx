@@ -6,12 +6,17 @@ import {
 } from "@/hooks/useFourWeekTrend";
 import { formatDuration } from "@/lib/timezone";
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 import { deltaPalette, deltaPolarity } from "./delta-polarity";
 
 interface FourWeekTrendProps {
   monthDate: string;
+  /**
+   * Fires when a week column (or label) is tapped. Receives the bucket's
+   * local start date — any day in the target week works for the weekly view.
+   */
+  onWeekPress?: (weekDate: string) => void;
 }
 
 const LABEL_COL_WIDTH = 92;
@@ -23,6 +28,7 @@ const SPARK_PADDING_Y = 3;
 
 export function FourWeekTrend({
   monthDate,
+  onWeekPress,
 }: FourWeekTrendProps): React.ReactElement | null {
   const { buckets, categories, isLoading } = useFourWeekTrend(monthDate);
 
@@ -31,7 +37,6 @@ export function FourWeekTrend({
   const hasData =
     categories.length > 0 && categories.some((c) => c.totalSeconds > 0);
   const weekCount = buckets.length;
-  const weekLabels = buckets.map((b) => b.label);
 
   return (
     <View style={styles.container}>
@@ -50,11 +55,33 @@ export function FourWeekTrend({
         <>
           <View style={styles.weekLabelsRow}>
             <View style={styles.weekLabels}>
-              {weekLabels.map((label) => (
-                <Text key={label} style={styles.weekLabel}>
-                  {label}
-                </Text>
-              ))}
+              {buckets.map((b) =>
+                onWeekPress ? (
+                  <Pressable
+                    key={b.label}
+                    onPress={() => onWeekPress(b.startDate)}
+                    hitSlop={{ top: 8, bottom: 8, left: 10, right: 10 }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Open ${b.label} weekly insights`}
+                  >
+                    {({ pressed }) => (
+                      <Text
+                        style={[
+                          styles.weekLabel,
+                          styles.weekLabelPressable,
+                          pressed && styles.weekLabelPressed,
+                        ]}
+                      >
+                        {b.label}
+                      </Text>
+                    )}
+                  </Pressable>
+                ) : (
+                  <Text key={b.label} style={styles.weekLabel}>
+                    {b.label}
+                  </Text>
+                ),
+              )}
             </View>
           </View>
 
@@ -286,6 +313,13 @@ const styles = StyleSheet.create({
     lineHeight: 12,
     letterSpacing: 0.6,
     color: COLORS.outline,
+  },
+  weekLabelPressable: {
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+  },
+  weekLabelPressed: {
+    color: COLORS.onSurface,
   },
 
   // Rows
