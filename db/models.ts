@@ -89,7 +89,7 @@ export interface RecommendedActivity {
   /** Resolved display icon (override or category fallback); null = no icon. */
   categoryIcon: string | null;
   /** Why we surfaced this card — drives the subtitle copy. */
-  reason: 'history' | 'routine';
+  reason: 'history' | 'routine' | 'follow_up';
   /** Pre-resolved subtitle for the card (e.g. "It's around lunchtime"). */
   subtitle: string;
 }
