@@ -19,10 +19,15 @@
       "deploymentTarget": "16.1",
       "infoPlist": {
         "NSSupportsLiveActivities": true,
-        "LSApplicationQueriesSchemes": ["mailto"]
+        "LSApplicationQueriesSchemes": [
+          "mailto",
+          "mailto"
+        ],
+        "ITSAppUsesNonExemptEncryption": false
       },
       "entitlements": {
         "com.apple.security.application-groups": [
+          "group.com.myozawwin.horae.shared",
           "group.com.myozawwin.horae.shared"
         ]
       },
