@@ -10,6 +10,7 @@
 export const RECOMMENDATION_QUERY = `
   SELECT
     te.started_at   AS started_at,
+    te.ended_at     AS ended_at,
     te.timezone     AS timezone,
     a.id            AS activity_id,
     a.name          AS activity_name,

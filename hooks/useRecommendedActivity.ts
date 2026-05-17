@@ -6,6 +6,7 @@ import { getCurrentTimezone } from '@/lib/timezone';
 
 interface FlatRow {
   started_at: string;
+  ended_at: string | null;
   timezone: string;
   activity_id: string;
   activity_name: string;
@@ -36,6 +37,16 @@ const WEEKDAY_FALLBACK_WEIGHT = 0.5;
 const MS_PER_DAY = 86_400_000;
 
 const HISTORY_SUBTITLE = 'You usually start around now';
+
+// Follow-up recommendation tuning. Looks at the last N occurrences of the
+// "previous" activity (the running timer's activity, or the most-recent
+// ended entry if idle) and finds the most common activity that comes next
+// within FOLLOW_UP_MAX_GAP_MS. Requires both an absolute count floor and a
+// share of occurrences to avoid noisy low-confidence suggestions.
+const FOLLOW_UP_LOOKBACK = 20;
+const FOLLOW_UP_MIN_OCCURRENCES = 3;
+const FOLLOW_UP_MIN_SHARE = 0.3;
+const FOLLOW_UP_MAX_GAP_MS = 60 * 60 * 1000;
 
 interface RoutineSlot {
   /** Lower-case activity name to match against the user's catalog. */
@@ -136,6 +147,77 @@ function isHourInSlot(hour: number, slot: RoutineSlot): boolean {
   return hour >= slot.startHour || hour < slot.endHour;
 }
 
+/**
+ * Find the activity that most commonly follows `prevActivityId` based on the
+ * last FOLLOW_UP_LOOKBACK occurrences in history. Returns null when there
+ * isn't enough signal (count + share thresholds), or when the top candidate
+ * is the previous activity itself.
+ *
+ * `historyDesc` is expected ordered newest-first (matches RECOMMENDATION_QUERY).
+ */
+function computeFollowUpRecommendation(
+  historyDesc: readonly FlatRow[],
+  prevActivityId: string,
+  prevActivityName: string,
+  excluded: ReadonlySet<string>,
+): RecommendedActivity | null {
+  // Walk asc so "the next entry" is index+1. Sort defensively in case the
+  // query order ever changes.
+  const asc = [...historyDesc].sort(
+    (a, b) => new Date(a.started_at).getTime() - new Date(b.started_at).getTime(),
+  );
+
+  // Collect indices of the most recent N occurrences of prevActivity.
+  const occurrenceIndices: number[] = [];
+  for (let i = asc.length - 1; i >= 0; i--) {
+    if (asc[i].activity_id !== prevActivityId) continue;
+    if (!asc[i].ended_at) continue;
+    occurrenceIndices.push(i);
+    if (occurrenceIndices.length >= FOLLOW_UP_LOOKBACK) break;
+  }
+  if (occurrenceIndices.length === 0) return null;
+
+  const tallies = new Map<string, { count: number; row: FlatRow }>();
+  for (const idx of occurrenceIndices) {
+    const occ = asc[idx];
+    const next = asc[idx + 1];
+    if (!next) continue;
+    if (next.activity_id === prevActivityId) continue;
+
+    const endedMs = new Date(occ.ended_at as string).getTime();
+    const nextStartMs = new Date(next.started_at).getTime();
+    if (Number.isNaN(endedMs) || Number.isNaN(nextStartMs)) continue;
+    if (nextStartMs - endedMs > FOLLOW_UP_MAX_GAP_MS) continue;
+
+    const existing = tallies.get(next.activity_id);
+    if (existing) existing.count += 1;
+    else tallies.set(next.activity_id, { count: 1, row: next });
+  }
+
+  if (tallies.size === 0) return null;
+
+  let top: { activityId: string; count: number; row: FlatRow } | null = null;
+  for (const [id, t] of tallies) {
+    if (!top || t.count > top.count) {
+      top = { activityId: id, count: t.count, row: t.row };
+    }
+  }
+  if (!top) return null;
+  if (top.count < FOLLOW_UP_MIN_OCCURRENCES) return null;
+  if (top.count / occurrenceIndices.length < FOLLOW_UP_MIN_SHARE) return null;
+  if (excluded.has(top.activityId)) return null;
+
+  return {
+    activityId: top.activityId,
+    activityName: top.row.activity_name,
+    categoryName: top.row.category_name,
+    categoryColor: top.row.category_color,
+    categoryIcon: top.row.category_icon,
+    reason: 'follow_up',
+    subtitle: `You often do this after ${prevActivityName}`,
+  };
+}
+
 interface Score {
   activityId: string;
   activityName: string;
@@ -148,13 +230,16 @@ interface Score {
 
 /**
  * Reactive hook returning up to MAX_RECOMMENDATIONS activity suggestions for
- * the Home tab. Combines two sources:
+ * the Home tab. Combines three sources:
  *
- *   1. **History** — same-weekday + ±1h hour matches over the last 60 days,
+ *   1. **Follow-up** — the activity that most commonly follows the user's
+ *      "previous" activity (running timer if any, else the most-recent ended
+ *      entry). Takes the top slot when confident.
+ *   2. **History** — same-weekday + ±1h hour matches over the last 60 days,
  *      ranked by recency-decayed weight (14-day half life). Falls back to
  *      same weekday-class (weekday/weekend) at half weight when same-weekday
  *      data is sparse.
- *   2. **Routine** — fixed time-of-day slots (lunch, dinner, night sleep…)
+ *   3. **Routine** — fixed time-of-day slots (lunch, dinner, night sleep…)
  *      matched by lowercase activity name against the user's catalog. Fills
  *      remaining slots when history is sparse.
  *
@@ -243,6 +328,34 @@ export function useRecommendedActivity(
         subtitle: HISTORY_SUBTITLE,
       }));
 
+    // --- Follow-up: what usually comes after the most recent activity?
+    // When a timer is running, that activity is the "previous"; otherwise
+    // fall back to the most-recent ended entry in history.
+    let followUpRec: RecommendedActivity | null = null;
+    if (historyData && historyData.length > 0) {
+      let prevId: string | null = null;
+      let prevName: string | null = null;
+      if (currentActivityId) {
+        prevId = currentActivityId;
+        // Prefer history (cheapest lookup), fall back to catalog for first-time
+        // activities that have no completed entries yet.
+        const fromHistory = historyData.find((r) => r.activity_id === currentActivityId);
+        if (fromHistory) {
+          prevName = fromHistory.activity_name;
+        } else if (catalogData) {
+          const fromCatalog = catalogData.find((r) => r.activity_id === currentActivityId);
+          prevName = fromCatalog?.activity_name ?? null;
+        }
+      } else {
+        const last = historyData[0];
+        prevId = last.activity_id;
+        prevName = last.activity_name;
+      }
+      if (prevId && prevName) {
+        followUpRec = computeFollowUpRecommendation(historyData, prevId, prevName, excluded);
+      }
+    }
+
     // --- Resolve active routine slots against the user's catalog.
     const routineRecs: RecommendedActivity[] = [];
     if (catalogData && catalogData.length > 0) {
@@ -289,13 +402,18 @@ export function useRecommendedActivity(
       }
     };
 
-    // Routines first (they're the time-of-day signal), then history fills the rest.
+    // Follow-up first (strongest contextual signal — what usually comes
+    // after the activity the user just did / is doing), then routines, then
+    // history fills the rest.
+    const followUpPool = followUpRec ? [followUpRec] : [];
+    pickRound(followUpPool, true);
     pickRound(routineRecs, true);
     pickRound(historyRanked, true);
     if (merged.length < MAX_RECOMMENDATIONS) {
       // Relax the diversity cap if we still have empty slots.
       pickRound(historyRanked, false);
       pickRound(routineRecs, false);
+      pickRound(followUpPool, false);
     }
 
     return merged;
