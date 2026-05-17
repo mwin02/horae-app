@@ -271,8 +271,8 @@ const styles = StyleSheet.create({
     color: COLORS.onSurfaceVariant,
   },
   row: {
-    paddingTop: SPACING.lg,
-    paddingBottom: SPACING.md,
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.sm,
   },
   rowDivider: {
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
     gap: SPACING.sm,
   },
   rowHeaderLeft: {
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   barArea: {
-    paddingTop: 12,
+    paddingTop: 10,
   },
   goalLabelRow: {
     height: 0,
