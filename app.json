@@ -60,7 +60,13 @@
       ],
       "expo-sharing",
       "@bacons/apple-targets",
-      "@sentry/react-native",
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "myo-zaw-win",
+          "project": "horae-ios"
+        }
+      ],
       "expo-mail-composer"
     ],
     "experiments": {
