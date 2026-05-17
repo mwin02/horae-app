@@ -1,16 +1,26 @@
 /**
  * Dev-only seeder for App Store screenshots / demo recordings.
  *
- * Populates "today" with a believable timeline of entries spanning early
- * morning through "now", sets 4 goals on common categories, and leaves
- * one entry currently running. Idempotent — wipes today's data first.
+ * Populates YESTERDAY with a believable 14-entry timeline from 06:30
+ * through 20:30, sets 4 goals on common categories, and leaves one
+ * entry currently running on TODAY (started 25 min ago).
  *
- * Tied behind EXPO_PUBLIC_ENABLE_DEBUG=1 via the Settings → Debug
- * section. Never callable in production builds.
+ * Why yesterday for the schedule: if we seeded today and ran the
+ * function at 9 AM, only 2–3 entries (those that end before now − 30
+ * min) would land, and the Timeline / Insights screenshots would look
+ * empty. Yesterday is fully in the past regardless of run time, so the
+ * full schedule always lands.
  *
- * Hard-deletes today's existing entries on every run — that's fine
- * because this module only runs in debug builds that are never shipped.
- * Sync compatibility is not a concern here.
+ * Why today for the running entry: a "running since yesterday" entry
+ * would show 12+ hours elapsed in the Home UI, which looks broken.
+ *
+ * Idempotent — wipes both yesterday's and today's existing entries
+ * first. Tied behind EXPO_PUBLIC_ENABLE_DEBUG=1 via Settings → Debug.
+ * Never callable in production builds.
+ *
+ * Hard-deletes on every run — fine because this module only runs in
+ * debug builds that are never shipped. Sync compatibility is not a
+ * concern here.
  */
 
 import { db } from "@/lib/powersync";
@@ -37,9 +47,8 @@ type SeedScheduleItem = {
 };
 
 /**
- * Fixed local-time schedule that fills a "typical" day. Entries whose
- * planned end is in the future relative to now-30min are skipped, so
- * the seeder produces sensible output no matter what time it's run.
+ * Fixed local-time schedule that fills a "typical" day. Seeded onto
+ * yesterday, so every entry lands regardless of when this is run.
  */
 const SCHEDULE: SeedScheduleItem[] = [
   {
@@ -169,24 +178,31 @@ type ActivityRow = { id: string; category_id: string; name: string };
 
 export type SeedDemoResult = {
   insertedEntries: number;
-  skippedFutureEntries: number;
   goalsSet: number;
   running: boolean;
+  scheduleDate: string;
   missingCategoryNames: string[];
 };
 
 /**
- * Hard-delete today's entries and entry_tags, then insert a believable
- * day plus a running entry, plus 4 daily goals. Returns counts so the
- * caller can show a confirmation toast/alert.
+ * Hard-delete yesterday's + today's entries and entry_tags, then insert
+ * yesterday's full schedule plus today's running entry, plus 4 daily
+ * goals. Returns counts so the caller can show a confirmation alert.
  */
 export async function seedDemoDay(): Promise<SeedDemoResult> {
   const tz = getCurrentTimezone();
   const today = getTodayDate(tz);
-  const dayStart = getStartOfDay(today, tz).toISOString();
-  const dayEnd = getEndOfDay(today, tz).toISOString();
+  // Compute the local YYYY-MM-DD for "one day ago" in the user's timezone.
+  // Using getStartOfDay(today) − 24h lands midnight-of-yesterday in UTC,
+  // and getDateInTimezone gives us its local-date string DST-safely.
+  const yesterdayMs = getStartOfDay(today, tz).getTime() - 24 * 60 * 60 * 1000;
+  const yesterday = new Date(yesterdayMs).toLocaleDateString("en-CA", {
+    timeZone: tz,
+  });
+  const yesterdayStart = getStartOfDay(yesterday, tz).toISOString();
+  const todayStart = getStartOfDay(today, tz).toISOString();
+  const todayEnd = getEndOfDay(today, tz).toISOString();
   const now = new Date();
-  const cutoff = new Date(now.getTime() - 30 * 60 * 1000); // 30 min before now
   const source = assertTimeEntrySource(TIME_ENTRY_SOURCES.import);
 
   const categories = await db.getAll<CategoryRow>(
@@ -223,41 +239,40 @@ export async function seedDemoDay(): Promise<SeedDemoResult> {
 
   const tsNow = nowUTC();
   let insertedEntries = 0;
-  let skippedFutureEntries = 0;
   let runningInserted = false;
 
   await db.writeTransaction(async (tx) => {
-    // Wipe today's entries (overlap with the local day window). Hard
-    // delete is intentional — this module is debug-only and never
-    // synced. We also clear entry_tags for those entries plus today's
-    // cached daily_summaries so the Insights tab recomputes cleanly.
-    const todaysEntryIds = await tx.getAll<{ id: string }>(
+    // Wipe yesterday's + today's entries (any entry overlapping either
+    // local day window). Hard delete is intentional — this module is
+    // debug-only and never synced. Also clear entry_tags for wiped
+    // entries plus cached daily_summaries so the Insights tab
+    // recomputes cleanly.
+    const wipedEntryIds = await tx.getAll<{ id: string }>(
       `SELECT id FROM time_entries
        WHERE started_at <= ?
          AND (ended_at IS NULL OR ended_at >= ?)`,
-      [dayEnd, dayStart],
+      [todayEnd, yesterdayStart],
     );
-    for (const row of todaysEntryIds) {
+    for (const row of wipedEntryIds) {
       await tx.execute("DELETE FROM entry_tags WHERE entry_id = ?", [row.id]);
     }
     await tx.execute(
       `DELETE FROM time_entries
        WHERE started_at <= ?
          AND (ended_at IS NULL OR ended_at >= ?)`,
-      [dayEnd, dayStart],
+      [todayEnd, yesterdayStart],
     );
-    await tx.execute("DELETE FROM daily_summaries WHERE date = ?", [today]);
+    await tx.execute(
+      "DELETE FROM daily_summaries WHERE date IN (?, ?)",
+      [yesterday, today],
+    );
 
-    // Insert scheduled entries whose end is before "now − 30 min" so
-    // we never write an entry that ends in the future. Anything later
-    // is silently skipped — the next run picks up where this left off.
+    // Insert the full schedule onto YESTERDAY. Yesterday is always
+    // fully in the past so no future-end skipping needed — every
+    // entry always lands.
     for (const item of SCHEDULE) {
-      const start = parseLocalTimeOfDay(item.startHHMM, today, tz);
-      const end = parseLocalTimeOfDay(item.endHHMM, today, tz);
-      if (end > cutoff) {
-        skippedFutureEntries += 1;
-        continue;
-      }
+      const start = parseLocalTimeOfDay(item.startHHMM, yesterday, tz);
+      const end = parseLocalTimeOfDay(item.endHHMM, yesterday, tz);
       const ids = resolve(item.categoryName, item.activityName);
       if (!ids) continue;
       const durationSeconds = Math.round((end.getTime() - start.getTime()) / 1000);
@@ -282,13 +297,19 @@ export async function seedDemoDay(): Promise<SeedDemoResult> {
       insertedEntries += 1;
     }
 
-    // Running entry — starts `minutesAgo` ago. Only insert if its start
-    // falls within today's local window (so a 25-min entry seeded just
-    // after local midnight doesn't backdate into yesterday).
-    const runStart = new Date(now.getTime() - RUNNING_ENTRY.minutesAgo * 60 * 1000);
+    // Running entry on TODAY — starts `minutesAgo` ago. Only insert if
+    // its start falls within today's local window (so a 25-min entry
+    // seeded just after local midnight doesn't backdate into
+    // yesterday's screenshot data).
+    const runStart = new Date(
+      now.getTime() - RUNNING_ENTRY.minutesAgo * 60 * 1000,
+    );
     const runStartIso = runStart.toISOString();
-    if (runStartIso >= dayStart) {
-      const ids = resolve(RUNNING_ENTRY.categoryName, RUNNING_ENTRY.activityName);
+    if (runStartIso >= todayStart) {
+      const ids = resolve(
+        RUNNING_ENTRY.categoryName,
+        RUNNING_ENTRY.activityName,
+      );
       if (ids) {
         await tx.execute(
           `INSERT INTO time_entries
@@ -358,9 +379,9 @@ export async function seedDemoDay(): Promise<SeedDemoResult> {
 
   return {
     insertedEntries,
-    skippedFutureEntries,
     goalsSet,
     running: runningInserted,
+    scheduleDate: yesterday,
     missingCategoryNames: Array.from(missing),
   };
 }

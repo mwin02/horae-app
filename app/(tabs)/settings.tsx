@@ -133,13 +133,10 @@ export default function SettingsScreen(): React.ReactElement {
     try {
       const result = await seedDemoDay();
       const parts = [
-        `${result.insertedEntries} entries`,
+        `${result.insertedEntries} entries on ${result.scheduleDate}`,
         `${result.goalsSet} goals`,
-        result.running ? "running timer set" : "no running timer (too late in day?)",
+        result.running ? "running timer on today" : "no running timer",
       ];
-      if (result.skippedFutureEntries > 0) {
-        parts.push(`${result.skippedFutureEntries} skipped (future)`);
-      }
       if (result.missingCategoryNames.length > 0) {
         parts.push(
           `missing: ${result.missingCategoryNames.slice(0, 3).join(", ")}${
@@ -298,7 +295,7 @@ export default function SettingsScreen(): React.ReactElement {
             />
             <SettingRow
               title="Seed demo day"
-              description="Wipes today's entries and primes a believable timeline for screenshots"
+              description="Fills yesterday with a believable timeline + a running timer on today"
               onPress={handleSeedDemoDay}
               iconBackground={COLORS.surfaceContainer}
               iconChildren={
