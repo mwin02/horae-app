@@ -22,9 +22,9 @@ export interface TrendCategory {
 export interface TrendBucket {
   /** 1-indexed label e.g. "W1" */
   label: string;
-  /** YYYY-MM-DD of the bucket's local start date (clipped to month) */
+  /** YYYY-MM-DD of the bucket's local start date (full ISO week, may precede month start) */
   startDate: string;
-  /** YYYY-MM-DD of the bucket's local end date (clipped to month) */
+  /** YYYY-MM-DD of the bucket's local end date (full ISO week, may extend past month end) */
   endDate: string;
   /**
    * `true` when the bucket's local end-of-day is in the past — i.e. the week
@@ -65,10 +65,12 @@ const TOP_CATEGORY_LIMIT = 6;
 const MAX_BUCKETS = 6; // months span up to 6 ISO-week overlaps
 
 /**
- * Splits the calendar month into Mon–Sun ISO-week buckets (clipped to the
- * month's first/last day). For each of the top categories (by monthly total),
- * returns a parallel array of per-bucket seconds. Midnight-spanning entries
- * are split at local day boundaries in the entry's own timezone.
+ * Splits the calendar month into full ISO-week buckets (one per week that
+ * overlaps the month — buckets may bleed into the prior/next month so each
+ * week's tracked total is comparable to its neighbours rather than partial).
+ * For each of the top categories (by total over the window), returns a
+ * parallel array of per-bucket seconds. Midnight-spanning entries are split
+ * at local day boundaries in the entry's own timezone.
  */
 export function useFourWeekTrend(
   monthDate: string,
@@ -78,10 +80,8 @@ export function useFourWeekTrend(
   const { preferences } = useUserPreferences();
   const weekStartDay = preferences.weekStartDay;
 
-  const { startIso, endIso, buckets, monthStart, monthEnd } = useMemo(() => {
+  const { startIso, endIso, buckets, rangeStart, rangeEnd } = useMemo(() => {
     const { monthStart, monthEnd } = getMonthRange(monthDate);
-    const startIso = getStartOfDay(monthStart, timezone).toISOString();
-    const endIso = getEndOfDay(monthEnd, timezone).toISOString();
 
     const buckets: TrendBucket[] = [];
     const nowMs = Date.now();
@@ -89,9 +89,13 @@ export function useFourWeekTrend(
     let idx = 1;
     // Clamp safety: at most 6 ISO-week overlaps (month can span 4-6 weeks).
     while (cursor <= monthEnd && buckets.length < MAX_BUCKETS) {
-      const { weekEnd } = getWeekRange(cursor, weekStartDay);
-      const bucketStart = cursor;
-      const bucketEnd = weekEnd > monthEnd ? monthEnd : weekEnd;
+      const { weekStart, weekEnd } = getWeekRange(cursor, weekStartDay);
+      // Use the full ISO week even if it overflows the month — partial
+      // first/last buckets were the root cause of artificially low W1/W-last
+      // totals. Adjacent-month days are included so each bar represents a
+      // comparable 7-day span.
+      const bucketStart = weekStart;
+      const bucketEnd = weekEnd;
       const bucketStartMs = getStartOfDay(bucketStart, timezone).getTime();
       // Drop weeks that haven't started yet — sparkline should stop at the
       // current week, not slope to zero across the rest of the month.
@@ -107,7 +111,13 @@ export function useFourWeekTrend(
       cursor = shiftDate(bucketEnd, 1);
     }
 
-    return { startIso, endIso, buckets, monthStart, monthEnd };
+    const rangeStart = buckets.length > 0 ? buckets[0].startDate : monthStart;
+    const rangeEnd =
+      buckets.length > 0 ? buckets[buckets.length - 1].endDate : monthEnd;
+    const startIso = getStartOfDay(rangeStart, timezone).toISOString();
+    const endIso = getEndOfDay(rangeEnd, timezone).toISOString();
+
+    return { startIso, endIso, buckets, rangeStart, rangeEnd };
   }, [monthDate, timezone, weekStartDay]);
 
   const { data: rows, isLoading } = useQuery<TimelineEntryRow>(
@@ -150,8 +160,8 @@ export function useFourWeekTrend(
       endMs: getEndOfDay(b.endDate, timezone).getTime(),
     }));
 
-    const monthStartMs = getStartOfDay(monthStart, timezone).getTime();
-    const monthEndMs = getEndOfDay(monthEnd, timezone).getTime();
+    const rangeStartMs = getStartOfDay(rangeStart, timezone).getTime();
+    const rangeEndMs = getEndOfDay(rangeEnd, timezone).getTime();
     const nowMs = Date.now();
 
     // Map<categoryKey, { meta, perBucket: number[] }>
@@ -166,8 +176,8 @@ export function useFourWeekTrend(
         ? new Date(row.ended_at).getTime()
         : nowMs;
 
-      const startMs = Math.max(rawStartMs, monthStartMs);
-      const endMs = Math.min(rawEndMs, monthEndMs);
+      const startMs = Math.max(rawStartMs, rangeStartMs);
+      const endMs = Math.min(rawEndMs, rangeEndMs);
       if (endMs <= startMs) continue;
 
       const catKey = row.category_id;
@@ -254,7 +264,7 @@ export function useFourWeekTrend(
       maxBucketSeconds,
       buckets: trimmedBuckets,
     };
-  }, [rows, buckets, timezone, monthStart, monthEnd, limit, goalDirectionByCategory, weeklyTargetByCategory]);
+  }, [rows, buckets, timezone, rangeStart, rangeEnd, limit, goalDirectionByCategory, weeklyTargetByCategory]);
 
   return {
     buckets: result.buckets,

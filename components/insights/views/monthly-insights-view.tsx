@@ -18,6 +18,7 @@ interface MonthlyInsightsViewProps {
   coverage: DayCoverage;
   totalTrackedMinutes: number;
   onDayPress: (date: string) => void;
+  onWeekPress: (weekDate: string) => void;
   editMode: boolean;
   onEditModeChange: (editing: boolean) => void;
 }
@@ -28,6 +29,7 @@ export function MonthlyInsightsView({
   coverage,
   totalTrackedMinutes,
   onDayPress,
+  onWeekPress,
   editMode,
   onEditModeChange,
 }: MonthlyInsightsViewProps): React.ReactElement {
@@ -71,7 +73,12 @@ export function MonthlyInsightsView({
       {
         id: "four-week-trend",
         label: "Weekly trend",
-        node: <FourWeekTrend monthDate={selectedDate} />,
+        node: (
+          <FourWeekTrend
+            monthDate={selectedDate}
+            onWeekPress={onWeekPress}
+          />
+        ),
       },
       {
         id: "top-activities",
@@ -84,7 +91,7 @@ export function MonthlyInsightsView({
         node: <TrackingCoverage coverage={coverage} period="monthly" />,
       },
     ],
-    [categoryInsights, coverage, onDayPress, selectedDate, totalTrackedMinutes],
+    [categoryInsights, coverage, onDayPress, onWeekPress, selectedDate, totalTrackedMinutes],
   );
 
   return (
