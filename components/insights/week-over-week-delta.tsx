@@ -7,6 +7,7 @@ import {
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { deltaPalette, deltaPolarity } from "./delta-polarity";
+import { PaginatedRows } from "./paginated-rows";
 
 interface WeekOverWeekDeltaProps {
   weekDate: string;
@@ -61,11 +62,13 @@ export function WeekOverWeekDelta({
       {!hasData ? (
         <Text style={styles.emptyText}>No tracked time this week or last</Text>
       ) : (
-        <View>
-          {rows.map((row, i) => (
-            <DeltaRow key={row.categoryId} row={row} showDivider={i > 0} />
-          ))}
-        </View>
+        <PaginatedRows
+          items={rows}
+          keyExtractor={(row) => row.categoryId}
+          renderItem={(row, indexInPage) => (
+            <DeltaRow row={row} showDivider={indexInPage > 0} />
+          )}
+        />
       )}
     </View>
   );
