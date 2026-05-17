@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { useQuery } from "@powersync/react";
 import { useRouter } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { SignOutPromptModal } from "@/components/common/sign-out-prompt-modal";
@@ -12,6 +12,7 @@ import { NOTIFICATION_PREFERENCES_QUERY } from "@/db/queries";
 import type { NotificationPreferencesRecord } from "@/db/schema";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { seedDemoDay } from "@/lib/dev-seed";
 import { sendFeedback } from "@/lib/feedback";
 
 const WEEK_START_LABELS: Record<number, string> = {
@@ -126,6 +127,30 @@ export default function SettingsScreen(): React.ReactElement {
     throw new Error(
       `Horae Sentry test crash @ ${new Date().toISOString()}`,
     );
+  }, []);
+
+  const handleSeedDemoDay = useCallback(async () => {
+    try {
+      const result = await seedDemoDay();
+      const parts = [
+        `${result.insertedEntries} entries on ${result.scheduleDate}`,
+        `${result.goalsSet} goals`,
+        result.running ? "running timer on today" : "no running timer",
+      ];
+      if (result.missingCategoryNames.length > 0) {
+        parts.push(
+          `missing: ${result.missingCategoryNames.slice(0, 3).join(", ")}${
+            result.missingCategoryNames.length > 3 ? "…" : ""
+          }`,
+        );
+      }
+      Alert.alert("Demo day seeded", parts.join(" · "));
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unknown error";
+      console.error("[dev-seed] failed:", error);
+      Alert.alert("Seed failed", message);
+    }
   }, []);
 
   const notificationSummary = useMemo(
@@ -266,6 +291,15 @@ export default function SettingsScreen(): React.ReactElement {
               iconBackground={COLORS.surfaceContainer}
               iconChildren={
                 <Feather name="zap" size={20} color={COLORS.error} />
+              }
+            />
+            <SettingRow
+              title="Seed demo day"
+              description="Fills yesterday with a believable timeline + a running timer on today"
+              onPress={handleSeedDemoDay}
+              iconBackground={COLORS.surfaceContainer}
+              iconChildren={
+                <Feather name="play" size={20} color={COLORS.primary} />
               }
             />
           </>
