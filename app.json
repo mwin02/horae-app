@@ -18,7 +18,9 @@
       "deploymentTarget": "16.1",
       "infoPlist": {
         "NSSupportsLiveActivities": true,
-        "LSApplicationQueriesSchemes": ["mailto"]
+        "LSApplicationQueriesSchemes": [
+          "mailto"
+        ]
       },
       "entitlements": {
         "com.apple.security.application-groups": [
@@ -64,6 +66,30 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "bundleIdentifier": "com.myozawwin.horae.widget",
+                  "targetName": "HoraeWidget",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.myozawwin.horae.shared"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "51654fbc-04ce-4c69-95fa-4342ea409057"
+      }
+    },
+    "owner": "rediablack"
   }
 }
