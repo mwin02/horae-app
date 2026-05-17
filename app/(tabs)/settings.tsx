@@ -133,7 +133,7 @@ export default function SettingsScreen(): React.ReactElement {
     try {
       const result = await seedDemoDay();
       const parts = [
-        `${result.insertedEntries} entries on ${result.scheduleDate}`,
+        `${result.insertedEntries} entries across ${result.daysSeeded} days (${result.scheduleStartDate} → ${result.scheduleEndDate})`,
         `${result.goalsSet} goals`,
         result.running ? "running timer on today" : "no running timer",
       ];
@@ -295,7 +295,7 @@ export default function SettingsScreen(): React.ReactElement {
             />
             <SettingRow
               title="Seed demo day"
-              description="Fills yesterday with a believable timeline + a running timer on today"
+              description="Fills the last 21 days with a believable timeline (weekday/weekend mix + nightly sleep) and a running timer on today"
               onPress={handleSeedDemoDay}
               iconBackground={COLORS.surfaceContainer}
               iconChildren={
