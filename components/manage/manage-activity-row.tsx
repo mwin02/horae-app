@@ -2,6 +2,7 @@ import React, { useCallback, useRef } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { Swipeable, RectButton } from "react-native-gesture-handler";
+import { CategoryIconSwatch } from "@/components/insights/category-icon-swatch";
 import type { ActivityItem } from "@/db/models";
 import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 
@@ -42,8 +43,11 @@ export function ManageActivityRow({
       rightThreshold={40}
     >
       <Pressable style={styles.row} onPress={() => onRename(activity)}>
-        <View
-          style={[styles.dot, { backgroundColor: activity.categoryColor }]}
+        <CategoryIconSwatch
+          icon={activity.icon}
+          color={activity.categoryColor}
+          size={32}
+          iconSize={18}
         />
         <View style={styles.info}>
           <Text style={styles.name} numberOfLines={1}>
@@ -79,11 +83,6 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.lg,
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.lg,
-  },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
   },
   info: {
     flex: 1,
