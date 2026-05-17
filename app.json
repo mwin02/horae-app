@@ -15,12 +15,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.myozawwin.horae",
+      "appleTeamId": "827722TPEU",
       "deploymentTarget": "16.1",
       "infoPlist": {
         "NSSupportsLiveActivities": true,
-        "LSApplicationQueriesSchemes": [
-          "mailto"
-        ]
+        "LSApplicationQueriesSchemes": ["mailto"]
       },
       "entitlements": {
         "com.apple.security.application-groups": [
