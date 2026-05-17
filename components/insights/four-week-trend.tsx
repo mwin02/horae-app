@@ -9,6 +9,7 @@ import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 import { deltaPalette, deltaPolarity } from "./delta-polarity";
+import { PaginatedRows } from "./paginated-rows";
 
 interface FourWeekTrendProps {
   monthDate: string;
@@ -85,17 +86,18 @@ export function FourWeekTrend({
             </View>
           </View>
 
-          <View>
-            {categories.map((cat, i) => (
+          <PaginatedRows
+            items={categories}
+            keyExtractor={(cat) => cat.category.id}
+            renderItem={(cat, indexInPage) => (
               <TrendRow
-                key={cat.category.id}
                 trend={cat}
                 weekCount={weekCount}
                 completeFlags={buckets.map((b) => b.complete)}
-                showDivider={i > 0}
+                showDivider={indexInPage > 0}
               />
-            ))}
-          </View>
+            )}
+          />
         </>
       )}
     </View>

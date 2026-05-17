@@ -8,6 +8,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Defs, Pattern, Path, Rect } from "react-native-svg";
 import { deltaPalette, type DeltaPolarity } from "./delta-polarity";
+import { PaginatedRows } from "./paginated-rows";
 
 interface ActualVsIdealProps {
   categoryInsights: CategoryInsight[];
@@ -55,15 +56,13 @@ export function ActualVsIdeal({
   return (
     <View style={styles.container}>
       {Header}
-      <View>
-        {withTargets.map((insight, i) => (
-          <ComparisonRow
-            key={insight.categoryId}
-            insight={insight}
-            isFirst={i === 0}
-          />
-        ))}
-      </View>
+      <PaginatedRows
+        items={withTargets}
+        keyExtractor={(insight) => insight.categoryId}
+        renderItem={(insight, indexInPage) => (
+          <ComparisonRow insight={insight} isFirst={indexInPage === 0} />
+        )}
+      />
     </View>
   );
 }
@@ -272,8 +271,8 @@ const styles = StyleSheet.create({
     color: COLORS.onSurfaceVariant,
   },
   row: {
-    paddingTop: SPACING.lg,
-    paddingBottom: SPACING.md,
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.sm,
   },
   rowDivider: {
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -283,7 +282,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
     gap: SPACING.sm,
   },
   rowHeaderLeft: {
@@ -329,7 +328,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   barArea: {
-    paddingTop: 12,
+    paddingTop: 10,
   },
   goalLabelRow: {
     height: 0,
