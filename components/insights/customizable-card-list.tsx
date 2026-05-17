@@ -62,13 +62,35 @@ export function CustomizableCardList({
   // (or tapping any other card) exits. Disabled while editing cards.
   const [focusedId, setFocusedId] = useState<InsightCardId | null>(null);
   type ScrollableList = {
-    scrollToIndex: (params: {
-      index: number;
-      viewPosition?: number;
-      animated?: boolean;
-    }) => void;
+    scrollToOffset: (params: { offset: number; animated?: boolean }) => void;
   };
   const listRef = useRef<ScrollableList | null>(null);
+
+  // Refs used to compute the scroll offset that centers a card on focus.
+  // We measure the focused card's bounds + the list container's bounds in
+  // window coordinates and combine them with the current scroll offset.
+  // scrollToIndex was unreliable here because the list has no
+  // getItemLayout and the cards have widely varying heights, so its
+  // viewPosition-based math was estimating from an inaccurate average.
+  const cardRefs = useRef<Map<InsightCardId, View>>(new Map());
+  const containerRef = useRef<View | null>(null);
+  const scrollOffsetRef = useRef(0);
+
+  const registerCardRef = useCallback(
+    (id: InsightCardId, view: View | null) => {
+      if (view) cardRefs.current.set(id, view);
+      else cardRefs.current.delete(id);
+    },
+    [],
+  );
+
+  const handleScrollOffsetChange = useCallback(
+    (offset: number) => {
+      scrollOffsetRef.current = offset;
+      onScrollOffsetChange?.(offset);
+    },
+    [onScrollOffsetChange],
+  );
 
   useEffect(() => {
     if (editMode && focusedId !== null) setFocusedId(null);
@@ -153,23 +175,53 @@ export function CustomizableCardList({
   const handleCardPress = useCallback(
     (id: InsightCardId) => {
       if (editMode) return;
-      if (focusedId === null) {
-        setFocusedId(id);
-        const index = visibleCards.findIndex((c) => c.id === id);
-        if (index >= 0) {
-          requestAnimationFrame(() => {
-            listRef.current?.scrollToIndex({
-              index,
-              viewPosition: 0.5,
+      if (focusedId !== null) {
+        setFocusedId(null);
+        return;
+      }
+      setFocusedId(id);
+
+      const cardView = cardRefs.current.get(id);
+      const container = containerRef.current;
+      if (!cardView || !container) return;
+
+      // Defer to the next frame so any pending layout has settled. We use
+      // measureInWindow (which reports layout bounds, ignoring transforms)
+      // so the scale animation that focus mode triggers doesn't skew the
+      // math.
+      requestAnimationFrame(() => {
+        container.measureInWindow((_cx, containerY, _cw, containerH) => {
+          cardView.measureInWindow((_x, cardWindowY, _w, cardH) => {
+            if (containerH <= 0) return;
+            const currentOffset = scrollOffsetRef.current;
+            const cardOffsetInContent =
+              currentOffset + (cardWindowY - containerY);
+            const cardBottomInContent = cardOffsetInContent + cardH;
+            const visibleTop = currentOffset;
+            const visibleBottom = currentOffset + containerH;
+
+            // Already fully visible — leave the scroll alone so a centered
+            // card doesn't jump to a different position on tap.
+            if (
+              cardOffsetInContent >= visibleTop &&
+              cardBottomInContent <= visibleBottom
+            ) {
+              return;
+            }
+
+            const target =
+              cardH >= containerH
+                ? cardOffsetInContent
+                : cardOffsetInContent - (containerH - cardH) / 2;
+            listRef.current?.scrollToOffset({
+              offset: Math.max(0, target),
               animated: true,
             });
           });
-        }
-      } else {
-        setFocusedId(null);
-      }
+        });
+      });
     },
-    [editMode, focusedId, visibleCards],
+    [editMode, focusedId],
   );
 
   const renderItem = useCallback(
@@ -183,9 +235,17 @@ export function CustomizableCardList({
         onHide={handleHide}
         focusedId={focusedId}
         onPress={handleCardPress}
+        registerRef={registerCardRef}
       />
     ),
-    [editMode, focusedId, handleCardPress, handleEnterEditMode, handleHide],
+    [
+      editMode,
+      focusedId,
+      handleCardPress,
+      handleEnterEditMode,
+      handleHide,
+      registerCardRef,
+    ],
   );
 
   const keyExtractor = useCallback((item: CardEntry) => item.id, []);
@@ -273,22 +333,23 @@ export function CustomizableCardList({
           </Pressable>
         </View>
       ) : null}
-      <DraggableFlatList
-        ref={listRef as unknown as React.RefObject<never>}
-        data={visibleCards}
-        keyExtractor={keyExtractor}
-        renderItem={renderItem}
-        onDragEnd={handleDragEnd}
-        onScrollOffsetChange={onScrollOffsetChange}
-        ListHeaderComponent={header}
-        ListFooterComponent={footer}
-        contentContainerStyle={styles.contentContainer}
-        ItemSeparatorComponent={Separator}
-        showsVerticalScrollIndicator={false}
-        activationDistance={10}
-        containerStyle={styles.listContainer}
-        scrollEnabled={focusedId === null}
-      />
+      <View ref={containerRef} style={styles.listContainer} collapsable={false}>
+        <DraggableFlatList
+          ref={listRef as unknown as React.RefObject<never>}
+          data={visibleCards}
+          keyExtractor={keyExtractor}
+          renderItem={renderItem}
+          onDragEnd={handleDragEnd}
+          onScrollOffsetChange={handleScrollOffsetChange}
+          ListHeaderComponent={header}
+          ListFooterComponent={footer}
+          contentContainerStyle={styles.contentContainer}
+          ItemSeparatorComponent={Separator}
+          showsVerticalScrollIndicator={false}
+          activationDistance={10}
+          containerStyle={styles.listContainer}
+        />
+      </View>
     </View>
   );
 }
@@ -306,6 +367,7 @@ interface CardCellProps {
   onHide: (id: InsightCardId) => void;
   focusedId: InsightCardId | null;
   onPress: (id: InsightCardId) => void;
+  registerRef: (id: InsightCardId, view: View | null) => void;
 }
 
 function CardCell({
@@ -317,6 +379,7 @@ function CardCell({
   onHide,
   focusedId,
   onPress,
+  registerRef,
 }: CardCellProps): React.ReactElement {
   const isFocused = focusedId === card.id;
   const isDimmed = focusedId !== null && !isFocused;
@@ -341,11 +404,27 @@ function CardCell({
     elevation: isActive ? 8 : isFocused ? 6 : 0,
   }));
 
+  // Register a ref so the parent can measure this card's window-relative
+  // bounds when entering focus mode.
+  const setRef = useCallback(
+    (view: View | null) => {
+      registerRef(card.id, view);
+    },
+    [card.id, registerRef],
+  );
+
+  // The outer Pressable stays mounted across focus toggles so the inner
+  // PaginatedRows FlatList doesn't lose its measured width, page height,
+  // or active page index. When focused, pointerEvents="box-none" lets
+  // touches pass straight through to the inner horizontal FlatList so
+  // page swipes work; the Pressable itself is inert in that state.
   return (
     <Pressable
-      onPress={editMode ? undefined : () => onPress(card.id)}
+      ref={setRef}
+      onPress={editMode || isFocused ? undefined : () => onPress(card.id)}
       onLongPress={editMode || focusedId !== null ? undefined : onLongPressEnter}
       delayLongPress={380}
+      pointerEvents={isFocused ? "box-none" : "auto"}
     >
       <Animated.View style={[styles.cardWrapper, animatedStyle]}>
         <View pointerEvents={isDimmed ? "none" : "auto"}>{card.node}</View>
