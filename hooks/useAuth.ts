@@ -8,7 +8,10 @@ import React, {
   useState,
 } from "react";
 
-import { supabase } from "@/lib/supabase";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase";
+
+const UNCONFIGURED_ERROR =
+  "Sign-in is unavailable in this build of Horae.";
 
 interface AuthContextValue {
   user: User | null;
@@ -44,6 +47,13 @@ export function AuthProvider({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Local-only builds (no Supabase env vars) skip auth entirely.
+    // Mark loading complete so any UI waiting on it can render.
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+
     let mounted = true;
 
     supabase.auth.getSession().then(({ data }) => {
@@ -66,6 +76,7 @@ export function AuthProvider({
 
   const signInWithPassword = useCallback<AuthContextValue["signInWithPassword"]>(
     async (email, password) => {
+      if (!isSupabaseConfigured) return { error: UNCONFIGURED_ERROR };
       const { error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
@@ -77,6 +88,13 @@ export function AuthProvider({
 
   const signUp = useCallback<AuthContextValue["signUp"]>(
     async (email, password) => {
+      if (!isSupabaseConfigured) {
+        return {
+          error: UNCONFIGURED_ERROR,
+          needsConfirmation: false,
+          alreadyExists: false,
+        };
+      }
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
@@ -104,12 +122,14 @@ export function AuthProvider({
   );
 
   const signOut = useCallback<AuthContextValue["signOut"]>(async () => {
+    if (!isSupabaseConfigured) return;
     await supabase.auth.signOut();
   }, []);
 
   const sendPasswordReset = useCallback<
     AuthContextValue["sendPasswordReset"]
   >(async (email) => {
+    if (!isSupabaseConfigured) return { error: UNCONFIGURED_ERROR };
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
     return { error: error?.message ?? null };
   }, []);
@@ -117,6 +137,7 @@ export function AuthProvider({
   const resendSignUpConfirmation = useCallback<
     AuthContextValue["resendSignUpConfirmation"]
   >(async (email) => {
+    if (!isSupabaseConfigured) return { error: UNCONFIGURED_ERROR };
     const { error } = await supabase.auth.resend({
       type: "signup",
       email: email.trim(),
