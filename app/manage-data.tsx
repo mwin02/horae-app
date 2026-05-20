@@ -30,13 +30,13 @@ const DELETE_COPY: Record<
   entries: {
     title: "Delete time entries",
     description:
-      "Permanently removes every tracked entry from this device. Your categories, activities, tags, and preferences are kept so you can keep tracking right away.",
+      "Permanently removes every tracked entry from this device. Your categories, activities, tags, and preferences are kept so you can keep tracking right away. Export a backup first if you might want this data later.",
     bullets: ["All time entries", "All entry-tag links", "Daily summaries"],
   },
   all: {
     title: "Delete all data",
     description:
-      "Wipes everything on this device and resets the app to a fresh state. Preset categories and default preferences are restored on the next screen.",
+      "Wipes everything on this device and resets the app to a fresh state. Preset categories and default preferences are restored after. Export a backup first if you might want this data later.",
     bullets: [
       "Time entries, categories, activities, tags",
       "Goals and notification preferences",
@@ -90,8 +90,6 @@ export default function ManageDataScreen(): React.ReactElement {
   const [isExportingJson, setIsExportingJson] = useState(false);
   const [isExportingCsv, setIsExportingCsv] = useState(false);
   const [deleteScope, setDeleteScope] = useState<DeleteScope | null>(null);
-  // TODO(block-4): move this row into a proper "Restore" section above
-  // Danger Zone and rewrite the surrounding copy.
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const runJsonExport = useCallback(async () => {
@@ -145,8 +143,6 @@ export default function ManageDataScreen(): React.ReactElement {
     }
   }, [deleteScope]);
 
-  // TODO(block-4): move this handler + its alert composer out of the
-  // dev-wiring zone and into the final Restore section.
   const handleImport = useCallback(
     async (mode: ImportMode): Promise<ImportSummary | null> => {
       try {
@@ -183,19 +179,39 @@ export default function ManageDataScreen(): React.ReactElement {
         <View style={styles.header}>
           <Text style={styles.title}>Manage data</Text>
           <Text style={styles.subtitle}>
-            Export a copy of what you&apos;ve tracked, or wipe local data to
-            start over.
+            Back up what you&apos;ve tracked, bring it back later, or start
+            fresh.
           </Text>
         </View>
 
-        <Text style={styles.sectionLabel}>Export</Text>
+        <View style={styles.aboutCard}>
+          <View style={styles.aboutHeader}>
+            <Feather
+              name="hard-drive"
+              size={18}
+              color={COLORS.onPrimaryContainer}
+            />
+            <Text style={styles.aboutTitle}>Your data lives on this device</Text>
+          </View>
+          <Text style={styles.aboutBody}>
+            Until cloud sync arrives, everything you track is stored inside the
+            app. If you delete the app, all of it goes with it.
+          </Text>
+          <Text style={styles.aboutBody}>
+            Export a backup file every so often — you can restore it later from
+            this same screen. Full iCloud or iPhone backups also include the
+            app&apos;s data if you ever restore the whole device.
+          </Text>
+        </View>
+
+        <Text style={styles.sectionLabel}>Back up</Text>
         <View style={styles.group}>
           <SettingRow
-            title="Export data (JSON)"
+            title="Export a backup (JSON)"
             description={
               isExportingJson
                 ? "Preparing export…"
-                : "Full snapshot of every table"
+                : "Save a complete copy you can restore later"
             }
             onPress={runJsonExport}
             disabled={isExportingJson}
@@ -220,12 +236,11 @@ export default function ManageDataScreen(): React.ReactElement {
           />
         </View>
 
-        {/* TODO(block-4): replace with the proper "Restore" section + About card. */}
-        <Text style={styles.sectionLabel}>Restore (dev)</Text>
+        <Text style={styles.sectionLabel}>Restore</Text>
         <View style={styles.group}>
           <SettingRow
-            title="Import data (JSON)"
-            description="Restore from a backup file"
+            title="Restore from a backup"
+            description="Bring data back from a JSON file you exported"
             onPress={() => setIsImportModalOpen(true)}
             iconBackground={COLORS.surfaceContainer}
             iconChildren={
@@ -311,5 +326,26 @@ const styles = StyleSheet.create({
   },
   group: {
     gap: SPACING.sm,
+  },
+  aboutCard: {
+    backgroundColor: COLORS.primaryContainer,
+    borderRadius: 20,
+    padding: SPACING.lg,
+    marginTop: SPACING.md,
+    gap: SPACING.sm,
+  },
+  aboutHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACING.sm,
+  },
+  aboutTitle: {
+    ...TYPOGRAPHY.titleMd,
+    color: COLORS.onPrimaryContainer,
+    flex: 1,
+  },
+  aboutBody: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.onPrimaryContainer,
   },
 });
