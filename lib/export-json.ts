@@ -26,6 +26,7 @@ interface ExportPayload {
     entry_tags: Row[];
     notification_preferences: Row[];
     user_preferences: Row[];
+    insight_preferences: Row[];
   };
 }
 
@@ -43,6 +44,7 @@ async function buildPayload(): Promise<ExportPayload> {
     entry_tags,
     notification_preferences,
     user_preferences,
+    insight_preferences,
   ] = await Promise.all([
     selectAlive("categories"),
     selectAlive("activities"),
@@ -57,6 +59,7 @@ async function buildPayload(): Promise<ExportPayload> {
     ),
     selectAlive("notification_preferences"),
     selectAlive("user_preferences"),
+    selectAlive("insight_preferences"),
   ]);
 
   return {
@@ -72,6 +75,7 @@ async function buildPayload(): Promise<ExportPayload> {
       entry_tags,
       notification_preferences,
       user_preferences,
+      insight_preferences,
     },
   };
 }

@@ -1,3 +1,5 @@
+import type { Transaction } from "@powersync/react-native";
+
 import { db } from "@/lib/powersync";
 import { cancelAllAppNotifications } from "@/lib/notifications";
 import {
@@ -6,6 +8,43 @@ import {
   seedUserPreferencesIfNeeded,
 } from "@/db/seed";
 import { nowUTC } from "@/db/queries/_helpers";
+
+/**
+ * Wipes every user-owned row across every table, inside an existing
+ * transaction. Used by `deleteAllUserData` and by the JSON importer's
+ * "replace" mode so the two paths can't drift.
+ *
+ * Soft-deletes user-editable tables (time_entries, ideal_allocations,
+ * tags) so Phase 3 sync can propagate the removal. Hard-deletes
+ * categories/activities (preset rows are server-owned globals) and
+ * singleton pref rows / cache tables.
+ *
+ * Does NOT reseed presets or singletons — callers decide whether to
+ * follow up with `seedPresetsIfNeeded()` etc.
+ */
+export async function wipeAllInsideTx(
+  tx: Transaction,
+  now: string,
+): Promise<void> {
+  await tx.execute("DELETE FROM entry_tags");
+  await tx.execute(
+    "UPDATE time_entries SET deleted_at = ?, updated_at = ? WHERE deleted_at IS NULL",
+    [now, now],
+  );
+  await tx.execute(
+    "UPDATE ideal_allocations SET deleted_at = ?, updated_at = ? WHERE deleted_at IS NULL",
+    [now, now],
+  );
+  await tx.execute(
+    "UPDATE tags SET deleted_at = ?, updated_at = ? WHERE deleted_at IS NULL",
+    [now, now],
+  );
+  await tx.execute("DELETE FROM activities");
+  await tx.execute("DELETE FROM categories");
+  await tx.execute("DELETE FROM notification_preferences");
+  await tx.execute("DELETE FROM user_preferences");
+  await tx.execute("DELETE FROM daily_summaries");
+}
 
 /**
  * Soft-deletes every time entry plus its tag links. Categories,
@@ -49,24 +88,7 @@ export async function deleteAllTimeEntries(): Promise<void> {
 export async function deleteAllUserData(): Promise<void> {
   const now = nowUTC();
   await db.writeTransaction(async (tx) => {
-    await tx.execute("DELETE FROM entry_tags");
-    await tx.execute(
-      "UPDATE time_entries SET deleted_at = ?, updated_at = ? WHERE deleted_at IS NULL",
-      [now, now],
-    );
-    await tx.execute(
-      "UPDATE ideal_allocations SET deleted_at = ?, updated_at = ? WHERE deleted_at IS NULL",
-      [now, now],
-    );
-    await tx.execute(
-      "UPDATE tags SET deleted_at = ?, updated_at = ? WHERE deleted_at IS NULL",
-      [now, now],
-    );
-    await tx.execute("DELETE FROM activities");
-    await tx.execute("DELETE FROM categories");
-    await tx.execute("DELETE FROM notification_preferences");
-    await tx.execute("DELETE FROM user_preferences");
-    await tx.execute("DELETE FROM daily_summaries");
+    await wipeAllInsideTx(tx, now);
   });
   await cancelAllAppNotifications();
   await seedPresetsIfNeeded();
