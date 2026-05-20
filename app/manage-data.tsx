@@ -98,8 +98,7 @@ export default function ManageDataScreen(): React.ReactElement {
     try {
       await exportDataAsJson();
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unknown error";
+      const message = error instanceof Error ? error.message : "Unknown error";
       Alert.alert("Export failed", message);
     } finally {
       setIsExportingJson(false);
@@ -112,8 +111,7 @@ export default function ManageDataScreen(): React.ReactElement {
     try {
       await exportTimeEntriesAsCsv();
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unknown error";
+      const message = error instanceof Error ? error.message : "Unknown error";
       Alert.alert("Export failed", message);
     } finally {
       setIsExportingCsv(false);
@@ -136,8 +134,7 @@ export default function ManageDataScreen(): React.ReactElement {
           : "All data was wiped and presets were restored.",
       );
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unknown error";
+      const message = error instanceof Error ? error.message : "Unknown error";
       console.error("[manage-data] delete failed:", error);
       Alert.alert("Delete failed", message);
     }
@@ -191,11 +188,14 @@ export default function ManageDataScreen(): React.ReactElement {
               size={18}
               color={COLORS.onPrimaryContainer}
             />
-            <Text style={styles.aboutTitle}>Your data lives on this device</Text>
+            <Text style={styles.aboutTitle}>
+              Your data lives on this device
+            </Text>
           </View>
           <Text style={styles.aboutBody}>
-            Until cloud sync arrives, everything you track is stored inside the
-            app. If you delete the app, all of it goes with it.
+            Everything you track is stored only inside the app. If you delete
+            the app,{" "}
+            <Text style={styles.warning}>you will lose all of your data.</Text>
           </Text>
           <Text style={styles.aboutBody}>
             Export a backup file every so often — you can restore it later from
@@ -312,6 +312,9 @@ const styles = StyleSheet.create({
   title: {
     ...TYPOGRAPHY.headingXl,
     color: COLORS.onSurface,
+  },
+  warning: {
+    color: COLORS.error,
   },
   subtitle: {
     ...TYPOGRAPHY.body,
