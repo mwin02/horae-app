@@ -24,22 +24,20 @@ export async function seedPresetsIfNeeded(): Promise<void> {
   await db.writeTransaction(async (tx) => {
     for (let catIdx = 0; catIdx < PRESET_CATEGORIES.length; catIdx++) {
       const preset = PRESET_CATEGORIES[catIdx];
-      const categoryId = generateId();
 
       await tx.execute(
         `INSERT INTO categories (id, user_id, name, color, icon, is_preset, sort_order, is_archived, created_at, updated_at)
          VALUES (?, NULL, ?, ?, ?, 1, ?, 0, ?, ?)`,
-        [categoryId, preset.name, preset.color, preset.icon, catIdx, now, now]
+        [preset.id, preset.name, preset.color, preset.icon, catIdx, now, now]
       );
 
       for (let actIdx = 0; actIdx < preset.activities.length; actIdx++) {
-        const activityName = preset.activities[actIdx];
-        const activityId = generateId();
+        const activity = preset.activities[actIdx];
 
         await tx.execute(
           `INSERT INTO activities (id, user_id, category_id, name, is_preset, sort_order, is_archived, created_at, updated_at)
            VALUES (?, NULL, ?, ?, 1, ?, 0, ?, ?)`,
-          [activityId, categoryId, activityName, actIdx, now, now]
+          [activity.id, preset.id, activity.name, actIdx, now, now]
         );
       }
     }
