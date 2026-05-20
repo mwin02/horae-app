@@ -140,15 +140,19 @@ function parseAndValidate(text: string): ImportPayload {
   return { schema_version: EXPORT_SCHEMA_VERSION, tables: cleaned };
 }
 
-/** Builds an `INSERT OR IGNORE INTO <table> (...) VALUES (?, ?, ...)` */
+/** Builds a plain `INSERT INTO <table> (...) VALUES (?, ?, ...)`. We decide
+ *  whether to insert vs skip via an explicit pre-SELECT, so OR IGNORE is
+ *  unnecessary — and `rowsAffected` can't be trusted on PowerSync's
+ *  JSON-view-backed tables anyway (see insertRows). */
 function buildInsertSql(table: ImportTableName, columns: string[]): string {
   const cols = columns.map((c) => `"${c}"`).join(", ");
   const placeholders = columns.map(() => "?").join(", ");
-  return `INSERT OR IGNORE INTO ${table} (${cols}) VALUES (${placeholders})`;
+  return `INSERT INTO ${table} (${cols}) VALUES (${placeholders})`;
 }
 
 /**
- * Inserts every row of `rows` into `table`, with three-way handling per row:
+ * Inserts every row of `rows` into `table`, deciding per row via an explicit
+ * pre-SELECT (not via `rowsAffected`):
  *
  *   1. No local row with this id              → INSERT (counted as inserted).
  *   2. Local row exists and is alive          → skip per merge-mode policy
@@ -157,16 +161,21 @@ function buildInsertSql(table: ImportTableName, columns: string[]): string {
  *      (tombstone, deleted_at IS NOT NULL)      with the imported values
  *                                                (counted as inserted).
  *
- * Case 3 is the fix for the "deleted then re-imported" scenario: without it,
- * tombstones from `wipeAllInsideTx` / `deleteAllTimeEntries` would silently
- * block re-import because INSERT OR IGNORE treats id collisions as skips.
+ * Why a pre-SELECT instead of `INSERT OR IGNORE` + checking `rowsAffected`:
+ * PowerSync's client tables are JSON-backed views with INSTEAD OF triggers,
+ * and its DBAdapter docs explicitly warn that `rowsAffected` may be `0` even
+ * on successful writes. Counting via `rowsAffected` was producing summaries
+ * that said "nothing was added" after a real restore.
  *
- * Tables without a `deleted_at` column (e.g. `entry_tags`) fall through to
- * plain INSERT OR IGNORE — they're hard-deleted by the wipe so no tombstones
- * exist for them anyway.
+ * Case 3 also fixes the "deleted then re-imported" scenario: without it,
+ * tombstones from `wipeAllInsideTx` / `deleteAllTimeEntries` would silently
+ * block re-import in merge mode.
+ *
+ * Tables without a `deleted_at` column (e.g. `entry_tags`) collapse cases
+ * 2 and 3 into "row exists → skip" since no tombstone is possible.
  *
  * Resurrections are folded into the `inserted` count so the user-facing
- * summary stays simple: "Added N items" reads better than exposing the
+ * summary stays simple — "Added N items" reads better than exposing the
  * soft-delete machinery.
  */
 async function insertRows(
@@ -187,14 +196,20 @@ async function insertRows(
     const id = typeof row.id === "string" ? row.id : null;
     const hasSoftDelete = columns.includes("deleted_at");
 
-    if (id && hasSoftDelete) {
-      const existing = await tx.getOptional<{ deleted_at: string | null }>(
-        `SELECT deleted_at FROM ${table} WHERE id = ?`,
-        [id],
-      );
+    if (id) {
+      const existing = hasSoftDelete
+        ? await tx.getOptional<{ deleted_at: string | null }>(
+            `SELECT deleted_at FROM ${table} WHERE id = ?`,
+            [id],
+          )
+        : await tx.getOptional<{ id: string }>(
+            `SELECT id FROM ${table} WHERE id = ?`,
+            [id],
+          );
+
       if (existing) {
-        if (existing.deleted_at === null) {
-          // Alive collision — keep the device's row per merge-mode policy.
+        if (!hasSoftDelete || (existing as { deleted_at: string | null }).deleted_at === null) {
+          // Alive collision (or table can't tombstone) — keep the device's row.
           skipped += 1;
           continue;
         }
@@ -213,17 +228,13 @@ async function insertRows(
       }
     }
 
-    // No existing row (or table has no soft-delete column): INSERT OR IGNORE.
+    // No existing row: plain INSERT. Pre-check above guarantees no UNIQUE
+    // conflict on `id`, so we don't need OR IGNORE and don't have to
+    // inspect `rowsAffected` (which is unreliable on PowerSync views).
     const values = columns.map((c) => row[c] as unknown);
     const sql = buildInsertSql(table, columns);
-    const result = await tx.execute(sql, values as never[]);
-    // `rowsAffected` is 0 when OR IGNORE skipped due to UNIQUE conflict.
-    const affected = result.rowsAffected ?? 0;
-    if (affected > 0) {
-      inserted += 1;
-    } else {
-      skipped += 1;
-    }
+    await tx.execute(sql, values as never[]);
+    inserted += 1;
   }
 
   return { inserted, skipped };
