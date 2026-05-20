@@ -30,21 +30,41 @@ export interface ImportDataModalProps {
 interface ModeOption {
   value: ImportMode;
   title: string;
-  description: string;
+  renderDescription: () => React.ReactNode;
 }
 
 const MODE_OPTIONS: ModeOption[] = [
   {
     value: "merge",
     title: "Add to what's already here",
-    description:
-      "Keep everything that's on this device and add anything new from your backup. Items that already exist won't be duplicated.",
+    renderDescription: () => (
+      <>
+        Keep everything on this device and fill in anything new from your
+        backup. Pick this if you have{" "}
+        <Text style={styles.descriptionEmphasis}>
+          data on this device you don&apos;t want to lose
+        </Text>
+        .{" "}
+        <Text style={styles.descriptionWarning}>
+          Renamed or deleted preset activities won&apos;t be restored
+        </Text>{" "}
+        — use Replace for that.
+      </>
+    ),
   },
   {
     value: "replace",
     title: "Replace what's on this device",
-    description:
-      "Wipe everything currently on this device, then load the backup. Use this if you just reinstalled and want your old data back exactly as it was.",
+    renderDescription: () => (
+      <>
+        Wipe everything currently on this device, then load the backup. Use
+        this if you want your data back{" "}
+        <Text style={styles.descriptionEmphasis}>
+          exactly as it was when you exported
+        </Text>
+        .
+      </>
+    ),
   },
 ];
 
@@ -145,7 +165,7 @@ export function ImportDataModal({
                     <View style={styles.optionText}>
                       <Text style={styles.optionTitle}>{option.title}</Text>
                       <Text style={styles.optionDescription}>
-                        {option.description}
+                        {option.renderDescription()}
                       </Text>
                     </View>
                   </Pressable>
@@ -317,6 +337,14 @@ const styles = StyleSheet.create({
   optionDescription: {
     ...TYPOGRAPHY.body,
     color: COLORS.onSurfaceVariant,
+  },
+  descriptionEmphasis: {
+    color: COLORS.onSurface,
+    fontWeight: "600",
+  },
+  descriptionWarning: {
+    color: COLORS.error,
+    fontWeight: "600",
   },
   replaceWarning: {
     flexDirection: "row",
