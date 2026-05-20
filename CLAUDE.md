@@ -108,6 +108,7 @@ Hard constraints feature work needs to know:
 
 - **All persistent data is user-scoped post-auth.** Every `SELECT`/`UPDATE`/`DELETE` in `db/queries/**` must filter by current user (or `user_id IS NULL OR user_id = ?` for `categories`/`activities`, where presets are global). Block 6 introduces a `currentUserId()` getter — use it.
 - **Presets are server-owned and read-only to clients.** RLS + a CHECK constraint enforce this. Don't write `is_preset = true` rows from app code; never mutate a preset row's `user_id`. Block 5 handles the local→server preset remap.
+- **Preset rows have stable, slug-based ids.** [`constants/presets.ts`](./constants/presets.ts) defines deterministic ids like `preset-cat-work` and `preset-act-work-deep-work`. The seed (`db/seed.ts`) writes those literal ids, not random UUIDs, so presets converge across devices and round-trip cleanly through JSON export/import. **Never change an existing preset id** — it would orphan every `time_entries.activity_id` / `ideal_allocations.category_id` referencing it. Add new presets with new ids; never reassign.
 - **No DB-level overlap constraint on `time_entries`.** The client may produce overlapping closed entries (retroactive edits, etc.) and they sync fine. The server enforces only "≤1 running entry per user" via a partial unique index + auto-close trigger. Insights queries already clip ranges; do the same in any new aggregation.
 - **`entry_tags.user_id` is server-managed.** A trigger fills it from the parent `time_entries` on insert/update. When `db/schema.ts` flips `entry_tags` to `localOnly: false` (Block 4), add a nullable `user_id` column locally and let the server set it on upload.
 - **Constraint failures are fatal for PowerSync uploads.** Don't add Postgres CHECK / UNIQUE / FK constraints unless the client *already* enforces them — a single bad row will stall the upload queue indefinitely.
@@ -153,6 +154,21 @@ npx tsc --noEmit
 
 - `useNotificationScheduler` is **mounted once at the root** and is purely **reactive** — it watches the running-entry query + `notification_preferences` and never gets called imperatively from `useTimer`. Every code path that mutates `time_entries` is automatically covered.
 - Quiet hours **defer** `fireAt`, they don't drop it. Wrap every Date with `deferForQuietHours(fireAt, prefs)` from `db/queries.ts` before passing to `scheduleIdleReminder` / `scheduleLongRunningReminder`.
+
+### Local JSON backup & restore
+
+The Manage Data screen ships a full JSON export ([`lib/export-json.ts`](./lib/export-json.ts)) and import ([`lib/import-json.ts`](./lib/import-json.ts)) so users can survive an app delete before cloud sync arrives. Round-trips cleanly between the user's own devices via the OS Files app.
+
+- **Schema version is 1** (`EXPORT_SCHEMA_VERSION`); the importer rejects mismatched files with a friendly error. Bump only when row shape changes.
+- **Exporter writes alive rows only** (`deleted_at IS NULL`); `entry_tags` filters by parent `time_entries` liveness because it has no `deleted_at` of its own. Caches (`notification_fires`, `daily_summaries`) are intentionally omitted — they're rebuildable.
+- **Importer is transactional and three-way per row** (keyed on `id`, decided via pre-`SELECT`, never `rowsAffected`):
+  - row absent → INSERT
+  - row alive → skip (merge-mode policy: keep what's on device)
+  - row tombstoned (`deleted_at IS NOT NULL`) → UPDATE every column from the file, implicitly clearing the tombstone
+- **Replace mode** runs `wipeAllInsideTx` then hard-deletes the just-stamped tombstones for `time_entries` / `ideal_allocations` / `tags` so subsequent INSERTs aren't blocked by stale ids. The soft-delete moment still happens inside the same transaction, preserving the Phase 3 sync contract.
+- **Singleton-pref tables** (`notification_preferences`, `user_preferences`, `insight_preferences`) are always skipped in merge mode; replace mode imports them and falls back to `seed*IfNeeded` if the file lacks them. **Caveat:** `seedInsightPreferencesIfNeeded` doesn't exist yet — TODO listed in `docs/BACKUP.md`.
+
+For deep mechanics, Phase 3 sync intersections, and open TODOs (including the planned `db/sync-tables.ts` catalog refactor), see [`docs/BACKUP.md`](./docs/BACKUP.md).
 
 ### `time_entries.source` is a closed enum
 
@@ -229,7 +245,8 @@ npx tsc --noEmit
 - **`npx expo run:ios` required** — PowerSync uses native SQLite (JSI), incompatible with Expo Go
 - **Never use setInterval to accumulate timer duration** — always compute from `started_at`
 - **All times in UTC** in the database, display in entry's original timezone
-- **Soft deletes only** — use `deleted_at` column, never hard delete (needed for future sync)
+- **Soft deletes for user-editable data** — set `deleted_at`, don't hard-delete. `wipeAllInsideTx` is the one exception: it stamps `deleted_at` then clears the tombstones at the end of the same transaction so the JSON importer can re-insert by id. Don't replicate that pattern elsewhere without thinking through the sync implications (`docs/BACKUP.md` → Phase 3 sync intersections).
+- **PowerSync `rowsAffected` is unreliable on client tables.** Client tables are JSON-backed views with INSTEAD OF triggers — `tx.execute(...).rowsAffected` can return `0` on successful writes. Don't gate logic on it; use a `RETURNING` clause or a pre/post `SELECT` if you need to confirm a write landed. (Bit us in the JSON importer; see `docs/BACKUP.md`.)
 - **Zustand for UI state only** — all persistent data goes through PowerSync
 - **No `crypto.randomUUID()`** — use `generateId()` from `@/lib/uuid` instead
 - **PowerSync `OPSqliteOpenFactory`** — must be passed explicitly when creating the database instance
