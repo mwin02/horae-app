@@ -148,10 +148,26 @@ function buildInsertSql(table: ImportTableName, columns: string[]): string {
 }
 
 /**
- * Inserts every row of `rows` into `table`. Returns inserted/skipped counts.
- * Uses `INSERT OR IGNORE` so a duplicate primary key (`id`) is treated as a
- * skip rather than an error. Each row may declare its own column subset —
- * we build the SQL per row to tolerate column drift across exports.
+ * Inserts every row of `rows` into `table`, with three-way handling per row:
+ *
+ *   1. No local row with this id              → INSERT (counted as inserted).
+ *   2. Local row exists and is alive          → skip per merge-mode policy
+ *                                                ("keep what's on device").
+ *   3. Local row exists but is soft-deleted   → resurrect by overwriting it
+ *      (tombstone, deleted_at IS NOT NULL)      with the imported values
+ *                                                (counted as inserted).
+ *
+ * Case 3 is the fix for the "deleted then re-imported" scenario: without it,
+ * tombstones from `wipeAllInsideTx` / `deleteAllTimeEntries` would silently
+ * block re-import because INSERT OR IGNORE treats id collisions as skips.
+ *
+ * Tables without a `deleted_at` column (e.g. `entry_tags`) fall through to
+ * plain INSERT OR IGNORE — they're hard-deleted by the wipe so no tombstones
+ * exist for them anyway.
+ *
+ * Resurrections are folded into the `inserted` count so the user-facing
+ * summary stays simple: "Added N items" reads better than exposing the
+ * soft-delete machinery.
  */
 async function insertRows(
   tx: Transaction,
@@ -167,6 +183,37 @@ async function insertRows(
       skipped += 1;
       continue;
     }
+
+    const id = typeof row.id === "string" ? row.id : null;
+    const hasSoftDelete = columns.includes("deleted_at");
+
+    if (id && hasSoftDelete) {
+      const existing = await tx.getOptional<{ deleted_at: string | null }>(
+        `SELECT deleted_at FROM ${table} WHERE id = ?`,
+        [id],
+      );
+      if (existing) {
+        if (existing.deleted_at === null) {
+          // Alive collision — keep the device's row per merge-mode policy.
+          skipped += 1;
+          continue;
+        }
+        // Tombstone — resurrect by overwriting every column from the file.
+        // The imported `deleted_at` is NULL (exporter filters by liveness),
+        // so this also clears the tombstone implicitly.
+        const setCols = columns.filter((c) => c !== "id");
+        const setClause = setCols.map((c) => `"${c}" = ?`).join(", ");
+        const updateValues = setCols.map((c) => row[c] as unknown);
+        await tx.execute(
+          `UPDATE ${table} SET ${setClause} WHERE id = ?`,
+          [...updateValues, id] as never[],
+        );
+        inserted += 1;
+        continue;
+      }
+    }
+
+    // No existing row (or table has no soft-delete column): INSERT OR IGNORE.
     const values = columns.map((c) => row[c] as unknown);
     const sql = buildInsertSql(table, columns);
     const result = await tx.execute(sql, values as never[]);

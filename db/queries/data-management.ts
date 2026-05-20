@@ -39,6 +39,14 @@ export async function wipeAllInsideTx(
     "UPDATE tags SET deleted_at = ?, updated_at = ? WHERE deleted_at IS NULL",
     [now, now],
   );
+  // The three tables above stamp deleted_at for sync future, but
+  // tombstones would block subsequent INSERT OR IGNORE during the
+  // JSON importer's replace mode (id collisions get silently skipped).
+  // Clear them after stamping so the soft-delete moment is still
+  // observable within this transaction.
+  await tx.execute("DELETE FROM time_entries WHERE deleted_at IS NOT NULL");
+  await tx.execute("DELETE FROM ideal_allocations WHERE deleted_at IS NOT NULL");
+  await tx.execute("DELETE FROM tags WHERE deleted_at IS NOT NULL");
   await tx.execute("DELETE FROM activities");
   await tx.execute("DELETE FROM categories");
   await tx.execute("DELETE FROM notification_preferences");
