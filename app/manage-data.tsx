@@ -5,6 +5,7 @@ import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { DeleteDataModal } from "@/components/manage/delete-data-modal";
+import { ImportDataModal } from "@/components/manage/import-data-modal";
 import { SettingRow } from "@/components/settings/setting-row";
 import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
 import {
@@ -13,6 +14,12 @@ import {
 } from "@/db/queries/data-management";
 import { exportTimeEntriesAsCsv } from "@/lib/export-csv";
 import { exportDataAsJson } from "@/lib/export-json";
+import {
+  ImportError,
+  pickAndImportJson,
+  type ImportMode,
+  type ImportSummary,
+} from "@/lib/import-json";
 
 type DeleteScope = "entries" | "all";
 
@@ -38,10 +45,54 @@ const DELETE_COPY: Record<
   },
 };
 
+const FRIENDLY_TABLE_NAMES: Record<string, string> = {
+  categories: "categories",
+  activities: "activities",
+  time_entries: "time entries",
+  ideal_allocations: "goals",
+  tags: "tags",
+  entry_tags: "entry tags",
+  notification_preferences: "notification preferences",
+  user_preferences: "preferences",
+  insight_preferences: "insights layout",
+};
+
+function formatImportSummary(summary: ImportSummary): string {
+  const addedParts: string[] = [];
+  let skippedTotal = 0;
+  for (const [table, count] of Object.entries(summary.inserted)) {
+    if (count > 0) {
+      const label = FRIENDLY_TABLE_NAMES[table] ?? table;
+      addedParts.push(`${count} ${label}`);
+    }
+  }
+  for (const count of Object.values(summary.skipped)) {
+    skippedTotal += count;
+  }
+
+  const lines: string[] = [];
+  if (addedParts.length === 0) {
+    lines.push("Nothing new to add — your device already has it all.");
+  } else {
+    lines.push(`Added ${addedParts.join(", ")}.`);
+  }
+  if (skippedTotal > 0 && summary.mode === "merge") {
+    lines.push(
+      `Skipped ${skippedTotal} ${
+        skippedTotal === 1 ? "item" : "items"
+      } that were already on this device.`,
+    );
+  }
+  return lines.join(" ");
+}
+
 export default function ManageDataScreen(): React.ReactElement {
   const [isExportingJson, setIsExportingJson] = useState(false);
   const [isExportingCsv, setIsExportingCsv] = useState(false);
   const [deleteScope, setDeleteScope] = useState<DeleteScope | null>(null);
+  // TODO(block-4): move this row into a proper "Restore" section above
+  // Danger Zone and rewrite the surrounding copy.
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const runJsonExport = useCallback(async () => {
     if (isExportingJson) return;
@@ -94,6 +145,31 @@ export default function ManageDataScreen(): React.ReactElement {
     }
   }, [deleteScope]);
 
+  // TODO(block-4): move this handler + its alert composer out of the
+  // dev-wiring zone and into the final Restore section.
+  const handleImport = useCallback(
+    async (mode: ImportMode): Promise<ImportSummary | null> => {
+      try {
+        const summary = await pickAndImportJson(mode);
+        if (summary) {
+          setIsImportModalOpen(false);
+          Alert.alert("Restore complete", formatImportSummary(summary));
+        }
+        return summary;
+      } catch (error) {
+        const message =
+          error instanceof ImportError
+            ? error.message
+            : error instanceof Error
+              ? error.message
+              : "Unknown error";
+        Alert.alert("Couldn't read that file", message);
+        return null;
+      }
+    },
+    [],
+  );
+
   const copy = deleteScope ? DELETE_COPY[deleteScope] : null;
 
   return (
@@ -144,6 +220,20 @@ export default function ManageDataScreen(): React.ReactElement {
           />
         </View>
 
+        {/* TODO(block-4): replace with the proper "Restore" section + About card. */}
+        <Text style={styles.sectionLabel}>Restore (dev)</Text>
+        <View style={styles.group}>
+          <SettingRow
+            title="Import data (JSON)"
+            description="Restore from a backup file"
+            onPress={() => setIsImportModalOpen(true)}
+            iconBackground={COLORS.surfaceContainer}
+            iconChildren={
+              <Feather name="upload" size={20} color={COLORS.primary} />
+            }
+          />
+        </View>
+
         <Text style={styles.sectionLabel}>Danger zone</Text>
         <View style={styles.group}>
           <SettingRow
@@ -166,6 +256,14 @@ export default function ManageDataScreen(): React.ReactElement {
           />
         </View>
       </ScrollView>
+
+      <ImportDataModal
+        visible={isImportModalOpen}
+        exporting={isExportingJson}
+        onExportFirst={runJsonExport}
+        onPicked={handleImport}
+        onClose={() => setIsImportModalOpen(false)}
+      />
 
       <DeleteDataModal
         visible={deleteScope !== null}
