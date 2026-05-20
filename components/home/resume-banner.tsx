@@ -19,10 +19,7 @@ export function ResumeBanner({
   onPress,
 }: ResumeBannerProps): React.ReactElement {
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.row, { opacity: pressed ? 0.7 : 1 }]}
-    >
+    <View style={styles.row}>
       <View style={[styles.dot, { backgroundColor: categoryColor }]} />
       <View style={styles.textCol}>
         <Text style={styles.label}>Resume</Text>
@@ -30,10 +27,14 @@ export function ResumeBanner({
           {activityName}
         </Text>
       </View>
-      <View style={styles.iconWrap}>
+      <Pressable
+        onPress={onPress}
+        hitSlop={8}
+        style={({ pressed }) => [styles.iconWrap, { opacity: pressed ? 0.7 : 1 }]}
+      >
         <Feather name="play" size={16} color={COLORS.onSurface} />
-      </View>
-    </Pressable>
+      </Pressable>
+    </View>
   );
 }
 

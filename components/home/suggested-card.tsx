@@ -25,13 +25,7 @@ export function SuggestedCard({
   onPress,
 }: SuggestedCardProps): React.ReactElement {
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.card,
-        { transform: [{ scale: pressed ? 0.98 : 1 }] },
-      ]}
-    >
+    <View style={styles.card}>
       <View style={styles.headerRow}>
         <View
           style={[
@@ -58,11 +52,17 @@ export function SuggestedCard({
         </Text>
       </View>
 
-      <View style={styles.startBtn}>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.startBtn,
+          { opacity: pressed ? 0.7 : 1 },
+        ]}
+      >
         <Feather name="play" size={12} color={COLORS.onSurface} />
         <Text style={styles.startLabel}>Start</Text>
-      </View>
-    </Pressable>
+      </Pressable>
+    </View>
   );
 }
 
