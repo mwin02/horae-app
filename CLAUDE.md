@@ -43,52 +43,6 @@ Full implementation plan: `/Users/myozawwin/.claude/plans/ethereal-percolating-c
 - **Gradients/Blur:** `expo-linear-gradient`, `expo-blur`
 - **SVG:** `react-native-svg` (used for donut charts in Insights tab)
 
-## Project Structure
-
-```
-horae/
-├── app/                    # Expo Router screens (file-based routing)
-│   ├── (tabs)/             # Tab navigator
-│   │   ├── index.tsx       # Home/Timer tab
-│   │   ├── timeline.tsx    # Day Timeline tab
-│   │   ├── insights.tsx    # Insights tab
-│   │   └── settings.tsx    # Settings tab
-│   ├── notifications-settings.tsx # Idle/long-running toggles, threshold, quiet hours
-│   ├── manage-activities.tsx      # Add/rename/archive categories and activities
-│   └── _layout.tsx         # Root layout (PowerSync provider, DB init, seed)
-├── components/             # Reusable UI components
-│   ├── timer/              # Timer display, activity picker, quick-switch
-│   ├── timeline/           # Timeline blocks, gap filler
-│   ├── insights/           # Charts, comparison bars
-│   └── common/             # Shared buttons, modals, toasts
-├── db/                     # PowerSync database layer
-│   ├── schema.ts           # PowerSync table definitions (5 tables, all localOnly)
-│   ├── models.ts           # TypeScript types for UI (RunningTimer, TimelineEntry, etc.)
-│   ├── queries.ts          # All CRUD operations (categories, activities, time entries)
-│   └── seed.ts             # Seeds 10 preset categories + ~40 activities on first launch
-├── hooks/                  # Custom React hooks
-│   ├── useTimer.ts         # Core timer hook (start/stop/switch via PowerSync useQuery)
-│   ├── useElapsedTime.ts   # Live-ticking elapsed seconds (recalculates from startedAt)
-│   ├── useForgottenTimer.ts # Detects stale timers on app foreground (past activity threshold or different day)
-│   ├── useNotificationScheduler.ts # Root-mounted; schedules/cancels idle + long-running local notifications off the running-entry query
-│   ├── useCategoriesWithActivities.ts # Reactive grouped categories + activities
-│   ├── useInsightsData.ts  # Aggregated insights (category breakdown, coverage, actual vs ideal)
-│   └── useActivityBreakdown.ts # Activity-level drill-down within a category
-├── lib/                    # Library initializations
-│   ├── powersync.ts        # PowerSync DB instance (OPSqliteOpenFactory, local-only mode)
-│   ├── timezone.ts         # IANA timezone helpers (format, isToday, duration display)
-│   ├── notifications.ts    # expo-notifications wrapper (schedule/cancel/permissions)
-│   └── uuid.ts             # generateId() — React Native-safe UUID generation
-├── store/                  # Zustand stores (UI state only)
-│   └── uiStore.ts          # Selected date, ephemeral UI state
-├── constants/              # Preset data, colors, config
-│   ├── theme.ts            # Design system: COLORS, FONTS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS
-│   └── presets.ts          # 10 preset categories with activities
-├── supabase/               # Supabase migrations, seed data, Edge Functions (Phase 3)
-├── babel.config.js         # Includes async generator plugin for PowerSync watched queries
-└── app.json                # Expo configuration
-```
-
 ## Key Architecture Decisions
 
 1. **Offline-first:** All writes go to local SQLite via PowerSync. Sync to Supabase happens in background when online.
@@ -98,35 +52,13 @@ horae/
 5. **Timezones:** All times stored in UTC as ISO 8601 strings. Each time_entry stores its IANA timezone at creation. Display in original timezone.
 6. **PowerSync OP-SQLite adapter:** Must use `OPSqliteOpenFactory` explicitly — the default adapter (`@journeyapps/react-native-quick-sqlite`) is not installed.
 
-## Phase 3 cloud sync (backend in `supabase/`)
+## Phase 3 cloud sync
 
-Supabase Postgres is the source of truth; PowerSync Cloud filters per-user
-buckets to the client over WebSocket; uploads go through Supabase REST.
-Auth is **deferred** — the app stays fully usable without an account.
+All tables are `localOnly: true` today; sync ships in Phase 3. When working in `db/queries/**` or `supabase/`, read [`supabase/DESIGN.md`](./supabase/DESIGN.md) first — it covers user-scoping, the preset id contract, RLS rules, and PowerSync upload constraints. **Never change an existing preset id** in [`constants/presets.ts`](./constants/presets.ts) — it would orphan every `time_entries` / `ideal_allocations` row referencing it.
 
-Hard constraints feature work needs to know:
+## Data Model
 
-- **All persistent data is user-scoped post-auth.** Every `SELECT`/`UPDATE`/`DELETE` in `db/queries/**` must filter by current user (or `user_id IS NULL OR user_id = ?` for `categories`/`activities`, where presets are global). Block 6 introduces a `currentUserId()` getter — use it.
-- **Presets are server-owned and read-only to clients.** RLS + a CHECK constraint enforce this. Don't write `is_preset = true` rows from app code; never mutate a preset row's `user_id`. Block 5 handles the local→server preset remap.
-- **Preset rows have stable, slug-based ids.** [`constants/presets.ts`](./constants/presets.ts) defines deterministic ids like `preset-cat-work` and `preset-act-work-deep-work`. The seed (`db/seed.ts`) writes those literal ids, not random UUIDs, so presets converge across devices and round-trip cleanly through JSON export/import. **Never change an existing preset id** — it would orphan every `time_entries.activity_id` / `ideal_allocations.category_id` referencing it. Add new presets with new ids; never reassign.
-- **No DB-level overlap constraint on `time_entries`.** The client may produce overlapping closed entries (retroactive edits, etc.) and they sync fine. The server enforces only "≤1 running entry per user" via a partial unique index + auto-close trigger. Insights queries already clip ranges; do the same in any new aggregation.
-- **`entry_tags.user_id` is server-managed.** A trigger fills it from the parent `time_entries` on insert/update. When `db/schema.ts` flips `entry_tags` to `localOnly: false` (Block 4), add a nullable `user_id` column locally and let the server set it on upload.
-- **Constraint failures are fatal for PowerSync uploads.** Don't add Postgres CHECK / UNIQUE / FK constraints unless the client *already* enforces them — a single bad row will stall the upload queue indefinitely.
-
-For the *why* behind these (preset UUID scheme, sync-rule limitations,
-preset-mutation playbook, full RLS contract, operational checklist), see
-[`supabase/DESIGN.md`](./supabase/DESIGN.md).
-
-## Data Model (Core Tables)
-
-- **categories** — Work, Sleep, Health, etc. Has `sort_order`, `is_archived`, `is_preset`
-- **activities** — Belongs to a category. E.g., "Deep Work" under "Work"
-- **time_entries** — Core data. `started_at`, `ended_at`, `duration_seconds`, `timezone`, `note`, `source` (timer/manual/retroactive/import)
-- **ideal_allocations** — User's target minutes per day per category
-- **notification_preferences** — Singleton row. `idle_reminder_enabled`, `long_running_enabled`, `threshold_override_seconds` (nullable — null = compute from activity median), `has_asked_permission`, `quiet_hours_enabled`, `quiet_hours_start`, `quiet_hours_end` (HH:MM 24h local; NULL on pre-v3 rows = disabled; `end <= start` wraps midnight)
-- **daily_summaries** — Pre-aggregated daily totals (computed, not user-edited)
-
-All tables have `updated_at`, `deleted_at` (soft delete) columns. All tables are `localOnly: true` until Phase 3 (sync).
+Schema definitions live in [`db/schema.ts`](./db/schema.ts); TypeScript types in [`db/models.ts`](./db/models.ts). All tables carry `updated_at` + `deleted_at` (soft delete) and are `localOnly: true` until Phase 3.
 
 ## Development Commands
 
@@ -141,7 +73,7 @@ npx tsc --noEmit
 - **Functional components** with hooks — no class components
 - **File naming:** kebab-case for files (`activity-picker.tsx`), PascalCase for components (`ActivityPicker`)
 - **Imports:** Use path aliases (`@/components/...`, `@/db/...`, `@/hooks/...`)
-- **Styling:** StyleSheet.create() — no inline styles except for dynamic values. Use `TYPOGRAPHY`, `SPACING`, `RADIUS` from `@/constants/theme`. **Colors must come from `useTheme()` / `useThemedStyles()`** — see "Theming & dark mode" below. The static `COLORS` export is light-only and exists for non-React fallbacks; never import it into a component.
+- **Styling:** StyleSheet.create() — no inline styles except for dynamic values. Use `TYPOGRAPHY`, `SPACING`, `RADIUS` from `@/constants/theme`. **Colors must come from `useTheme()` / `useThemedStyles()`** — see [`docs/THEMING.md`](./docs/THEMING.md). The static `COLORS` export is light-only and exists for non-React fallbacks; never import it into a component.
 - **Design system:** "Fluid Chronometer" — no borders for sectioning (use background color shifts), tonal depth over structural lines. Designs in `design/` folder
 - **Error handling:** Always handle loading/error/empty states in UI components
 - **Database queries:** All PowerSync queries go through `db/queries.ts` — screens never write raw SQL
@@ -152,59 +84,7 @@ npx tsc --noEmit
 
 ### Theming & dark mode
 
-The app supports Light / Dark / Match-device, persisted in AsyncStorage under
-`horae.theme-mode.v1` and exposed via the **Appearance** section in General
-preferences. The provider lives at the root of `app/_layout.tsx`, and React
-Navigation's theme is rebuilt from the active palette so headers/cards repaint
-in sync. There are **two color palettes** in `constants/theme.ts`
-(`LIGHT_COLORS` and `DARK_COLORS`, typed `ThemeColors`); every component MUST
-read its colors through the theme hook so styles recompute on mode switch.
-
-**Required pattern for new components** — use a `makeStyles(c: ThemeColors)`
-factory at the bottom of the file, and call `useThemedStyles(makeStyles)` from
-the component:
-
-```tsx
-import { SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
-import { useTheme, useThemedStyles } from "@/hooks/useTheme";
-
-export function MyCard(): React.ReactElement {
-  const styles = useThemedStyles(makeStyles);
-  const { colors } = useTheme(); // only if you need an inline color in JSX
-  return (
-    <View style={styles.container}>
-      <Text style={styles.label}>Hi</Text>
-      <Feather name="check" color={colors.primary} size={16} />
-    </View>
-  );
-}
-
-function makeStyles(c: ThemeColors) {
-  return StyleSheet.create({
-    container: { backgroundColor: c.surface, padding: SPACING.lg },
-    label: { ...TYPOGRAPHY.titleMd, color: c.onSurface },
-  });
-}
-```
-
-**Rules:**
-
-- Never call `StyleSheet.create({ ... COLORS.x ... })` at module scope — the
-  values get baked in at module load and won't react to mode changes.
-- Never import `COLORS` into a `.tsx` component. The static `COLORS` export
-  aliases `LIGHT_COLORS` and exists only as a fallback for non-React modules
-  that genuinely can't read from context (none exist today).
-- If a sibling helper outside a component needs colors (e.g. a chart palette
-  function or a derived lookup table), make it take `c: ThemeColors` as a
-  parameter and have the caller pass `useTheme().colors`. See
-  `components/insights/delta-polarity.ts` for the pattern.
-- Multiple sub-components in the same file can each call
-  `useThemedStyles(makeStyles)` — the memoized result is cheap.
-- `SPACING`, `TYPOGRAPHY`, `RADIUS`, `FONTS`, `SHADOWS`, and `CATEGORY_PALETTE`
-  are theme-independent and stay as module-level imports.
-- When you add a new color token to `LIGHT_COLORS`, add the dark counterpart to
-  `DARK_COLORS` in the same commit — `ThemeColors` enforces parity but only
-  catches it at type-check time.
+Colors come from `useTheme()` / `useThemedStyles()` so styles recompute on Light/Dark switch. Never call `StyleSheet.create({ ... COLORS.x ... })` at module scope, and never import `COLORS` into a `.tsx` component. Full pattern (with code example) + rules: [`docs/THEMING.md`](./docs/THEMING.md).
 
 ### Notifications
 
@@ -213,18 +93,7 @@ function makeStyles(c: ThemeColors) {
 
 ### Local JSON backup & restore
 
-The Manage Data screen ships a full JSON export ([`lib/export-json.ts`](./lib/export-json.ts)) and import ([`lib/import-json.ts`](./lib/import-json.ts)) so users can survive an app delete before cloud sync arrives. Round-trips cleanly between the user's own devices via the OS Files app.
-
-- **Schema version is 1** (`EXPORT_SCHEMA_VERSION`); the importer rejects mismatched files with a friendly error. Bump only when row shape changes.
-- **Exporter writes alive rows only** (`deleted_at IS NULL`); `entry_tags` filters by parent `time_entries` liveness because it has no `deleted_at` of its own. Caches (`notification_fires`, `daily_summaries`) are intentionally omitted — they're rebuildable.
-- **Importer is transactional and three-way per row** (keyed on `id`, decided via pre-`SELECT`, never `rowsAffected`):
-  - row absent → INSERT
-  - row alive → skip (merge-mode policy: keep what's on device)
-  - row tombstoned (`deleted_at IS NOT NULL`) → UPDATE every column from the file, implicitly clearing the tombstone
-- **Replace mode** runs `wipeAllInsideTx` then hard-deletes the just-stamped tombstones for `time_entries` / `ideal_allocations` / `tags` so subsequent INSERTs aren't blocked by stale ids. The soft-delete moment still happens inside the same transaction, preserving the Phase 3 sync contract.
-- **Singleton-pref tables** (`notification_preferences`, `user_preferences`, `insight_preferences`) are always skipped in merge mode; replace mode imports them and falls back to `seed*IfNeeded` if the file lacks them. **Caveat:** `seedInsightPreferencesIfNeeded` doesn't exist yet — TODO listed in `docs/BACKUP.md`.
-
-For deep mechanics, Phase 3 sync intersections, and open TODOs (including the planned `db/sync-tables.ts` catalog refactor), see [`docs/BACKUP.md`](./docs/BACKUP.md).
+JSON export ([`lib/export-json.ts`](./lib/export-json.ts)) / import ([`lib/import-json.ts`](./lib/import-json.ts)) on the Manage Data screen. Schema rules, importer semantics, replace-mode tombstone handling, and Phase 3 sync intersections: [`docs/BACKUP.md`](./docs/BACKUP.md).
 
 ### `time_entries.source` is a closed enum
 
@@ -233,68 +102,20 @@ For deep mechanics, Phase 3 sync intersections, and open TODOs (including the pl
 - **All writes go through `TIME_ENTRY_SOURCES` + `assertTimeEntrySource`** from `db/queries/_helpers.ts`. Never inline a string literal in an INSERT — bind a typed const instead. The `__DEV__`-only assert catches stray values in development.
 - **Reads can trust the union.** `TimeEntryRecord.source` is narrowed to `TimeEntrySource | null` in `db/models.ts`, so analytics SQL (`source IN ('timer','manual')` in `notifications.ts`) and downstream Insights queries can rely on a fixed alphabet.
 
-### Reusable UI Components (`components/common/`)
+### Reusable component gotchas
 
-- **`GlassCard`** — Glassmorphism card wrapper (BlurView on iOS, rgba fallback on Android)
-- **`GradientButton`** — Primary CTA with linear gradient. `shape="pill"` for text buttons, `shape="circle"` for icon buttons (e.g., stop button). **Note:** pill shape has `paddingVertical: 16` making it ~54px tall — if you need exact height control (e.g., fixed-height action rows), use inline `LinearGradient` + `Pressable` instead.
-- **`CategoryChip`** — Colored pill showing category name with dot indicator. Does NOT accept a `selected` prop — wrap in a styled `Pressable` with a border for selection state.
-- **`CategoryIcon`** — Maps preset icon strings (e.g., `'briefcase'`, `'heart'`) to Feather icons with fallbacks
-- **`PulsingDots`** — Animated dots indicator for active timer state
-- **`DonutChart`** (`components/insights/donut-chart.tsx`) — Reusable SVG donut chart. Props: `slices` (value + color), `size`, `strokeWidth`, `centerLabel`, `centerSubLabel`. Handles single-slice and empty states.
+- **`GradientButton`** pill shape has `paddingVertical: 16` (~54px tall). For fixed-height rows, use inline `LinearGradient` + `Pressable` instead.
+- **`CategoryChip`** does NOT accept a `selected` prop — wrap in a styled `Pressable` with a border for selection state.
 
-### Reusable Hooks
+Component catalog: browse `components/common/` and `components/insights/`. Hook catalog: `hooks/`. Query functions: `db/queries.ts` (or `db/queries/**`).
 
-- **`useCategoriesWithActivities()`** — Returns `{ categories }` with each category containing its activities array. Used in any activity picker (NewSessionModal, GapFillModal, etc.)
-- **`useTimelineData(selectedDate)`** — Returns entries + gaps for a day. Useful reference for timezone-aware day boundary queries.
-- **`useTimer()`** — Core timer hook (start/stop/switch)
-- **`useElapsedTime(startedAt)`** — Live-ticking seconds from a start time
-- **`useForgottenTimer()`** — Detects stale timers on app foreground
-- **`useInsightsData(selectedDate, period)`** — Returns `categoryInsights[]`, `coverage`, `totalTrackedMinutes` for daily/weekly periods. Joins category aggregations with ideal allocations.
-- **`useActivityBreakdown(categoryId, categoryColor, selectedDate, period)`** — Returns activity-level time slices within a category, with tonal color variations derived from the parent category color.
+### Timezone gotchas
 
-### Available Query Functions (`db/queries.ts`)
+All times stored in UTC; each `time_entry` carries its IANA timezone; display in the entry's original timezone. Helpers live in [`lib/timezone.ts`](./lib/timezone.ts).
 
-- **`createRetroactiveEntry({ activityId, startedAt, endedAt, timezone })`** — Creates a completed entry with `source: 'retroactive'`
-- **`updateEntryTimes(entryId, startedAt, endedAt)`** — Updates start/end times and recomputes `duration_seconds`
-- **`updateEntryNote(entryId, note)`** — Updates the note on an entry
-- **`deleteEntry(entryId)`** — Soft deletes an entry (sets `deleted_at`)
-
-### Timezone Patterns
-
-**Critical:** All times are stored in UTC. Each `time_entry` stores an IANA timezone. Always display in the entry's original timezone.
-
-**Gotcha:** Never add local minutes to UTC dates directly — use `localMinutesToDate()` from `useTimelineData.ts` which accounts for timezone offset.
-
-**Key timezone helpers in `lib/timezone.ts`:**
-
-- `getCurrentTimezone()` — Returns current IANA timezone string
-- `getTodayDate(timezone)` — Returns `YYYY-MM-DD` for today in the given timezone
-- `getStartOfDay(dateStr, timezone)` — UTC `Date` for local midnight of `dateStr`
-- `parseLocalTimeOfDay(hhMM, dateStr, tz)` — combines `YYYY-MM-DD` + `HH:MM` into a UTC `Date`, DST-safe (same two-pass adjust as `getStartOfDay`)
-- `getEndOfDay(dateStr, timezone)` — UTC `Date` for the last instant of that local day (DST-safe)
-- `formatTimeInTimezone(isoString, timezone)` — Formats time for display (e.g., "9:30 AM")
-- `formatDuration(seconds)` — Human-readable duration (e.g., "1h 30m")
-- `minutesSinceMidnight(date, timezone)` — Minutes since midnight for a Date in a timezone (in `useTimelineData.ts`)
-
-**Day boundary queries:** Always use `getStartOfDay(date, tz)` / `getEndOfDay(date, tz)` as query params — never naive `${date}T00:00:00.000Z` strings, which represent UTC midnight and are off by the user's UTC offset in local time (causes entries to be clipped to e.g. 7 AM local in UTC+7). Combine with overlap logic (`started_at <= dayEnd AND (ended_at IS NULL OR ended_at >= dayStart)`).
-
-**Range aggregations must clip entry durations:** When summing time across a date range (e.g. `INSIGHTS_CATEGORY_QUERY`), sum the clipped intersection `MIN(rangeEnd, ended_at_or_now) - MAX(rangeStart, started_at)`, not the full `duration_seconds`. Otherwise a midnight-spanning entry gets its full duration counted in both days' totals.
-
-## Implementation Progress
-
-### Completed
-
-- **Phase 1, Step 1:** Expo scaffold with tabs template, EAS dev build configured
-- **Phase 1, Step 2:** PowerSync database layer (schema, models, queries, seed)
-- **Timer hooks:** useTimer, useElapsedTime, useForgottenTimer, timezone utils, Zustand UI store
-- **Phase 1, Step 3:** Home/Timer tab — TimerCard (active/idle with consistent height), QuickSwitchSection (horizontal carousel), NewSessionModal (category filter, search, activity picker), tab layout with Feather icons
-- **Phase 1, Step 4:** Forgotten stop modal (bottom sheet with time picker)
-- **Phase 2, Step 5:** Timeline tab — vertical day timeline with time axis, entry blocks, gap blocks, clustering of short entries, overlap detection (side-by-side layout), current time indicator, date navigation (DateHeader + WeekStrip), EntryDetailModal (time editing + delete), GapFillModal (activity picker with adjustable times)
-- **Phase 2, Step 6:** Insights tab — Daily/Weekly toggle, category breakdown bars, actual vs ideal comparison, activity breakdown with SVG donut chart and category selector, tracking coverage card
-
-### Next Up
-
-- **Phase 3:** Cloud sync (Supabase Auth, PowerSync sync, Row-Level Security)
+- **Never add local minutes to UTC dates directly** — use `localMinutesToDate()` from `useTimelineData.ts`, which accounts for timezone offset.
+- **Day boundary queries:** use `getStartOfDay(date, tz)` / `getEndOfDay(date, tz)` — never naive `${date}T00:00:00.000Z` strings (off by UTC offset, clips entries in non-UTC zones). Combine with overlap logic: `started_at <= dayEnd AND (ended_at IS NULL OR ended_at >= dayStart)`.
+- **Range aggregations must clip entry durations:** sum `MIN(rangeEnd, ended_at_or_now) - MAX(rangeStart, started_at)`, not the full `duration_seconds`. Otherwise a midnight-spanning entry double-counts across days.
 
 ## Important Constraints
 
