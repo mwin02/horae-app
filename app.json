@@ -13,16 +13,13 @@
       "backgroundColor": "#D9B583"
     },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.myozawwin.horae",
       "appleTeamId": "827722TPEU",
       "deploymentTarget": "16.1",
       "infoPlist": {
         "NSSupportsLiveActivities": true,
-        "LSApplicationQueriesSchemes": [
-          "mailto",
-          "mailto"
-        ],
+        "LSApplicationQueriesSchemes": ["mailto", "mailto"],
         "ITSAppUsesNonExemptEncryption": false
       },
       "entitlements": {
