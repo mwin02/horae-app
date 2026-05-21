@@ -44,7 +44,8 @@ function buildNotificationSummary(
   if (!prefs) return "Loading…";
   const idle = prefs.idle_reminder_enabled === 1;
   const longRunning = prefs.long_running_enabled === 1;
-  if (!idle && !longRunning) return "All reminders off";
+  const goalAlerts = prefs.goal_alerts_enabled === 1;
+  if (!idle && !longRunning && !goalAlerts) return "All reminders off";
   const parts: string[] = [];
   if (idle) parts.push("Idle");
   if (longRunning) {
@@ -53,6 +54,7 @@ function buildNotificationSummary(
     );
     parts.push(`Long-running · ${threshold}`);
   }
+  if (goalAlerts) parts.push("Goal alerts");
   return parts.join(" · ");
 }
 
@@ -124,9 +126,7 @@ export default function SettingsScreen(): React.ReactElement {
   }, []);
 
   const handleSentryTest = useCallback(() => {
-    throw new Error(
-      `Horae Sentry test crash @ ${new Date().toISOString()}`,
-    );
+    throw new Error(`Horae Sentry test crash @ ${new Date().toISOString()}`);
   }, []);
 
   const handleSeedDemoDay = useCallback(async () => {
@@ -146,8 +146,7 @@ export default function SettingsScreen(): React.ReactElement {
       }
       Alert.alert("Demo day seeded", parts.join(" · "));
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unknown error";
+      const message = error instanceof Error ? error.message : "Unknown error";
       console.error("[dev-seed] failed:", error);
       Alert.alert("Seed failed", message);
     }
@@ -162,9 +161,6 @@ export default function SettingsScreen(): React.ReactElement {
     <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.header}>
         <Text style={styles.title}>Settings</Text>
-        <Text style={styles.subtitle}>
-          Shape how the app nudges you and what you&apos;re aiming for.
-        </Text>
       </View>
 
       <ScrollView
@@ -198,15 +194,6 @@ export default function SettingsScreen(): React.ReactElement {
 
         <Text style={styles.sectionLabel}>Preferences</Text>
         <SettingRow
-          title="General"
-          description={`Week starts ${WEEK_START_LABELS[preferences.weekStartDay]} · Insights ${PERIOD_LABELS[preferences.defaultInsightsPeriod]}`}
-          onPress={goToGeneralPreferences}
-          iconBackground={COLORS.surfaceContainer}
-          iconChildren={
-            <Feather name="sliders" size={20} color={COLORS.primary} />
-          }
-        />
-        <SettingRow
           title="Notifications"
           description={notificationSummary}
           onPress={goToNotifications}
@@ -216,26 +203,25 @@ export default function SettingsScreen(): React.ReactElement {
           }
         />
         <SettingRow
+          title="General"
+          description={`Week starts ${WEEK_START_LABELS[preferences.weekStartDay]} · Insights ${PERIOD_LABELS[preferences.defaultInsightsPeriod]}`}
+          onPress={goToGeneralPreferences}
+          iconBackground={COLORS.surfaceContainer}
+          iconChildren={
+            <Feather name="sliders" size={20} color={COLORS.primary} />
+          }
+        />
+        <SettingRow
           title="Goals"
-          description="Ideal hours per day for each category"
           onPress={goToIdealAllocations}
           iconBackground={COLORS.surfaceContainer}
           iconChildren={
             <Feather name="target" size={20} color={COLORS.primary} />
           }
         />
-        <SettingRow
-          title="Manage categories"
-          description="Recolor or change category icons"
-          onPress={goToManageCategories}
-          iconBackground={COLORS.surfaceContainer}
-          iconChildren={
-            <Feather name="grid" size={20} color={COLORS.primary} />
-          }
-        />
+
         <SettingRow
           title="Manage activities"
-          description="Add, rename, or archive activities"
           onPress={goToManageActivities}
           iconBackground={COLORS.surfaceContainer}
           iconChildren={
@@ -243,17 +229,22 @@ export default function SettingsScreen(): React.ReactElement {
           }
         />
         <SettingRow
-          title="Manage tags"
-          description="Add, rename, recolor, or archive tags"
-          onPress={goToManageTags}
+          title="Manage categories"
+          onPress={goToManageCategories}
           iconBackground={COLORS.surfaceContainer}
           iconChildren={
-            <Feather name="tag" size={20} color={COLORS.primary} />
+            <Feather name="grid" size={20} color={COLORS.primary} />
           }
+        />
+
+        <SettingRow
+          title="Manage tags"
+          onPress={goToManageTags}
+          iconBackground={COLORS.surfaceContainer}
+          iconChildren={<Feather name="tag" size={20} color={COLORS.primary} />}
         />
         <SettingRow
           title="Manage data"
-          description="Export or wipe what you've tracked"
           onPress={goToManageData}
           iconBackground={COLORS.surfaceContainer}
           iconChildren={
@@ -264,7 +255,6 @@ export default function SettingsScreen(): React.ReactElement {
         <Text style={styles.sectionLabel}>Help us improve</Text>
         <SettingRow
           title="Report a bug"
-          description="Open your mail app with app info pre-filled"
           onPress={handleReportBug}
           iconBackground={COLORS.surfaceContainer}
           iconChildren={
@@ -273,7 +263,6 @@ export default function SettingsScreen(): React.ReactElement {
         />
         <SettingRow
           title="Request a feature"
-          description="Tell us what would make Horae better"
           onPress={handleRequestFeature}
           iconBackground={COLORS.surfaceContainer}
           iconChildren={
@@ -286,7 +275,6 @@ export default function SettingsScreen(): React.ReactElement {
             <Text style={styles.sectionLabel}>Debug</Text>
             <SettingRow
               title="Trigger Sentry test crash"
-              description="Throws a known error — verify it lands in Sentry"
               onPress={handleSentryTest}
               iconBackground={COLORS.surfaceContainer}
               iconChildren={
@@ -295,7 +283,6 @@ export default function SettingsScreen(): React.ReactElement {
             />
             <SettingRow
               title="Seed demo day"
-              description="Fills the last 21 days with a believable timeline (weekday/weekend mix + nightly sleep) and a running timer on today"
               onPress={handleSeedDemoDay}
               iconBackground={COLORS.surfaceContainer}
               iconChildren={
@@ -329,10 +316,6 @@ const styles = StyleSheet.create({
   title: {
     ...TYPOGRAPHY.headingXl,
     color: COLORS.onSurface,
-  },
-  subtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.onSurfaceVariant,
   },
   listContent: {
     paddingHorizontal: SPACING.lg,
