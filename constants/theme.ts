@@ -6,7 +6,7 @@
 // ---------------------------------------------------------------------------
 // Colors — Material 3 tonal palette from the design spec
 // ---------------------------------------------------------------------------
-export const COLORS = {
+export const LIGHT_COLORS = {
   // Surfaces (light → dark layering)
   surface: '#f8f5ff',
   surfaceContainerLowest: '#ffffff',
@@ -78,6 +78,91 @@ export const COLORS = {
   glassBackground: 'rgba(217, 218, 255, 0.7)',
   glassInnerGlow: 'rgba(123, 156, 255, 0.2)',
 } as const;
+
+export type ThemeColors = { -readonly [K in keyof typeof LIGHT_COLORS]: string };
+
+// Material 3 dark tonal palette — keeps the indigo/blue accent intact,
+// flips the surface ramp so containers go from near-black to mid-tone.
+export const DARK_COLORS: ThemeColors = {
+  // Surfaces (dark → lighter layering)
+  surface: '#101230',
+  surfaceContainerLowest: '#0a0b22',
+  surfaceContainerLow: '#181a3a',
+  surfaceContainer: '#1c1f44',
+  surfaceContainerHigh: '#262952',
+  surfaceContainerHighest: '#30335f',
+  surfaceDim: '#0a0b22',
+
+  // On-surface text
+  onSurface: '#e0e2ff',
+  onSurfaceVariant: '#a7aad7',
+  onBackground: '#e0e2ff',
+
+  // Primary
+  primary: '#a8c0ff',
+  primaryContainer: '#003a9e',
+  primaryDim: '#7b9cff',
+  primaryFixed: '#7b9cff',
+  primaryFixedDim: '#658eff',
+  onPrimary: '#001e5a',
+  onPrimaryContainer: '#dce2ff',
+  onPrimaryFixed: '#000000',
+  onPrimaryFixedVariant: '#00266e',
+  inversePrimary: '#0050d4',
+
+  // Secondary
+  secondary: '#71e4b1',
+  secondaryContainer: '#005a3d',
+  secondaryDim: '#7ff3be',
+  secondaryFixed: '#7ff3be',
+  secondaryFixedDim: '#71e4b1',
+  onSecondary: '#003827',
+  onSecondaryContainer: '#c8ffe1',
+  onSecondaryFixed: '#00452e',
+  onSecondaryFixedVariant: '#006545',
+
+  // Tertiary
+  tertiary: '#ffb785',
+  tertiaryContainer: '#5a2e00',
+  tertiaryDim: '#ff9735',
+  tertiaryFixed: '#ff9735',
+  tertiaryFixedDim: '#f08921',
+  onTertiary: '#4d2600',
+  onTertiaryContainer: '#ffdcc2',
+  onTertiaryFixed: '#291200',
+  onTertiaryFixedVariant: '#5a2e00',
+
+  // Error
+  error: '#ff8a90',
+  errorContainer: '#7a0010',
+  errorDim: '#fb5151',
+  onError: '#570008',
+  onErrorContainer: '#ffdad8',
+
+  // Outline
+  outline: '#8d8fbe',
+  outlineVariant: '#3f4271',
+
+  // Inverse
+  inverseSurface: '#e0e2ff',
+  inverseOnSurface: '#282b51',
+
+  // Gradient endpoints
+  gradientStart: '#3568e5',
+  gradientEnd: '#7b9cff',
+
+  // Glass card
+  glassBackground: 'rgba(38, 41, 82, 0.7)',
+  glassInnerGlow: 'rgba(123, 156, 255, 0.25)',
+};
+
+/**
+ * Default export — light palette. Kept as `COLORS` for backwards
+ * compatibility with non-themed call sites (e.g. constants modules,
+ * external resources) and as a static fallback. Themed components MUST
+ * read colors from `useTheme().colors` so they react to mode switches.
+ */
+export const COLORS: ThemeColors = LIGHT_COLORS;
 
 // ---------------------------------------------------------------------------
 // Font family names (must match the keys used in useFonts)

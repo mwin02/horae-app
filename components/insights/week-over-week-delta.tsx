@@ -1,5 +1,6 @@
 import { CategoryIconSwatch } from "./category-icon-swatch";
-import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { FONTS, RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import {
   useWeekOverWeekDelta,
   type WeekOverWeekRow,
@@ -40,6 +41,8 @@ function formatCompactDuration(totalSeconds: number): string {
 export function WeekOverWeekDelta({
   weekDate,
 }: WeekOverWeekDeltaProps): React.ReactElement | null {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const { rows, isLoading } = useWeekOverWeekDelta(weekDate);
 
   if (isLoading) return null;
@@ -54,7 +57,7 @@ export function WeekOverWeekDelta({
         <Text style={styles.eyebrowTitle}>WEEK OVER WEEK</Text>
         {hasData ? (
           <View style={styles.legend}>
-            <LegendSwatch color={COLORS.outlineVariant} label="previous week" />
+            <LegendSwatch color={colors.outlineVariant} label="previous week" />
           </View>
         ) : null}
       </View>
@@ -83,6 +86,7 @@ function LegendSwatch({
   color: string;
   label: string;
 }): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.legendItem}>
       <View style={[styles.legendDot, { backgroundColor: color }]} />
@@ -99,7 +103,7 @@ interface ChipStyle {
   text: string;
 }
 
-function resolveChip(row: WeekOverWeekRow): ChipStyle {
+function resolveChip(row: WeekOverWeekRow, c: ThemeColors): ChipStyle {
   const now = row.thisWeekSeconds;
   const prev = row.lastWeekSeconds;
   const noData = now < NEAR_ZERO_SECONDS && prev < NEAR_ZERO_SECONDS;
@@ -107,7 +111,7 @@ function resolveChip(row: WeekOverWeekRow): ChipStyle {
   const dropped = now < NEAR_ZERO_SECONDS && prev >= NEAR_ZERO_SECONDS;
 
   if (noData) {
-    return { ...deltaPalette("neutral"), text: "—" };
+    return { ...deltaPalette("neutral", c), text: "—" };
   }
 
   // For `around` goals we compare distance-to-target between the two weeks
@@ -120,14 +124,14 @@ function resolveChip(row: WeekOverWeekRow): ChipStyle {
 
   if (newWeek) {
     return {
-      ...deltaPalette(deltaPolarity(row.goalDirection, true, aroundCtx)),
+      ...deltaPalette(deltaPolarity(row.goalDirection, true, aroundCtx), c),
       text: "new",
     };
   }
 
   if (dropped) {
     return {
-      ...deltaPalette(deltaPolarity(row.goalDirection, false, aroundCtx)),
+      ...deltaPalette(deltaPolarity(row.goalDirection, false, aroundCtx), c),
       text: "0m",
     };
   }
@@ -136,7 +140,7 @@ function resolveChip(row: WeekOverWeekRow): ChipStyle {
   const up = delta > 0;
   const symbol = up ? "+" : "−";
   return {
-    ...deltaPalette(deltaPolarity(row.goalDirection, up, aroundCtx)),
+    ...deltaPalette(deltaPolarity(row.goalDirection, up, aroundCtx), c),
     text: `${symbol}${formatCompactDuration(Math.abs(delta))}`,
   };
 }
@@ -147,7 +151,9 @@ interface DeltaRowProps {
 }
 
 function DeltaRow({ row, showDivider }: DeltaRowProps): React.ReactElement {
-  const chip = resolveChip(row);
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
+  const chip = resolveChip(row, colors);
   // Scale within the row so within-category comparison stays legible even
   // when other categories dwarf this one.
   const rowMax = Math.max(row.thisWeekSeconds, row.lastWeekSeconds);
@@ -181,7 +187,7 @@ function DeltaRow({ row, showDivider }: DeltaRowProps): React.ReactElement {
         />
         <BarLine
           pct={prevPct}
-          color={COLORS.outlineVariant}
+          color={colors.outlineVariant}
           height={PREV_BAR_HEIGHT}
           minWidthIfPositive={row.lastWeekSeconds > 0}
           valueText={
@@ -219,6 +225,7 @@ function BarLine({
   valueText,
   valueStrong,
 }: BarLineProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.barRow}>
       <View style={styles.barTrack}>
@@ -247,9 +254,10 @@ function BarLine({
 
 // ──────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
   container: {
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
     borderRadius: RADIUS.xl,
     padding: SPACING.lg,
   },
@@ -265,7 +273,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 14,
     letterSpacing: 1.3,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
   legend: {
     flexDirection: "row",
@@ -285,11 +293,11 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.jakartaSemiBold,
     fontSize: 10,
     lineHeight: 12,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
   emptyText: {
     ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
 
   row: {
@@ -300,7 +308,7 @@ const styles = StyleSheet.create({
   },
   rowDivider: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: COLORS.outlineVariant,
+    borderTopColor: c.outlineVariant,
   },
   labelCol: {
     width: LABEL_COL_WIDTH,
@@ -313,7 +321,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.jakartaSemiBold,
     fontSize: 12,
     lineHeight: 16,
-    color: COLORS.onSurface,
+    color: c.onSurface,
     flexShrink: 1,
   },
 
@@ -341,13 +349,13 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.jakartaSemiBold,
     fontSize: 10,
     lineHeight: 12,
-    color: COLORS.onSurface,
+    color: c.onSurface,
   },
   valueTextMuted: {
     fontFamily: FONTS.jakartaRegular,
     fontSize: 10,
     lineHeight: 12,
-    color: COLORS.outline,
+    color: c.outline,
   },
 
   chip: {
@@ -364,4 +372,5 @@ const styles = StyleSheet.create({
     lineHeight: 12,
     fontVariant: ["tabular-nums"],
   },
-});
+  });
+}

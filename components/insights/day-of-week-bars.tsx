@@ -1,5 +1,6 @@
 import { CategoryIconSwatch } from "./category-icon-swatch";
-import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { FONTS, RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useThemedStyles } from "@/hooks/useTheme";
 import {
   useDayOfWeekBreakdown,
   type DayOfWeekBucket,
@@ -20,6 +21,7 @@ const TIMELINE_HEIGHT = 140;
 export function DayOfWeekBars({
   weekDate,
 }: DayOfWeekBarsProps): React.ReactElement | null {
+  const styles = useThemedStyles(makeStyles);
   const { days, legend, isLoading } = useDayOfWeekBreakdown(weekDate);
   const router = useRouter();
   const setSelectedDate = useUIStore((s) => s.setSelectedDate);
@@ -91,6 +93,7 @@ function TimelineColumn({
   day: DayOfWeekBucket;
   dimmed?: boolean;
 }): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={[styles.barColumn, dimmed && styles.barColumnDimmed]}>
       <View style={styles.timelineTrack}>
@@ -115,74 +118,76 @@ function TimelineColumn({
 
 // ──────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: RADIUS.xl,
-    padding: SPACING["2xl"],
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: SPACING.lg,
-    gap: SPACING.md,
-  },
-  titleBlock: {
-    flex: 1,
-  },
-  sectionLabel: {
-    ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
-    marginBottom: SPACING.xs,
-  },
-  barsRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-    gap: SPACING.xs,
-  },
-  barColumn: {
-    flex: 1,
-    alignItems: "center",
-  },
-  barColumnDimmed: {
-    opacity: 0.35,
-  },
-  dayPressable: {
-    flex: 1,
-  },
-  dayPressed: {
-    opacity: 0.6,
-  },
-  timelineTrack: {
-    width: "100%",
-    height: TIMELINE_HEIGHT,
-    flexDirection: "column",
-    backgroundColor: COLORS.surfaceContainer,
-    borderRadius: RADIUS.sm,
-    overflow: "hidden",
-  },
-  dayLabel: {
-    fontFamily: FONTS.jakartaMedium,
-    fontSize: 11,
-    lineHeight: 14,
-    color: COLORS.onSurfaceVariant,
-    marginTop: SPACING.xs,
-  },
-  legend: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: SPACING.md,
-    marginTop: SPACING.md,
-  },
-  legendItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.xs,
-  },
-  legendText: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurface,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      backgroundColor: c.surfaceContainerLow,
+      borderRadius: RADIUS.xl,
+      padding: SPACING["2xl"],
+    },
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      marginBottom: SPACING.lg,
+      gap: SPACING.md,
+    },
+    titleBlock: {
+      flex: 1,
+    },
+    sectionLabel: {
+      ...TYPOGRAPHY.labelUppercase,
+      color: c.onSurfaceVariant,
+      marginBottom: SPACING.xs,
+    },
+    barsRow: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      justifyContent: "space-between",
+      gap: SPACING.xs,
+    },
+    barColumn: {
+      flex: 1,
+      alignItems: "center",
+    },
+    barColumnDimmed: {
+      opacity: 0.35,
+    },
+    dayPressable: {
+      flex: 1,
+    },
+    dayPressed: {
+      opacity: 0.6,
+    },
+    timelineTrack: {
+      width: "100%",
+      height: TIMELINE_HEIGHT,
+      flexDirection: "column",
+      backgroundColor: c.surfaceContainer,
+      borderRadius: RADIUS.sm,
+      overflow: "hidden",
+    },
+    dayLabel: {
+      fontFamily: FONTS.jakartaMedium,
+      fontSize: 11,
+      lineHeight: 14,
+      color: c.onSurfaceVariant,
+      marginTop: SPACING.xs,
+    },
+    legend: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: SPACING.md,
+      marginTop: SPACING.md,
+    },
+    legendItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SPACING.xs,
+    },
+    legendText: {
+      ...TYPOGRAPHY.bodySmall,
+      color: c.onSurface,
+    },
+  });
+}

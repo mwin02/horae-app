@@ -6,7 +6,8 @@ import { QuickStartGrid } from "@/components/home/quick-start-grid";
 import { SuggestedRow } from "@/components/home/suggested-row";
 import { WeeklyStreak } from "@/components/home/weekly-streak";
 import { UndoToast } from "@/components/common/undo-toast";
-import { COLORS, SPACING } from "@/constants/theme";
+import { SPACING, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import {
   endForgottenEntry,
   deleteEntry,
@@ -33,6 +34,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HomeScreen(): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const {
     runningEntry,
     isLoading,
@@ -147,7 +150,7 @@ export default function HomeScreen(): React.ReactElement {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -230,21 +233,23 @@ export default function HomeScreen(): React.ReactElement {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  scrollContent: {
-    padding: SPACING.lg,
-    paddingBottom: 100,
-  },
-  timerCardWrapper: {
-    marginBottom: SPACING["3xl"],
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.surface,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    scrollContent: {
+      padding: SPACING.lg,
+      paddingBottom: 100,
+    },
+    timerCardWrapper: {
+      marginBottom: SPACING["3xl"],
+    },
+  });
+}

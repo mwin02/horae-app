@@ -1,7 +1,8 @@
 import React, { useCallback } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from '@/constants/theme';
+import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from '@/constants/theme';
+import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 import { getCurrentTimezone, getTodayDate } from '@/lib/timezone';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 
@@ -36,6 +37,8 @@ function formatShortDate(dateStr: string): string {
 }
 
 export function WeekNavHeader({ selectedDate, onDateChange }: WeekNavHeaderProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const { preferences } = useUserPreferences();
   const weekStartDay = preferences.weekStartDay;
   const startOfSelected = getWeekStart(selectedDate, weekStartDay);
@@ -64,7 +67,7 @@ export function WeekNavHeader({ selectedDate, onDateChange }: WeekNavHeaderProps
           onPress={goBack}
           style={({ pressed }) => [styles.arrowButton, pressed && styles.arrowPressed]}
         >
-          <Feather name="chevron-left" size={20} color={COLORS.primary} />
+          <Feather name="chevron-left" size={20} color={colors.primary} />
         </Pressable>
         <Pressable
           onPress={goForward}
@@ -75,49 +78,51 @@ export function WeekNavHeader({ selectedDate, onDateChange }: WeekNavHeaderProps
             pressed && !isCurrentWeek && styles.arrowPressed,
           ]}
         >
-          <Feather name="chevron-right" size={20} color={isCurrentWeek ? COLORS.outlineVariant : COLORS.primary} />
+          <Feather name="chevron-right" size={20} color={isCurrentWeek ? colors.outlineVariant : colors.primary} />
         </Pressable>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    marginBottom: SPACING.lg,
-  },
-  label: {
-    ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
-    marginBottom: SPACING.xs,
-  },
-  weekRange: {
-    ...TYPOGRAPHY.headingXl,
-    color: COLORS.onSurface,
-  },
-  arrowPill: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-    backgroundColor: COLORS.surfaceContainerLow,
-    padding: 4,
-    borderRadius: RADIUS.full,
-  },
-  arrowButton: {
-    width: 40,
-    height: 40,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surfaceContainerLowest,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  arrowPressed: {
-    backgroundColor: COLORS.surfaceContainer,
-  },
-  arrowDisabled: {
-    opacity: 0.4,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: SPACING.lg,
+      marginBottom: SPACING.lg,
+    },
+    label: {
+      ...TYPOGRAPHY.labelUppercase,
+      color: c.onSurfaceVariant,
+      marginBottom: SPACING.xs,
+    },
+    weekRange: {
+      ...TYPOGRAPHY.headingXl,
+      color: c.onSurface,
+    },
+    arrowPill: {
+      flexDirection: 'row',
+      gap: SPACING.sm,
+      backgroundColor: c.surfaceContainerLow,
+      padding: 4,
+      borderRadius: RADIUS.full,
+    },
+    arrowButton: {
+      width: 40,
+      height: 40,
+      borderRadius: RADIUS.full,
+      backgroundColor: c.surfaceContainerLowest,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    arrowPressed: {
+      backgroundColor: c.surfaceContainer,
+    },
+    arrowDisabled: {
+      opacity: 0.4,
+    },
+  });
+}

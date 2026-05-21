@@ -1,12 +1,13 @@
 import { ActiveDot } from "@/components/common/active-dot";
 import { CategoryIcon } from "@/components/common/category-icon";
 import {
-  COLORS,
   RADIUS,
   SHADOWS,
   SPACING,
   TYPOGRAPHY,
+  type ThemeColors,
 } from "@/constants/theme";
+import { useThemedStyles } from "@/hooks/useTheme";
 import { formatDuration } from "@/lib/timezone";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -49,6 +50,7 @@ export function ActiveSessionChip({
   attachment,
   onPress,
 }: ActiveSessionChipProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   const elapsedSeconds = Math.max(
     0,
     Math.round((liveNow.getTime() - startedAt.getTime()) / 1000),
@@ -104,17 +106,18 @@ export function ActiveSessionChip({
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingLeft: SPACING.md + 6, // extra room for the category accent bar
     paddingRight: SPACING.md,
-    backgroundColor: COLORS.surface,
+    backgroundColor: c.surface,
     borderRadius: RADIUS.lg,
     borderWidth: 2,
-    borderColor: COLORS.primary,
+    borderColor: c.primary,
     alignSelf: "flex-start",
     width: "95%",
     gap: SPACING.sm,
@@ -141,7 +144,7 @@ const styles = StyleSheet.create({
   },
   activityName: {
     ...TYPOGRAPHY.titleMd,
-    color: COLORS.onSurface,
+    color: c.onSurface,
     flexShrink: 1,
   },
   categoryBadge: {
@@ -157,7 +160,8 @@ const styles = StyleSheet.create({
   },
   duration: {
     ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
     fontVariant: ["tabular-nums"],
   },
-});
+  });
+}

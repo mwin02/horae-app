@@ -1,5 +1,6 @@
 import { CategoryIcon } from "@/components/common/category-icon";
-import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { FONTS, RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -24,6 +25,8 @@ export function SuggestedCard({
   subtitle,
   onPress,
 }: SuggestedCardProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   return (
     <View style={styles.card}>
       <View style={styles.headerRow}>
@@ -59,7 +62,7 @@ export function SuggestedCard({
           { opacity: pressed ? 0.7 : 1 },
         ]}
       >
-        <Feather name="play" size={12} color={COLORS.onSurface} />
+        <Feather name="play" size={12} color={colors.onSurface} />
         <Text style={styles.startLabel}>Start</Text>
       </Pressable>
     </View>
@@ -79,57 +82,59 @@ function withAlpha(hex: string, alpha: number): string {
   return `#${m[1]}${a}`;
 }
 
-const styles = StyleSheet.create({
-  card: {
-    width: 240,
-    backgroundColor: COLORS.surfaceContainerLowest,
-    borderRadius: RADIUS.xl,
-    padding: SPACING.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: COLORS.outlineVariant,
-    gap: SPACING.md,
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.sm,
-  },
-  iconTile: {
-    width: ICON_TILE_SIZE,
-    height: ICON_TILE_SIZE,
-    borderRadius: 999,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  eyebrow: {
-    ...TYPOGRAPHY.labelUppercase,
-    fontSize: 11,
-    flexShrink: 1,
-  },
-  body: {
-    gap: 2,
-  },
-  title: {
-    ...TYPOGRAPHY.heading,
-    color: COLORS.onSurface,
-  },
-  subtitle: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
-  },
-  startBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: SPACING.sm,
-    paddingVertical: 11,
-    paddingHorizontal: SPACING.md,
-    borderRadius: 999,
-    backgroundColor: COLORS.surfaceContainerLow,
-  },
-  startLabel: {
-    fontFamily: FONTS.manropeBold,
-    fontSize: 14,
-    color: COLORS.onSurface,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    card: {
+      width: 240,
+      backgroundColor: c.surfaceContainerLowest,
+      borderRadius: RADIUS.xl,
+      padding: SPACING.lg,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.outlineVariant,
+      gap: SPACING.md,
+    },
+    headerRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SPACING.sm,
+    },
+    iconTile: {
+      width: ICON_TILE_SIZE,
+      height: ICON_TILE_SIZE,
+      borderRadius: 999,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    eyebrow: {
+      ...TYPOGRAPHY.labelUppercase,
+      fontSize: 11,
+      flexShrink: 1,
+    },
+    body: {
+      gap: 2,
+    },
+    title: {
+      ...TYPOGRAPHY.heading,
+      color: c.onSurface,
+    },
+    subtitle: {
+      ...TYPOGRAPHY.bodySmall,
+      color: c.onSurfaceVariant,
+    },
+    startBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: SPACING.sm,
+      paddingVertical: 11,
+      paddingHorizontal: SPACING.md,
+      borderRadius: 999,
+      backgroundColor: c.surfaceContainerLow,
+    },
+    startLabel: {
+      fontFamily: FONTS.manropeBold,
+      fontSize: 14,
+      color: c.onSurface,
+    },
+  });
+}

@@ -1,5 +1,6 @@
 import { CategoryIconSwatch } from "./category-icon-swatch";
-import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { FONTS, RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import { useTopActivities, type TopActivity } from "@/hooks/useTopActivities";
 import { formatDuration } from "@/lib/timezone";
 import React from "react";
@@ -25,6 +26,7 @@ const PODIUM_ORDER: number[] = [2, 1, 3];
 export function TopActivitiesRanked({
   monthDate,
 }: TopActivitiesRankedProps): React.ReactElement | null {
+  const styles = useThemedStyles(makeStyles);
   const { activities, topSeconds, isLoading } = useTopActivities(
     monthDate,
     TOTAL_LIMIT,
@@ -90,6 +92,8 @@ function PodiumColumn({
   rank,
   activity,
 }: PodiumColumnProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const barHeight = PODIUM_BAR_HEIGHT[rank] ?? PODIUM_BAR_HEIGHT[3];
 
   return (
@@ -108,7 +112,7 @@ function PodiumColumn({
             height: barHeight,
             backgroundColor: activity
               ? activity.categoryColor
-              : COLORS.surfaceContainer,
+              : colors.surfaceContainer,
             opacity: activity ? (rank === 1 ? 1 : 0.85) : 0.5,
           },
         ]}
@@ -132,6 +136,7 @@ function DenseRow({
   topSeconds,
   isLast,
 }: DenseRowProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   const fillFraction =
     topSeconds > 0 ? Math.max(0.02, activity.totalSeconds / topSeconds) : 0;
 
@@ -171,9 +176,10 @@ function DenseRow({
 
 // ──────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
   container: {
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
     borderRadius: RADIUS.xl,
     padding: SPACING.lg,
   },
@@ -191,17 +197,17 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 14,
     letterSpacing: 1.3,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
   eyebrowMeta: {
     fontFamily: FONTS.jakartaMedium,
     fontSize: 11,
     lineHeight: 14,
-    color: COLORS.outline,
+    color: c.outline,
   },
   emptyText: {
     ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
 
   // Podium
@@ -221,13 +227,13 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 14,
     letterSpacing: 1,
-    color: COLORS.outline,
+    color: c.outline,
   },
   podiumName: {
     fontFamily: FONTS.jakartaSemiBold,
     fontSize: 13,
     lineHeight: 18,
-    color: COLORS.onSurface,
+    color: c.onSurface,
     textAlign: "center",
     marginTop: 2,
     width: "100%",
@@ -236,7 +242,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.jakartaRegular,
     fontSize: 11,
     lineHeight: 14,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
     marginTop: 1,
     marginBottom: 6,
     fontVariant: ["tabular-nums"],
@@ -249,7 +255,7 @@ const styles = StyleSheet.create({
 
   // Dense list
   denseList: {
-    backgroundColor: COLORS.surfaceContainer,
+    backgroundColor: c.surfaceContainer,
     borderRadius: RADIUS.md,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -262,14 +268,14 @@ const styles = StyleSheet.create({
   },
   denseRowDivider: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.outlineVariant,
+    borderBottomColor: c.outlineVariant,
   },
   denseRank: {
     width: 14,
     fontFamily: FONTS.jakartaSemiBold,
     fontSize: 11,
     lineHeight: 14,
-    color: COLORS.outline,
+    color: c.outline,
     fontVariant: ["tabular-nums"],
   },
   denseMiddle: {
@@ -286,13 +292,13 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.jakartaMedium,
     fontSize: 13,
     lineHeight: 18,
-    color: COLORS.onSurface,
+    color: c.onSurface,
     flexShrink: 1,
   },
   denseBarTrack: {
     height: 3,
     borderRadius: 2,
-    backgroundColor: COLORS.outlineVariant,
+    backgroundColor: c.outlineVariant,
     overflow: "hidden",
   },
   denseBarFill: {
@@ -303,8 +309,9 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.jakartaSemiBold,
     fontSize: 12,
     lineHeight: 16,
-    color: COLORS.onSurface,
+    color: c.onSurface,
     fontVariant: ["tabular-nums"],
   },
-});
+  });
+}
 

@@ -3,7 +3,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { TagChip } from "@/components/common/tag-chip";
 import { useTags } from "@/hooks/useTags";
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 
 interface TagFilterRowProps {
   selectedTagIds: string[];
@@ -19,6 +20,8 @@ export function TagFilterRow({
   selectedTagIds,
   onChange,
 }: TagFilterRowProps): React.ReactElement | null {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const { tags } = useTags();
 
   if (tags.length === 0) return null;
@@ -52,7 +55,7 @@ export function TagFilterRow({
         ))}
         {hasSelection && (
           <Pressable onPress={() => onChange([])} style={styles.clearChip}>
-            <Feather name="x" size={12} color={COLORS.onSurfaceVariant} />
+            <Feather name="x" size={12} color={colors.onSurfaceVariant} />
             <Text style={styles.clearLabel}>Clear</Text>
           </Pressable>
         )}
@@ -61,36 +64,38 @@ export function TagFilterRow({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.sm,
-    paddingLeft: SPACING.lg,
-    paddingVertical: SPACING.xs,
-  },
-  label: {
-    ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
-    fontSize: 10,
-  },
-  scrollContent: {
-    gap: SPACING.sm,
-    paddingRight: SPACING.lg,
-    alignItems: "center",
-  },
-  clearChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surfaceContainer,
-  },
-  clearLabel: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
-    fontWeight: "600",
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SPACING.sm,
+      paddingLeft: SPACING.lg,
+      paddingVertical: SPACING.xs,
+    },
+    label: {
+      ...TYPOGRAPHY.labelUppercase,
+      color: c.onSurfaceVariant,
+      fontSize: 10,
+    },
+    scrollContent: {
+      gap: SPACING.sm,
+      paddingRight: SPACING.lg,
+      alignItems: "center",
+    },
+    clearChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: RADIUS.full,
+      backgroundColor: c.surfaceContainer,
+    },
+    clearLabel: {
+      ...TYPOGRAPHY.bodySmall,
+      color: c.onSurfaceVariant,
+      fontWeight: "600",
+    },
+  });
+}

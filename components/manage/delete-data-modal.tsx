@@ -11,7 +11,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 
 const CONFIRMATION_PHRASE = "DELETE";
 
@@ -42,6 +43,8 @@ export function DeleteDataModal({
   onClose,
 }: DeleteDataModalProps): React.ReactElement {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const [phrase, setPhrase] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -92,7 +95,7 @@ export function DeleteDataModal({
               <Text style={styles.headerSubtitle}>This cannot be undone.</Text>
             </View>
             <Pressable onPress={onClose} style={styles.closeButton}>
-              <Feather name="x" size={22} color={COLORS.onSurface} />
+              <Feather name="x" size={22} color={colors.onSurface} />
             </Pressable>
           </View>
 
@@ -116,7 +119,7 @@ export function DeleteDataModal({
               exporting && styles.exportNudgeDisabled,
             ]}
           >
-            <Feather name="download" size={18} color={COLORS.primary} />
+            <Feather name="download" size={18} color={colors.primary} />
             <Text style={styles.exportNudgeText}>
               {exporting ? "Preparing export…" : "Export data first (JSON)"}
             </Text>
@@ -129,7 +132,7 @@ export function DeleteDataModal({
             <TextInput
               style={styles.input}
               placeholder={CONFIRMATION_PHRASE}
-              placeholderTextColor={COLORS.onSurfaceVariant}
+              placeholderTextColor={colors.onSurfaceVariant}
               value={phrase}
               onChangeText={setPhrase}
               autoCapitalize="characters"
@@ -148,7 +151,7 @@ export function DeleteDataModal({
               !canConfirm && styles.deleteButtonDisabled,
             ]}
           >
-            <Feather name="trash-2" size={18} color={COLORS.onPrimary} />
+            <Feather name="trash-2" size={18} color={colors.onPrimary} />
             <Text style={styles.deleteButtonLabel}>
               {submitting ? "Deleting…" : "Delete permanently"}
             </Text>
@@ -160,7 +163,8 @@ export function DeleteDataModal({
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: "flex-end",
@@ -169,7 +173,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sheet: {
-    backgroundColor: COLORS.surfaceContainerLowest,
+    backgroundColor: c.surfaceContainerLowest,
     borderTopLeftRadius: RADIUS.xxl,
     borderTopRightRadius: RADIUS.xxl,
     paddingTop: SPACING.md,
@@ -182,7 +186,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: COLORS.outlineVariant,
+    backgroundColor: c.outlineVariant,
     alignSelf: "center",
     marginBottom: SPACING.lg,
   },
@@ -198,21 +202,21 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...TYPOGRAPHY.headingXl,
-    color: COLORS.onSurface,
+    color: c.onSurface,
   },
   headerSubtitle: {
     ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.error,
+    color: c.error,
     marginTop: SPACING.xs,
   },
   closeButton: {
     padding: SPACING.sm,
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
   },
   description: {
     ...TYPOGRAPHY.body,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
     marginBottom: SPACING.lg,
   },
   bulletList: {
@@ -228,12 +232,12 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: COLORS.onSurfaceVariant,
+    backgroundColor: c.onSurfaceVariant,
     marginTop: 8,
   },
   bulletText: {
     ...TYPOGRAPHY.body,
-    color: COLORS.onSurface,
+    color: c.onSurface,
     flex: 1,
   },
   exportNudge: {
@@ -243,26 +247,26 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.lg,
     borderRadius: RADIUS.lg,
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
     marginBottom: SPACING.lg,
   },
   exportNudgePressed: {
-    backgroundColor: COLORS.surfaceContainer,
+    backgroundColor: c.surfaceContainer,
   },
   exportNudgeDisabled: {
     opacity: 0.6,
   },
   exportNudgeText: {
     ...TYPOGRAPHY.titleMd,
-    color: COLORS.primary,
+    color: c.primary,
   },
   sectionLabel: {
     ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
     marginBottom: SPACING.sm,
   },
   inputContainer: {
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
     borderRadius: RADIUS.xl,
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
@@ -270,7 +274,7 @@ const styles = StyleSheet.create({
   },
   input: {
     ...TYPOGRAPHY.body,
-    color: COLORS.onSurface,
+    color: c.onSurface,
     padding: 0,
     letterSpacing: 1,
   },
@@ -281,16 +285,17 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
     paddingVertical: SPACING.lg,
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.error,
+    backgroundColor: c.error,
   },
   deleteButtonPressed: {
-    backgroundColor: COLORS.errorDim,
+    backgroundColor: c.errorDim,
   },
   deleteButtonDisabled: {
     opacity: 0.45,
   },
   deleteButtonLabel: {
     ...TYPOGRAPHY.titleMd,
-    color: COLORS.onPrimary,
+    color: c.onPrimary,
   },
-});
+  });
+}

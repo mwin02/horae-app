@@ -1,4 +1,5 @@
-import { COLORS, RADIUS, SPACING } from "@/constants/theme";
+import { RADIUS, SPACING, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import { getCurrentTimezone, getTodayDate } from "@/lib/timezone";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { LinearGradient } from "expo-linear-gradient";
@@ -41,6 +42,8 @@ export function WeekStrip({
   selectedDate,
   onDateChange,
 }: WeekStripProps): React.ReactElement {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const timezone = getCurrentTimezone();
   const today = getTodayDate(timezone);
   const { preferences } = useUserPreferences();
@@ -85,7 +88,7 @@ export function WeekStrip({
 
           {day.isSelected ? (
             <LinearGradient
-              colors={[COLORS.gradientStart, COLORS.gradientEnd]}
+              colors={[colors.gradientStart, colors.gradientEnd]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.selectedCircle}
@@ -118,7 +121,8 @@ export function WeekStrip({
 
 const CELL_SIZE = 44;
 
-const styles = StyleSheet.create({
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
   container: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -133,11 +137,11 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans_700Bold",
     fontSize: 10,
     textTransform: "uppercase",
-    color: COLORS.onSurfaceVariant + "99", // 60% opacity
+    color: c.onSurfaceVariant + "99", // 60% opacity
     letterSpacing: 1,
   },
   dayLabelSelected: {
-    color: COLORS.primary,
+    color: c.primary,
   },
   dayLabelFuture: {
     opacity: 0.4,
@@ -148,7 +152,7 @@ const styles = StyleSheet.create({
     borderRadius: (CELL_SIZE + 4) / 2,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: COLORS.primary,
+    shadowColor: c.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -168,18 +172,19 @@ const styles = StyleSheet.create({
   },
   todayRing: {
     borderWidth: 2,
-    borderColor: COLORS.primaryContainer,
+    borderColor: c.primaryContainer,
     borderRadius: CELL_SIZE / 2,
   },
   dayNumber: {
     fontFamily: "Manrope_700Bold",
     fontSize: 16,
-    color: COLORS.onSurface,
+    color: c.onSurface,
   },
   dayFuture: {
     opacity: 0.4,
   },
   dayNumberFuture: {
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
-});
+  });
+}

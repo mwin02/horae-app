@@ -11,12 +11,15 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { GradientButton } from "@/components/common/gradient-button";
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
 
 const RESEND_COOLDOWN_SECONDS = 60;
 
 export default function ConfirmEmailScreen(): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   const { email } = useLocalSearchParams<{ email?: string }>();
   const { resendSignUpConfirmation } = useAuth();
@@ -83,7 +86,7 @@ export default function ConfirmEmailScreen(): React.ReactElement {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.iconWrap}>
-          <Feather name="mail" size={28} color={COLORS.primary} />
+          <Feather name="mail" size={28} color={colors.primary} />
         </View>
 
         <View style={styles.header}>
@@ -106,7 +109,7 @@ export default function ConfirmEmailScreen(): React.ReactElement {
             onPress={handleResend}
             disabled={!email || resending || cooldownActive}
           >
-            <Feather name="refresh-cw" size={18} color={COLORS.onPrimary} />
+            <Feather name="refresh-cw" size={18} color={colors.onPrimary} />
           </GradientButton>
 
           <Pressable onPress={goToSignIn} style={styles.linkRow}>
@@ -126,75 +129,77 @@ export default function ConfirmEmailScreen(): React.ReactElement {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: SPACING.xl,
-    paddingTop: SPACING.lg,
-    paddingBottom: SPACING["3xl"],
-  },
-  iconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: COLORS.surfaceContainer,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: SPACING.lg,
-  },
-  header: {
-    gap: SPACING.sm,
-    marginBottom: SPACING["2xl"],
-  },
-  title: {
-    ...TYPOGRAPHY.headingXl,
-    color: COLORS.onSurface,
-  },
-  subtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.onSurfaceVariant,
-  },
-  emailHighlight: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.onSurface,
-    fontFamily: TYPOGRAPHY.titleMd.fontFamily,
-  },
-  actions: {
-    gap: SPACING.md,
-    marginBottom: SPACING["2xl"],
-  },
-  error: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.error,
-  },
-  info: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.secondary,
-  },
-  linkRow: {
-    alignSelf: "center",
-    paddingVertical: SPACING.sm,
-  },
-  linkText: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.primary,
-  },
-  helpCard: {
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: RADIUS.lg,
-    padding: SPACING.lg,
-    gap: SPACING.xs,
-  },
-  helpTitle: {
-    ...TYPOGRAPHY.titleMd,
-    color: COLORS.onSurface,
-  },
-  helpBody: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.surface,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      paddingHorizontal: SPACING.xl,
+      paddingTop: SPACING.lg,
+      paddingBottom: SPACING["3xl"],
+    },
+    iconWrap: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: c.surfaceContainer,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: SPACING.lg,
+    },
+    header: {
+      gap: SPACING.sm,
+      marginBottom: SPACING["2xl"],
+    },
+    title: {
+      ...TYPOGRAPHY.headingXl,
+      color: c.onSurface,
+    },
+    subtitle: {
+      ...TYPOGRAPHY.body,
+      color: c.onSurfaceVariant,
+    },
+    emailHighlight: {
+      ...TYPOGRAPHY.body,
+      color: c.onSurface,
+      fontFamily: TYPOGRAPHY.titleMd.fontFamily,
+    },
+    actions: {
+      gap: SPACING.md,
+      marginBottom: SPACING["2xl"],
+    },
+    error: {
+      ...TYPOGRAPHY.bodySmall,
+      color: c.error,
+    },
+    info: {
+      ...TYPOGRAPHY.bodySmall,
+      color: c.secondary,
+    },
+    linkRow: {
+      alignSelf: "center",
+      paddingVertical: SPACING.sm,
+    },
+    linkText: {
+      ...TYPOGRAPHY.body,
+      color: c.primary,
+    },
+    helpCard: {
+      backgroundColor: c.surfaceContainerLow,
+      borderRadius: RADIUS.lg,
+      padding: SPACING.lg,
+      gap: SPACING.xs,
+    },
+    helpTitle: {
+      ...TYPOGRAPHY.titleMd,
+      color: c.onSurface,
+    },
+    helpBody: {
+      ...TYPOGRAPHY.bodySmall,
+      color: c.onSurfaceVariant,
+    },
+  });
+}

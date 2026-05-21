@@ -4,12 +4,13 @@ import {
 } from "@/components/common/category-icon";
 import { GradientButton } from "@/components/common/gradient-button";
 import {
-  COLORS,
   FONTS,
   RADIUS,
   SPACING,
   TYPOGRAPHY,
+  type ThemeColors,
 } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import type { ActivityItem, CategoryWithActivities } from "@/db/models";
 import { createActivity, updateActivity } from "@/db/queries";
 import { Feather } from "@expo/vector-icons";
@@ -43,6 +44,8 @@ export function CreateActivityModal({
   initialCategoryId,
 }: CreateActivityModalProps): React.ReactElement {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const isEdit = !!initialActivity;
   const [name, setName] = useState(initialActivity?.name ?? "");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
@@ -121,7 +124,7 @@ export function CreateActivityModal({
 
   // Color always comes from the parent category. Only the icon is overridable.
   const selectedCategory = categories.find((c) => c.id === selectedCategoryId) ?? null;
-  const previewColor = selectedCategory?.color ?? COLORS.onSurfaceVariant;
+  const previewColor = selectedCategory?.color ?? colors.onSurfaceVariant;
   const previewIcon = iconOverride ?? selectedCategory?.icon ?? null;
 
   return (
@@ -156,7 +159,7 @@ export function CreateActivityModal({
               </Text>
             </View>
             <Pressable onPress={handleClose} style={styles.closeButton}>
-              <Feather name="x" size={22} color={COLORS.onSurface} />
+              <Feather name="x" size={22} color={colors.onSurface} />
             </Pressable>
           </View>
 
@@ -165,7 +168,7 @@ export function CreateActivityModal({
             <TextInput
               style={styles.input}
               placeholder="e.g. Morning Run"
-              placeholderTextColor={COLORS.onSurfaceVariant}
+              placeholderTextColor={colors.onSurfaceVariant}
               value={name}
               onChangeText={setName}
               autoCorrect={false}
@@ -275,7 +278,7 @@ export function CreateActivityModal({
                   <CategoryIcon
                     icon={iconKey}
                     size={20}
-                    color={isSelected ? previewColor : COLORS.onSurfaceVariant}
+                    color={isSelected ? previewColor : colors.onSurfaceVariant}
                   />
                 </Pressable>
               );
@@ -299,7 +302,7 @@ export function CreateActivityModal({
             <Feather
               name={isEdit ? "check" : "plus"}
               size={18}
-              color={COLORS.onPrimary}
+              color={colors.onPrimary}
             />
           </GradientButton>
           </ScrollView>
@@ -309,7 +312,8 @@ export function CreateActivityModal({
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: "flex-end",
@@ -318,7 +322,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sheet: {
-    backgroundColor: COLORS.surfaceContainerLowest,
+    backgroundColor: c.surfaceContainerLowest,
     borderTopLeftRadius: RADIUS.xxl,
     borderTopRightRadius: RADIUS.xxl,
     paddingTop: SPACING.md,
@@ -331,7 +335,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: COLORS.outlineVariant,
+    backgroundColor: c.outlineVariant,
     alignSelf: "center",
     marginBottom: SPACING.lg,
   },
@@ -343,25 +347,25 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...TYPOGRAPHY.headingXl,
-    color: COLORS.onSurface,
+    color: c.onSurface,
   },
   headerSubtitle: {
     ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
     marginTop: SPACING.xs,
   },
   closeButton: {
     padding: SPACING.sm,
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
   },
   sectionLabel: {
     ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
     marginBottom: SPACING.md,
   },
   inputContainer: {
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
     borderRadius: RADIUS.xl,
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
@@ -369,7 +373,7 @@ const styles = StyleSheet.create({
   },
   input: {
     ...TYPOGRAPHY.body,
-    color: COLORS.onSurface,
+    color: c.onSurface,
     padding: 0,
   },
   categoryScroll: {
@@ -387,21 +391,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: SPACING.md,
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
     borderRadius: RADIUS.xl,
     paddingVertical: SPACING.lg,
     paddingHorizontal: SPACING.lg,
   },
   categoryCardSelected: {
-    backgroundColor: COLORS.surfaceContainerHigh,
+    backgroundColor: c.surfaceContainerHigh,
   },
   categoryCardName: {
     ...TYPOGRAPHY.titleMd,
-    color: COLORS.onSurface,
+    color: c.onSurface,
     flexShrink: 1,
   },
   categoryCardNameSelected: {
-    color: COLORS.primary,
+    color: c.primary,
   },
   appearanceHeader: {
     flexDirection: "row",
@@ -411,7 +415,7 @@ const styles = StyleSheet.create({
   },
   resetLabel: {
     ...TYPOGRAPHY.bodySmall,
-    color: COLORS.primary,
+    color: c.primary,
     fontFamily: FONTS.jakartaSemiBold,
   },
   previewRow: {
@@ -429,7 +433,7 @@ const styles = StyleSheet.create({
   },
   previewHint: {
     ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
   appearanceScroll: {
     flexGrow: 0,
@@ -446,8 +450,9 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
     borderWidth: 1,
     borderColor: "transparent",
   },
-});
+  });
+}

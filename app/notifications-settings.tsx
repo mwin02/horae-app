@@ -8,7 +8,8 @@ import { PermissionBanner } from "@/components/settings/permission-banner";
 import { QuietHoursSection } from "@/components/settings/quiet-hours-section";
 import { SettingRow } from "@/components/settings/setting-row";
 import { ThresholdPicker } from "@/components/settings/threshold-picker";
-import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import {
   NOTIFICATION_PREFERENCES_QUERY,
   updateNotificationPreferences,
@@ -18,6 +19,8 @@ import { useNotificationPermissionStatus } from "@/hooks/useNotificationPermissi
 import { openSystemNotificationSettings } from "@/lib/notifications";
 
 export default function NotificationsSettingsScreen(): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const { data: prefsData } = useQuery<NotificationPreferencesRecord>(
     NOTIFICATION_PREFERENCES_QUERY,
   );
@@ -91,8 +94,8 @@ export default function NotificationsSettingsScreen(): React.ReactElement {
                 value={idleEnabled}
                 onValueChange={handleToggleIdle}
                 disabled={permissionDenied}
-                trackColor={{ true: COLORS.primary, false: COLORS.outlineVariant }}
-                thumbColor={COLORS.surfaceContainerLowest}
+                trackColor={{ true: colors.primary, false: colors.outlineVariant }}
+                thumbColor={colors.surfaceContainerLowest}
               />
             }
           />
@@ -105,8 +108,8 @@ export default function NotificationsSettingsScreen(): React.ReactElement {
                 value={longRunningEnabled}
                 onValueChange={handleToggleLongRunning}
                 disabled={permissionDenied}
-                trackColor={{ true: COLORS.primary, false: COLORS.outlineVariant }}
-                thumbColor={COLORS.surfaceContainerLowest}
+                trackColor={{ true: colors.primary, false: colors.outlineVariant }}
+                thumbColor={colors.surfaceContainerLowest}
               />
             }
           />
@@ -119,8 +122,8 @@ export default function NotificationsSettingsScreen(): React.ReactElement {
                 value={goalAlertsEnabled}
                 onValueChange={handleToggleGoalAlerts}
                 disabled={permissionDenied}
-                trackColor={{ true: COLORS.primary, false: COLORS.outlineVariant }}
-                thumbColor={COLORS.surfaceContainerLowest}
+                trackColor={{ true: colors.primary, false: colors.outlineVariant }}
+                thumbColor={colors.surfaceContainerLowest}
               />
             }
           />
@@ -147,50 +150,52 @@ export default function NotificationsSettingsScreen(): React.ReactElement {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-  },
-  scrollContent: {
-    paddingHorizontal: SPACING.lg,
-    paddingBottom: SPACING["4xl"],
-    gap: SPACING.md,
-  },
-  header: {
-    paddingHorizontal: SPACING.xs,
-    paddingTop: SPACING.md,
-    gap: SPACING.xs,
-  },
-  title: {
-    ...TYPOGRAPHY.headingXl,
-    color: COLORS.onSurface,
-  },
-  subtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.onSurfaceVariant,
-  },
-  bannerWrap: {
-    marginTop: SPACING.sm,
-  },
-  sectionLabel: {
-    ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
-    marginTop: SPACING.lg,
-    marginBottom: SPACING.xs,
-    paddingHorizontal: SPACING.xs,
-  },
-  group: {
-    gap: SPACING.sm,
-  },
-  thresholdCard: {
-    padding: SPACING.lg,
-    borderRadius: 16,
-    backgroundColor: COLORS.surfaceContainerLow,
-    gap: SPACING.md,
-  },
-  thresholdHelper: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.surface,
+    },
+    scrollContent: {
+      paddingHorizontal: SPACING.lg,
+      paddingBottom: SPACING["4xl"],
+      gap: SPACING.md,
+    },
+    header: {
+      paddingHorizontal: SPACING.xs,
+      paddingTop: SPACING.md,
+      gap: SPACING.xs,
+    },
+    title: {
+      ...TYPOGRAPHY.headingXl,
+      color: c.onSurface,
+    },
+    subtitle: {
+      ...TYPOGRAPHY.body,
+      color: c.onSurfaceVariant,
+    },
+    bannerWrap: {
+      marginTop: SPACING.sm,
+    },
+    sectionLabel: {
+      ...TYPOGRAPHY.labelUppercase,
+      color: c.onSurfaceVariant,
+      marginTop: SPACING.lg,
+      marginBottom: SPACING.xs,
+      paddingHorizontal: SPACING.xs,
+    },
+    group: {
+      gap: SPACING.sm,
+    },
+    thresholdCard: {
+      padding: SPACING.lg,
+      borderRadius: 16,
+      backgroundColor: c.surfaceContainerLow,
+      gap: SPACING.md,
+    },
+    thresholdHelper: {
+      ...TYPOGRAPHY.bodySmall,
+      color: c.onSurfaceVariant,
+    },
+  });
+}

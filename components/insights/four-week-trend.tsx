@@ -1,5 +1,6 @@
 import { CategoryIconSwatch } from "./category-icon-swatch";
-import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { FONTS, RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import {
   useFourWeekTrend,
   type CategoryTrend,
@@ -31,6 +32,7 @@ export function FourWeekTrend({
   monthDate,
   onWeekPress,
 }: FourWeekTrendProps): React.ReactElement | null {
+  const styles = useThemedStyles(makeStyles);
   const { buckets, categories, isLoading } = useFourWeekTrend(monthDate);
 
   if (isLoading) return null;
@@ -119,6 +121,8 @@ function TrendRow({
   completeFlags,
   showDivider,
 }: TrendRowProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const { values, category, goalDirection, weeklyTargetSeconds } = trend;
 
   // Compare first non-zero *complete* week vs most-recent non-zero complete
@@ -160,7 +164,7 @@ function TrendRow({
     : isNew
       ? deltaPolarity(goalDirection, true, aroundCtx)
       : "neutral";
-  const { fg: chipColor, bg: chipBg } = deltaPalette(polarity);
+  const { fg: chipColor, bg: chipBg } = deltaPalette(polarity, colors);
   const arrow = trendUp ? "▲" : "▼";
 
   return (
@@ -209,6 +213,7 @@ interface SparklineProps {
 }
 
 function Sparkline({ values, color }: SparklineProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   const [width, setWidth] = React.useState(0);
 
   if (values.length === 0 || width === 0) {
@@ -266,9 +271,10 @@ function Sparkline({ values, color }: SparklineProps): React.ReactElement {
 
 // ──────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
   container: {
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
     borderRadius: RADIUS.xl,
     padding: SPACING.lg,
   },
@@ -284,17 +290,17 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 14,
     letterSpacing: 1.3,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
   eyebrowMeta: {
     fontFamily: FONTS.jakartaMedium,
     fontSize: 11,
     lineHeight: 14,
-    color: COLORS.outline,
+    color: c.outline,
   },
   emptyText: {
     ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
 
   // Shared week label row
@@ -314,14 +320,14 @@ const styles = StyleSheet.create({
     fontSize: 9,
     lineHeight: 12,
     letterSpacing: 0.6,
-    color: COLORS.outline,
+    color: c.outline,
   },
   weekLabelPressable: {
     paddingHorizontal: 4,
     paddingVertical: 2,
   },
   weekLabelPressed: {
-    color: COLORS.onSurface,
+    color: c.onSurface,
   },
 
   // Rows
@@ -333,7 +339,7 @@ const styles = StyleSheet.create({
   },
   rowDivider: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: COLORS.outlineVariant,
+    borderTopColor: c.outlineVariant,
   },
   labelCol: {
     width: LABEL_COL_WIDTH,
@@ -349,14 +355,14 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.jakartaSemiBold,
     fontSize: 12,
     lineHeight: 16,
-    color: COLORS.onSurface,
+    color: c.onSurface,
     flexShrink: 1,
   },
   totalText: {
     fontFamily: FONTS.jakartaRegular,
     fontSize: 11,
     lineHeight: 14,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
     fontVariant: ["tabular-nums"],
   },
   sparkCol: {
@@ -380,4 +386,5 @@ const styles = StyleSheet.create({
     lineHeight: 12,
     fontVariant: ["tabular-nums"],
   },
-});
+  });
+}

@@ -1,5 +1,6 @@
 import { CategoryIcon } from "@/components/common/category-icon";
-import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { FONTS, RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import type { CategoryInsight } from "@/db/models";
 import { formatDuration } from "@/lib/timezone";
 import { Feather } from "@expo/vector-icons";
@@ -17,6 +18,8 @@ interface ActualVsIdealProps {
 export function ActualVsIdeal({
   categoryInsights,
 }: ActualVsIdealProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   const withTargets = categoryInsights.filter((c) => c.targetMinutes != null);
 
@@ -37,7 +40,7 @@ export function ActualVsIdeal({
           pressed && styles.gearButtonPressed,
         ]}
       >
-        <Feather name="settings" size={16} color={COLORS.onSurfaceVariant} />
+        <Feather name="settings" size={16} color={colors.onSurfaceVariant} />
       </Pressable>
     </View>
   );
@@ -81,6 +84,8 @@ function ComparisonRow({
   insight,
   isFirst,
 }: ComparisonRowProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const actual = insight.actualMinutes;
   const target = insight.targetMinutes ?? 0;
   const delta = actual - target;
@@ -98,7 +103,7 @@ function ComparisonRow({
   } else {
     polarity = Math.abs(delta) <= target * 0.2 ? "good" : "bad";
   }
-  const chipPalette = deltaPalette(polarity);
+  const chipPalette = deltaPalette(polarity, colors);
 
   // Bar scale: 1.5x goal so the goal marker sits at ~66%.
   const scaleMax = target > 0 ? target * 1.5 : Math.max(actual, 1);
@@ -240,15 +245,16 @@ function ComparisonRow({
 
 // ──────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
   container: {
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
     borderRadius: RADIUS.xl,
     padding: SPACING["2xl"],
   },
   sectionLabel: {
     ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
   headerRow: {
     flexDirection: "row",
@@ -264,11 +270,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   gearButtonPressed: {
-    backgroundColor: COLORS.surfaceContainer,
+    backgroundColor: c.surfaceContainer,
   },
   emptyText: {
     ...TYPOGRAPHY.body,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
   row: {
     paddingTop: SPACING.md,
@@ -276,7 +282,7 @@ const styles = StyleSheet.create({
   },
   rowDivider: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: COLORS.outlineVariant,
+    borderTopColor: c.outlineVariant,
   },
   rowHeader: {
     flexDirection: "row",
@@ -306,14 +312,14 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.jakartaSemiBold,
     fontSize: 13,
     lineHeight: 18,
-    color: COLORS.onSurface,
+    color: c.onSurface,
     flexShrink: 1,
   },
   amountText: {
     fontFamily: FONTS.jakartaMedium,
     fontSize: 12,
     lineHeight: 18,
-    color: COLORS.onSurface,
+    color: c.onSurface,
     flexShrink: 1,
   },
   diffChip: {
@@ -346,13 +352,13 @@ const styles = StyleSheet.create({
     fontSize: 8,
     lineHeight: 10,
     letterSpacing: 0.5,
-    color: COLORS.onSurface,
+    color: c.onSurface,
   },
   barTrack: {
     position: "relative",
     height: BAR_HEIGHT,
     borderRadius: BAR_HEIGHT / 2,
-    backgroundColor: COLORS.outlineVariant,
+    backgroundColor: c.outlineVariant,
     overflow: "hidden",
   },
   barFill: {
@@ -374,7 +380,8 @@ const styles = StyleSheet.create({
     bottom: -2,
     width: 2,
     marginLeft: -1,
-    backgroundColor: COLORS.onSurface,
+    backgroundColor: c.onSurface,
     borderRadius: 1,
   },
-});
+  });
+}

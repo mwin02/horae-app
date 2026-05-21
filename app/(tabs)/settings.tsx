@@ -7,7 +7,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { SignOutPromptModal } from "@/components/common/sign-out-prompt-modal";
 import { SettingRow } from "@/components/settings/setting-row";
-import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import { NOTIFICATION_PREFERENCES_QUERY } from "@/db/queries";
 import type { NotificationPreferencesRecord } from "@/db/schema";
 import { useAuth } from "@/hooks/useAuth";
@@ -59,6 +60,8 @@ function buildNotificationSummary(
 }
 
 export default function SettingsScreen(): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   const { data: prefsData } = useQuery<NotificationPreferencesRecord>(
     NOTIFICATION_PREFERENCES_QUERY,
@@ -174,9 +177,9 @@ export default function SettingsScreen(): React.ReactElement {
             title={user.email ?? "Signed in"}
             description="Tap to sign out"
             onPress={openSignOutPrompt}
-            iconBackground={COLORS.surfaceContainer}
+            iconBackground={colors.surfaceContainer}
             iconChildren={
-              <Feather name="user" size={20} color={COLORS.primary} />
+              <Feather name="user" size={20} color={colors.primary} />
             }
           />
         ) : (
@@ -184,9 +187,9 @@ export default function SettingsScreen(): React.ReactElement {
             title="Sign in"
             description="Back up and sync across devices"
             onPress={handleSignIn}
-            iconBackground={COLORS.surfaceContainer}
+            iconBackground={colors.surfaceContainer}
             iconChildren={
-              <Feather name="log-in" size={20} color={COLORS.primary} />
+              <Feather name="log-in" size={20} color={colors.primary} />
             }
           />
         )}
@@ -197,58 +200,58 @@ export default function SettingsScreen(): React.ReactElement {
           title="Notifications"
           description={notificationSummary}
           onPress={goToNotifications}
-          iconBackground={COLORS.surfaceContainer}
+          iconBackground={colors.surfaceContainer}
           iconChildren={
-            <Feather name="bell" size={20} color={COLORS.primary} />
+            <Feather name="bell" size={20} color={colors.primary} />
           }
         />
         <SettingRow
           title="General"
           description={`Week starts ${WEEK_START_LABELS[preferences.weekStartDay]} · Insights ${PERIOD_LABELS[preferences.defaultInsightsPeriod]}`}
           onPress={goToGeneralPreferences}
-          iconBackground={COLORS.surfaceContainer}
+          iconBackground={colors.surfaceContainer}
           iconChildren={
-            <Feather name="sliders" size={20} color={COLORS.primary} />
+            <Feather name="sliders" size={20} color={colors.primary} />
           }
         />
         <SettingRow
           title="Goals"
           onPress={goToIdealAllocations}
-          iconBackground={COLORS.surfaceContainer}
+          iconBackground={colors.surfaceContainer}
           iconChildren={
-            <Feather name="target" size={20} color={COLORS.primary} />
+            <Feather name="target" size={20} color={colors.primary} />
           }
         />
 
         <SettingRow
           title="Manage activities"
           onPress={goToManageActivities}
-          iconBackground={COLORS.surfaceContainer}
+          iconBackground={colors.surfaceContainer}
           iconChildren={
-            <Feather name="list" size={20} color={COLORS.primary} />
+            <Feather name="list" size={20} color={colors.primary} />
           }
         />
         <SettingRow
           title="Manage categories"
           onPress={goToManageCategories}
-          iconBackground={COLORS.surfaceContainer}
+          iconBackground={colors.surfaceContainer}
           iconChildren={
-            <Feather name="grid" size={20} color={COLORS.primary} />
+            <Feather name="grid" size={20} color={colors.primary} />
           }
         />
 
         <SettingRow
           title="Manage tags"
           onPress={goToManageTags}
-          iconBackground={COLORS.surfaceContainer}
-          iconChildren={<Feather name="tag" size={20} color={COLORS.primary} />}
+          iconBackground={colors.surfaceContainer}
+          iconChildren={<Feather name="tag" size={20} color={colors.primary} />}
         />
         <SettingRow
           title="Manage data"
           onPress={goToManageData}
-          iconBackground={COLORS.surfaceContainer}
+          iconBackground={colors.surfaceContainer}
           iconChildren={
-            <Feather name="database" size={20} color={COLORS.primary} />
+            <Feather name="database" size={20} color={colors.primary} />
           }
         />
 
@@ -256,17 +259,17 @@ export default function SettingsScreen(): React.ReactElement {
         <SettingRow
           title="Report a bug"
           onPress={handleReportBug}
-          iconBackground={COLORS.surfaceContainer}
+          iconBackground={colors.surfaceContainer}
           iconChildren={
-            <Feather name="alert-circle" size={20} color={COLORS.primary} />
+            <Feather name="alert-circle" size={20} color={colors.primary} />
           }
         />
         <SettingRow
           title="Request a feature"
           onPress={handleRequestFeature}
-          iconBackground={COLORS.surfaceContainer}
+          iconBackground={colors.surfaceContainer}
           iconChildren={
-            <Feather name="message-square" size={20} color={COLORS.primary} />
+            <Feather name="message-square" size={20} color={colors.primary} />
           }
         />
 
@@ -276,17 +279,17 @@ export default function SettingsScreen(): React.ReactElement {
             <SettingRow
               title="Trigger Sentry test crash"
               onPress={handleSentryTest}
-              iconBackground={COLORS.surfaceContainer}
+              iconBackground={colors.surfaceContainer}
               iconChildren={
-                <Feather name="zap" size={20} color={COLORS.error} />
+                <Feather name="zap" size={20} color={colors.error} />
               }
             />
             <SettingRow
               title="Seed demo day"
               onPress={handleSeedDemoDay}
-              iconBackground={COLORS.surfaceContainer}
+              iconBackground={colors.surfaceContainer}
               iconChildren={
-                <Feather name="play" size={20} color={COLORS.primary} />
+                <Feather name="play" size={20} color={colors.primary} />
               }
             />
           </>
@@ -302,30 +305,32 @@ export default function SettingsScreen(): React.ReactElement {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-  },
-  header: {
-    paddingHorizontal: SPACING.xl,
-    paddingTop: SPACING.lg,
-    paddingBottom: SPACING.lg,
-    gap: SPACING.xs,
-  },
-  title: {
-    ...TYPOGRAPHY.headingXl,
-    color: COLORS.onSurface,
-  },
-  listContent: {
-    paddingHorizontal: SPACING.lg,
-    paddingBottom: SPACING["4xl"],
-    gap: SPACING.sm,
-  },
-  sectionLabel: {
-    ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
-    paddingHorizontal: SPACING.sm,
-    paddingTop: SPACING.sm,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.surface,
+    },
+    header: {
+      paddingHorizontal: SPACING.xl,
+      paddingTop: SPACING.lg,
+      paddingBottom: SPACING.lg,
+      gap: SPACING.xs,
+    },
+    title: {
+      ...TYPOGRAPHY.headingXl,
+      color: c.onSurface,
+    },
+    listContent: {
+      paddingHorizontal: SPACING.lg,
+      paddingBottom: SPACING["4xl"],
+      gap: SPACING.sm,
+    },
+    sectionLabel: {
+      ...TYPOGRAPHY.labelUppercase,
+      color: c.onSurfaceVariant,
+      paddingHorizontal: SPACING.sm,
+      paddingTop: SPACING.sm,
+    },
+  });
+}

@@ -1,5 +1,6 @@
 import { CategoryIcon } from "@/components/common/category-icon";
-import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { FONTS, RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import {
   STREAK_WEEKS,
   useWeeklyStreaks,
@@ -28,6 +29,7 @@ interface WeeklyStreakProps {
 export function WeeklyStreak({
   weekDate,
 }: WeeklyStreakProps): React.ReactElement | null {
+  const styles = useThemedStyles(makeStyles);
   const { categories, isLoading } = useWeeklyStreaks(weekDate);
   const [idx, setIdx] = useState(0);
 
@@ -96,6 +98,7 @@ function Header({
   activeIdx,
   onSelect,
 }: HeaderProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.header}>
       <Text style={styles.eyebrowTitle}>WEEKLY STREAK</Text>
@@ -127,6 +130,8 @@ interface NavProps {
 }
 
 function CategoryRow({ cat, onPrev, onNext }: NavProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   return (
     <View style={styles.categoryBlock}>
       <View style={styles.categoryNavRow}>
@@ -136,7 +141,7 @@ function CategoryRow({ cat, onPrev, onNext }: NavProps): React.ReactElement {
           style={({ pressed }) => [styles.chevron, pressed && styles.chevronPressed]}
           accessibilityLabel="Previous category"
         >
-          <Feather name="chevron-left" size={16} color={COLORS.onSurfaceVariant} />
+          <Feather name="chevron-left" size={16} color={colors.onSurfaceVariant} />
         </Pressable>
         <View style={styles.categoryNameWrap}>
           <CategoryIcon
@@ -154,7 +159,7 @@ function CategoryRow({ cat, onPrev, onNext }: NavProps): React.ReactElement {
           style={({ pressed }) => [styles.chevron, pressed && styles.chevronPressed]}
           accessibilityLabel="Next category"
         >
-          <Feather name="chevron-right" size={16} color={COLORS.onSurfaceVariant} />
+          <Feather name="chevron-right" size={16} color={colors.onSurfaceVariant} />
         </Pressable>
       </View>
       <Text style={styles.goalLabel} numberOfLines={1}>
@@ -171,11 +176,13 @@ function HeroRow({
 }: {
   cat: WeeklyStreakCategory;
 }): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const { streak, best } = cat;
-  const flameColor = streak > 0 ? cat.categoryColor : COLORS.outline;
+  const flameColor = streak > 0 ? cat.categoryColor : colors.outline;
   const ringColor = cat.thisWeek.onTrack
     ? cat.categoryColor
-    : COLORS.tertiaryContainer;
+    : colors.tertiaryContainer;
 
   return (
     <View style={styles.heroRow}>
@@ -206,6 +213,8 @@ function ProgressRing({
   pct: number;
   color: string;
 }): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const dash = RING_CIRC * Math.max(0, Math.min(1, pct));
   const center = RING_SIZE / 2;
   return (
@@ -216,7 +225,7 @@ function ProgressRing({
           cy={center}
           r={RING_RADIUS}
           fill="none"
-          stroke={COLORS.outlineVariant}
+          stroke={colors.outlineVariant}
           strokeWidth={RING_STROKE}
         />
         <Circle
@@ -246,12 +255,14 @@ function HistorySection({
 }: {
   cat: WeeklyStreakCategory;
 }): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const { history } = cat;
   const tracked = history.filter((h) => h !== null).length;
   const hits = history.filter((h) => h === 1).length;
   const currentColor = cat.thisWeek.onTrack
     ? cat.categoryColor
-    : COLORS.tertiaryContainer;
+    : colors.tertiaryContainer;
 
   return (
     <View style={styles.historyBox}>
@@ -265,7 +276,7 @@ function HistorySection({
         {history.map((h, i) => {
           const isCurrent = i === STREAK_WEEKS - 1;
           let height = HISTORY_BAR_MISS;
-          let color: string = COLORS.outlineVariant;
+          let color: string = colors.outlineVariant;
           let opacity = 1;
           if (h === null) {
             height = HISTORY_BAR_NULL;
@@ -315,9 +326,11 @@ function FooterRow({
 }: {
   cat: WeeklyStreakCategory;
 }): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const { actualSeconds, goalSeconds, daysLeft, isLimit, onTrack } = cat.thisWeek;
-  const chipFg = onTrack ? COLORS.secondary : COLORS.tertiary;
-  const chipBg = onTrack ? COLORS.secondaryContainer : COLORS.tertiaryContainer;
+  const chipFg = onTrack ? colors.secondary : colors.tertiary;
+  const chipBg = onTrack ? colors.secondaryContainer : colors.tertiaryContainer;
 
   let chipText: string;
   if (isLimit) {
@@ -371,9 +384,10 @@ function formatHm(totalSeconds: number): string {
 
 // ──────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
   container: {
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
     borderRadius: RADIUS.xl,
     padding: SPACING.lg,
     marginTop: SPACING["3xl"],
@@ -391,7 +405,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 14,
     letterSpacing: 1.3,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
   dotsRow: {
     flexDirection: "row",
@@ -402,7 +416,7 @@ const styles = StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: 3,
-    backgroundColor: COLORS.outlineVariant,
+    backgroundColor: c.outlineVariant,
   },
 
   categoryBlock: {
@@ -427,25 +441,25 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: COLORS.surfaceContainer,
+    backgroundColor: c.surfaceContainer,
     alignItems: "center",
     justifyContent: "center",
   },
   chevronPressed: {
-    backgroundColor: COLORS.surfaceContainerHigh,
+    backgroundColor: c.surfaceContainerHigh,
   },
   categoryName: {
     ...TYPOGRAPHY.titleMd,
     fontSize: 17,
     lineHeight: 22,
-    color: COLORS.onSurface,
+    color: c.onSurface,
     flexShrink: 1,
   },
   goalLabel: {
     fontFamily: FONTS.jakartaMedium,
     fontSize: 12,
     lineHeight: 16,
-    color: COLORS.outline,
+    color: c.outline,
     textAlign: "center",
   },
 
@@ -472,22 +486,22 @@ const styles = StyleSheet.create({
     fontSize: 52,
     lineHeight: 52,
     letterSpacing: -2,
-    color: COLORS.onSurface,
+    color: c.onSurface,
     fontVariant: ["tabular-nums"],
   },
   streakSub: {
     fontFamily: FONTS.jakartaMedium,
     fontSize: 12,
     lineHeight: 16,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
     marginTop: 2,
   },
   streakSubMuted: {
-    color: COLORS.outline,
+    color: c.outline,
   },
   personalBest: {
     fontFamily: FONTS.jakartaBold,
-    color: COLORS.secondary,
+    color: c.secondary,
   },
   ringWrap: {
     width: RING_SIZE,
@@ -508,7 +522,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.jakartaBold,
     fontSize: 14,
     lineHeight: 14,
-    color: COLORS.onSurface,
+    color: c.onSurface,
     fontVariant: ["tabular-nums"],
   },
   ringSub: {
@@ -516,12 +530,12 @@ const styles = StyleSheet.create({
     fontSize: 8,
     lineHeight: 10,
     letterSpacing: 0.6,
-    color: COLORS.outline,
+    color: c.outline,
     marginTop: 2,
   },
 
   historyBox: {
-    backgroundColor: COLORS.surfaceContainer,
+    backgroundColor: c.surfaceContainer,
     borderRadius: RADIUS.lg,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
@@ -538,13 +552,13 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 12,
     letterSpacing: 0.6,
-    color: COLORS.outline,
+    color: c.outline,
   },
   historyMeta: {
     fontFamily: FONTS.jakartaSemiBold,
     fontSize: 10,
     lineHeight: 12,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
     fontVariant: ["tabular-nums"],
   },
   barsRow: {
@@ -566,11 +580,11 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.jakartaMedium,
     fontSize: 9,
     lineHeight: 11,
-    color: COLORS.outline,
+    color: c.outline,
   },
   barLabelCurrent: {
     fontFamily: FONTS.jakartaBold,
-    color: COLORS.onSurface,
+    color: c.onSurface,
   },
 
   footerRow: {
@@ -586,14 +600,14 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.jakartaSemiBold,
     fontSize: 12,
     lineHeight: 16,
-    color: COLORS.onSurface,
+    color: c.onSurface,
     fontVariant: ["tabular-nums"],
   },
   footerMuted: {
     fontFamily: FONTS.jakartaRegular,
     fontSize: 12,
     lineHeight: 16,
-    color: COLORS.outline,
+    color: c.outline,
   },
   chip: {
     paddingHorizontal: 8,
@@ -606,4 +620,5 @@ const styles = StyleSheet.create({
     lineHeight: 12,
     fontVariant: ["tabular-nums"],
   },
-});
+  });
+}

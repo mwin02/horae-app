@@ -1,4 +1,5 @@
-import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { FONTS, RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useThemedStyles } from "@/hooks/useTheme";
 import { formatDuration, getCurrentTimezone } from "@/lib/timezone";
 import React, { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
@@ -19,6 +20,7 @@ function formatTodayDate(timezone: string): string {
 export function HomeHeader({
   totalTrackedSeconds,
 }: HomeHeaderProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   const dateLabel = useMemo(() => formatTodayDate(getCurrentTimezone()), []);
   const totalLabel = `${formatDuration(totalTrackedSeconds)} today`;
 
@@ -35,39 +37,41 @@ export function HomeHeader({
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-    marginBottom: SPACING.xl,
-  },
-  left: {
-    flex: 1,
-    minWidth: 0,
-  },
-  date: {
-    fontFamily: FONTS.jakartaSemiBold,
-    fontSize: 13,
-    color: COLORS.onSurfaceVariant,
-    marginBottom: 2,
-  },
-  title: {
-    ...TYPOGRAPHY.headingXl,
-    color: COLORS.onSurface,
-  },
-  pill: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surfaceContainerLowest,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: COLORS.outlineVariant,
-    marginLeft: SPACING.md,
-  },
-  pillText: {
-    fontFamily: FONTS.jakartaSemiBold,
-    fontSize: 13,
-    color: COLORS.onSurface,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    row: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      justifyContent: "space-between",
+      marginBottom: SPACING.xl,
+    },
+    left: {
+      flex: 1,
+      minWidth: 0,
+    },
+    date: {
+      fontFamily: FONTS.jakartaSemiBold,
+      fontSize: 13,
+      color: c.onSurfaceVariant,
+      marginBottom: 2,
+    },
+    title: {
+      ...TYPOGRAPHY.headingXl,
+      color: c.onSurface,
+    },
+    pill: {
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: RADIUS.full,
+      backgroundColor: c.surfaceContainerLowest,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.outlineVariant,
+      marginLeft: SPACING.md,
+    },
+    pillText: {
+      fontFamily: FONTS.jakartaSemiBold,
+      fontSize: 13,
+      color: c.onSurface,
+    },
+  });
+}

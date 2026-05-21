@@ -1,4 +1,5 @@
-import { COLORS, SPACING } from "@/constants/theme";
+import { SPACING, type ThemeColors } from "@/constants/theme";
+import { useThemedStyles } from "@/hooks/useTheme";
 import React, { useCallback, useMemo, useState } from "react";
 import {
   FlatList,
@@ -32,6 +33,7 @@ export function PaginatedRows<T>({
   keyExtractor,
   renderItem,
 }: PaginatedRowsProps<T>): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   const pages = useMemo(() => {
     const result: T[][] = [];
     for (let i = 0; i < items.length; i += pageSize) {
@@ -115,22 +117,24 @@ export function PaginatedRows<T>({
   );
 }
 
-const styles = StyleSheet.create({
-  dotsRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 6,
-    marginTop: SPACING.sm,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.outlineVariant,
-  },
-  dotActive: {
-    width: 16,
-    backgroundColor: COLORS.onSurfaceVariant,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    dotsRow: {
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+      gap: 6,
+      marginTop: SPACING.sm,
+    },
+    dot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: c.outlineVariant,
+    },
+    dotActive: {
+      width: 16,
+      backgroundColor: c.onSurfaceVariant,
+    },
+  });
+}

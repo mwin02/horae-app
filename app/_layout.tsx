@@ -13,21 +13,21 @@ import {
 } from "@expo-google-fonts/plus-jakarta-sans";
 import { PowerSyncContext } from "@powersync/react";
 import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
+  DarkTheme as NavDarkTheme,
+  DefaultTheme as NavDefaultTheme,
+  ThemeProvider as NavigationThemeProvider,
+  type Theme as NavigationTheme,
 } from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 
-import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
-
-import { useColorScheme } from "@/components/useColorScheme";
+import { SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { ThemeProvider, useTheme } from "@/hooks/useTheme";
 import {
   seedNotificationPreferencesIfNeeded,
   seedPresetsIfNeeded,
@@ -109,18 +109,20 @@ export default wrap(function RootLayout() {
     return null;
   }
 
-  if (dbStatus === "error") {
-    return <DBErrorScreen />;
-  }
-
-  return <RootLayoutNav />;
+  return (
+    <ThemeProvider>
+      {dbStatus === "error" ? <DBErrorScreen /> : <RootLayoutNav />}
+    </ThemeProvider>
+  );
 });
 
 function DBErrorScreen(): React.ReactElement {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeErrorStyles(colors), [colors]);
   return (
-    <View style={errorStyles.container}>
-      <Text style={errorStyles.title}>Couldn&apos;t open your data</Text>
-      <Text style={errorStyles.body}>
+    <View style={styles.container}>
+      <Text style={styles.title}>Couldn&apos;t open your data</Text>
+      <Text style={styles.body}>
         Horae ran into a problem reading from local storage. Your tracked
         time is still saved on this device. Please force-quit the app and
         reopen it. If this keeps happening, contact support from your last
@@ -130,26 +132,52 @@ function DBErrorScreen(): React.ReactElement {
   );
 }
 
-const errorStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-    paddingHorizontal: SPACING.xl,
-    justifyContent: "center",
-    gap: SPACING.md,
-  },
-  title: {
-    ...TYPOGRAPHY.headingXl,
-    color: COLORS.onSurface,
-  },
-  body: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.onSurfaceVariant,
-  },
-});
+function makeErrorStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.surface,
+      paddingHorizontal: SPACING.xl,
+      justifyContent: "center",
+      gap: SPACING.md,
+    },
+    title: {
+      ...TYPOGRAPHY.headingXl,
+      color: c.onSurface,
+    },
+    body: {
+      ...TYPOGRAPHY.body,
+      color: c.onSurfaceVariant,
+    },
+  });
+}
+
+function buildNavigationTheme(
+  colors: ThemeColors,
+  isDark: boolean,
+): NavigationTheme {
+  const base = isDark ? NavDarkTheme : NavDefaultTheme;
+  return {
+    ...base,
+    dark: isDark,
+    colors: {
+      ...base.colors,
+      background: colors.surface,
+      card: colors.surface,
+      text: colors.onSurface,
+      border: colors.outlineVariant,
+      primary: colors.primary,
+      notification: colors.primary,
+    },
+  };
+}
 
 function RootLayoutNav() {
-  const colorScheme = useColorScheme();
+  const { colors, isDark } = useTheme();
+  const navTheme = useMemo(
+    () => buildNavigationTheme(colors, isDark),
+    [colors, isDark],
+  );
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -159,7 +187,7 @@ function RootLayoutNav() {
       <LiveActivityMount />
       <WidgetSnapshotMount />
       <TimerDeepLinksMount />
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+      <NavigationThemeProvider value={navTheme}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen
@@ -224,7 +252,7 @@ function RootLayoutNav() {
             }}
           />
         </Stack>
-      </ThemeProvider>
+      </NavigationThemeProvider>
       </AuthProvider>
     </PowerSyncContext.Provider>
     </GestureHandlerRootView>

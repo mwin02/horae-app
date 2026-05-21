@@ -6,7 +6,8 @@ import { useActivityBreakdown } from '@/hooks/useActivityBreakdown';
 import type { CategoryInsight } from '@/db/models';
 import type { InsightsPeriod } from '@/hooks/useInsightsData';
 import { formatDuration } from '@/lib/timezone';
-import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from '@/constants/theme';
+import { FONTS, RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from '@/constants/theme';
+import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 
 // ──────────────────────────────────────────────
 // Types
@@ -27,6 +28,8 @@ export function ActivityBreakdown({
   selectedDate,
   period,
 }: ActivityBreakdownProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   // Auto-select the category with the most tracked time
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
@@ -43,7 +46,7 @@ export function ActivityBreakdown({
   const selectedCategory = categoryInsights.find(
     (c) => c.categoryId === selectedCategoryId,
   );
-  const categoryColor = selectedCategory?.categoryColor ?? COLORS.primary;
+  const categoryColor = selectedCategory?.categoryColor ?? colors.primary;
 
   const { activities, totalSeconds, isLoading } = useActivityBreakdown(
     selectedCategoryId,
@@ -155,15 +158,16 @@ export function ActivityBreakdown({
 
 // ──────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
   container: {
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
     borderRadius: RADIUS.xl,
     padding: SPACING['2xl'],
   },
   sectionLabel: {
     ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
     marginBottom: SPACING.md,
   },
   // Category selector
@@ -182,7 +186,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surfaceContainer,
+    backgroundColor: c.surfaceContainer,
   },
   categoryDot: {
     width: 8,
@@ -193,7 +197,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.jakartaMedium,
     fontSize: 12,
     lineHeight: 16,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
   // Chart
   chartContainer: {
@@ -217,7 +221,7 @@ const styles = StyleSheet.create({
   },
   legendName: {
     ...TYPOGRAPHY.body,
-    color: COLORS.onSurface,
+    color: c.onSurface,
     flex: 1,
   },
   legendRight: {
@@ -229,20 +233,21 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.jakartaMedium,
     fontSize: 13,
     lineHeight: 18,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
   legendPercent: {
     fontFamily: FONTS.jakartaSemiBold,
     fontSize: 13,
     lineHeight: 18,
-    color: COLORS.onSurface,
+    color: c.onSurface,
     minWidth: 32,
     textAlign: 'right',
   },
   emptyText: {
     ...TYPOGRAPHY.body,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
     textAlign: 'center',
     paddingVertical: SPACING.xl,
   },
-});
+  });
+}

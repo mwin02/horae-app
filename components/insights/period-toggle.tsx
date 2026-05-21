@@ -2,7 +2,8 @@ import React, { useCallback } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { InsightsPeriod } from '@/hooks/useInsightsData';
-import { COLORS, FONTS, RADIUS, SPACING } from '@/constants/theme';
+import { FONTS, RADIUS, SPACING, type ThemeColors } from '@/constants/theme';
+import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 
 interface PeriodToggleProps {
   period: InsightsPeriod;
@@ -19,6 +20,7 @@ export function PeriodToggle({
   period,
   onPeriodChange,
 }: PeriodToggleProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.container}>
       {PERIODS.map(({ key, label }) => {
@@ -45,6 +47,8 @@ function PeriodPill({
   isActive: boolean;
   onPress: () => void;
 }): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const handlePress = useCallback(() => {
     onPress();
   }, [onPress]);
@@ -52,7 +56,7 @@ function PeriodPill({
   if (isActive) {
     return (
       <LinearGradient
-        colors={[COLORS.gradientStart, COLORS.gradientEnd]}
+        colors={[colors.gradientStart, colors.gradientEnd]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={styles.pill}
@@ -76,34 +80,36 @@ function PeriodPill({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.md,
-  },
-  pill: {
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.sm,
-    borderRadius: RADIUS.full,
-  },
-  pillInactive: {
-    backgroundColor: COLORS.surfaceContainerLow,
-  },
-  pillPressed: {
-    opacity: 0.7,
-  },
-  pillTextActive: {
-    fontFamily: FONTS.jakartaSemiBold,
-    fontSize: 13,
-    lineHeight: 18,
-    color: COLORS.onPrimary,
-  },
-  pillTextInactive: {
-    fontFamily: FONTS.jakartaSemiBold,
-    fontSize: 13,
-    lineHeight: 18,
-    color: COLORS.onSurfaceVariant,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      gap: SPACING.sm,
+      paddingHorizontal: SPACING.xl,
+      paddingVertical: SPACING.md,
+    },
+    pill: {
+      paddingHorizontal: SPACING.xl,
+      paddingVertical: SPACING.sm,
+      borderRadius: RADIUS.full,
+    },
+    pillInactive: {
+      backgroundColor: c.surfaceContainerLow,
+    },
+    pillPressed: {
+      opacity: 0.7,
+    },
+    pillTextActive: {
+      fontFamily: FONTS.jakartaSemiBold,
+      fontSize: 13,
+      lineHeight: 18,
+      color: c.onPrimary,
+    },
+    pillTextInactive: {
+      fontFamily: FONTS.jakartaSemiBold,
+      fontSize: 13,
+      lineHeight: 18,
+      color: c.onSurfaceVariant,
+    },
+  });
+}

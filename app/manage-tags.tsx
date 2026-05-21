@@ -14,12 +14,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { GradientButton } from "@/components/common/gradient-button";
 import { CreateTagModal } from "@/components/manage/create-tag-modal";
 import { ManageTagRow } from "@/components/manage/manage-tag-row";
-import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import type { TagItem } from "@/db/models";
 import { archiveTag } from "@/db/queries";
 import { useTags } from "@/hooks/useTags";
 
 export default function ManageTagsScreen(): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const { tags, isLoading } = useTags();
   const [createVisible, setCreateVisible] = useState(false);
   const [editing, setEditing] = useState<TagItem | null>(null);
@@ -61,7 +64,7 @@ export default function ManageTagsScreen(): React.ReactElement {
       <SafeAreaView style={styles.container} edges={["bottom"]}>
         <Stack.Screen options={{ title: "Manage Tags" }} />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -104,7 +107,7 @@ export default function ManageTagsScreen(): React.ReactElement {
           size={60}
           onPress={() => setCreateVisible(true)}
         >
-          <Feather name="plus" size={28} color={COLORS.onPrimary} />
+          <Feather name="plus" size={28} color={colors.onPrimary} />
         </GradientButton>
       </View>
 
@@ -122,58 +125,60 @@ export default function ManageTagsScreen(): React.ReactElement {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  header: {
-    paddingHorizontal: SPACING.xl,
-    paddingTop: SPACING.lg,
-    paddingBottom: SPACING.lg,
-    gap: SPACING.xs,
-  },
-  title: {
-    ...TYPOGRAPHY.headingXl,
-    color: COLORS.onSurface,
-  },
-  subtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.onSurfaceVariant,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: SPACING.lg,
-  },
-  list: {
-    flex: 1,
-  },
-  listContent: {
-    gap: SPACING.sm,
-    paddingBottom: 120,
-  },
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: SPACING["4xl"],
-    gap: SPACING.sm,
-  },
-  emptyTitle: {
-    ...TYPOGRAPHY.heading,
-    color: COLORS.onSurface,
-  },
-  emptySubtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.onSurfaceVariant,
-    textAlign: "center",
-  },
-  fabWrapper: {
-    position: "absolute",
-    right: SPACING.xl,
-    bottom: SPACING.xl,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.surface,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    header: {
+      paddingHorizontal: SPACING.xl,
+      paddingTop: SPACING.lg,
+      paddingBottom: SPACING.lg,
+      gap: SPACING.xs,
+    },
+    title: {
+      ...TYPOGRAPHY.headingXl,
+      color: c.onSurface,
+    },
+    subtitle: {
+      ...TYPOGRAPHY.body,
+      color: c.onSurfaceVariant,
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: SPACING.lg,
+    },
+    list: {
+      flex: 1,
+    },
+    listContent: {
+      gap: SPACING.sm,
+      paddingBottom: 120,
+    },
+    emptyState: {
+      alignItems: "center",
+      paddingVertical: SPACING["4xl"],
+      gap: SPACING.sm,
+    },
+    emptyTitle: {
+      ...TYPOGRAPHY.heading,
+      color: c.onSurface,
+    },
+    emptySubtitle: {
+      ...TYPOGRAPHY.body,
+      color: c.onSurfaceVariant,
+      textAlign: "center",
+    },
+    fabWrapper: {
+      position: "absolute",
+      right: SPACING.xl,
+      bottom: SPACING.xl,
+    },
+  });
+}

@@ -1,9 +1,15 @@
 import { CategoryChip } from "@/components/common/category-chip";
 import { TagChip } from "@/components/common/tag-chip";
 import { TagPicker } from "@/components/common/tag-picker";
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import {
+  RADIUS,
+  SPACING,
+  TYPOGRAPHY,
+  type ThemeColors,
+} from "@/constants/theme";
 import { deleteEntry, setEntryTags, updateEntryTimes } from "@/db/queries";
 import { useEntryTags } from "@/hooks/useEntryTags";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import type { TimelineEntryData } from "@/hooks/useTimelineData";
 import {
   formatDuration,
@@ -38,6 +44,8 @@ export function EntryDetailModal({
   onClose,
 }: EntryDetailModalProps): React.ReactElement | null {
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const [editedStart, setEditedStart] = useState<Date>(new Date());
   const [editedEnd, setEditedEnd] = useState<Date | null>(null);
   const [activePicker, setActivePicker] = useState<ActivePicker>(null);
@@ -207,7 +215,7 @@ export function EntryDetailModal({
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Entry Details</Text>
             <Pressable style={styles.closeButton} onPress={onClose} hitSlop={8}>
-              <Feather name="x" size={20} color={COLORS.onSurfaceVariant} />
+              <Feather name="x" size={20} color={colors.onSurfaceVariant} />
             </Pressable>
           </View>
 
@@ -225,7 +233,7 @@ export function EntryDetailModal({
             </View>
 
             <View style={styles.durationRow}>
-              <Feather name="clock" size={14} color={COLORS.onSurfaceVariant} />
+              <Feather name="clock" size={14} color={colors.onSurfaceVariant} />
               <Text style={styles.durationText}>{durationLabel}</Text>
             </View>
           </View>
@@ -235,7 +243,7 @@ export function EntryDetailModal({
             style={styles.tagsRow}
             onPress={() => setTagPickerOpen(true)}
           >
-            <Feather name="tag" size={14} color={COLORS.onSurfaceVariant} />
+            <Feather name="tag" size={14} color={colors.onSurfaceVariant} />
             {entryTags.length === 0 ? (
               <Text style={styles.tagsPlaceholder}>Add tags</Text>
             ) : (
@@ -248,7 +256,7 @@ export function EntryDetailModal({
             <Feather
               name="chevron-right"
               size={16}
-              color={COLORS.onSurfaceVariant}
+              color={colors.onSurfaceVariant}
             />
           </Pressable>
 
@@ -276,8 +284,8 @@ export function EntryDetailModal({
                 size={16}
                 color={
                   activePicker === "start"
-                    ? COLORS.primary
-                    : COLORS.onSurfaceVariant
+                    ? colors.primary
+                    : colors.onSurfaceVariant
                 }
               />
             </Pressable>
@@ -305,8 +313,8 @@ export function EntryDetailModal({
                   size={16}
                   color={
                     activePicker === "end"
-                      ? COLORS.primary
-                      : COLORS.onSurfaceVariant
+                      ? colors.primary
+                      : colors.onSurfaceVariant
                   }
                 />
               </Pressable>
@@ -323,7 +331,7 @@ export function EntryDetailModal({
                 onChange={pickerOnChange}
                 minimumDate={pickerMin}
                 maximumDate={pickerMax}
-                themeVariant="light"
+                themeVariant={isDark ? "dark" : "light"}
               />
             </View>
           )}
@@ -340,12 +348,12 @@ export function EntryDetailModal({
                   ]}
                 >
                   <LinearGradient
-                    colors={[COLORS.gradientStart, COLORS.gradientEnd]}
+                    colors={[colors.gradientStart, colors.gradientEnd]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={styles.saveButton}
                   >
-                    <Feather name="check" size={16} color={COLORS.onPrimary} />
+                    <Feather name="check" size={16} color={colors.onPrimary} />
                     <Text style={styles.saveButtonText}>
                       {saving ? "Saving..." : "Save Changes"}
                     </Text>
@@ -356,7 +364,7 @@ export function EntryDetailModal({
                   onPress={handleDelete}
                   hitSlop={8}
                 >
-                  <Feather name="trash-2" size={18} color={COLORS.error} />
+                  <Feather name="trash-2" size={18} color={colors.error} />
                 </Pressable>
               </>
             ) : timesDirty && !isValid ? (
@@ -371,12 +379,12 @@ export function EntryDetailModal({
                   onPress={handleDelete}
                   hitSlop={8}
                 >
-                  <Feather name="trash-2" size={18} color={COLORS.error} />
+                  <Feather name="trash-2" size={18} color={colors.error} />
                 </Pressable>
               </>
             ) : (
               <Pressable style={styles.deleteButton} onPress={handleDelete}>
-                <Feather name="trash-2" size={16} color={COLORS.error} />
+                <Feather name="trash-2" size={16} color={colors.error} />
                 <Text style={styles.deleteButtonText}>Delete entry</Text>
               </Pressable>
             )}
@@ -398,175 +406,177 @@ export function EntryDetailModal({
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-  },
-  backdrop: {
-    flex: 1,
-  },
-  sheet: {
-    backgroundColor: COLORS.surfaceContainerLowest,
-    borderTopLeftRadius: RADIUS.xxl,
-    borderTopRightRadius: RADIUS.xxl,
-    paddingHorizontal: SPACING["2xl"],
-    paddingTop: SPACING.md,
-  },
-  handleBar: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: COLORS.outlineVariant,
-    alignSelf: "center",
-    marginBottom: SPACING.lg,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: SPACING["2xl"],
-  },
-  headerTitle: {
-    ...TYPOGRAPHY.headingXl,
-    color: COLORS.onSurface,
-  },
-  closeButton: {
-    padding: SPACING.sm,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surfaceContainerLow,
-  },
-  infoCard: {
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: RADIUS.xl,
-    padding: SPACING.lg,
-    marginBottom: SPACING.lg,
-    gap: SPACING.sm,
-  },
-  activityName: {
-    ...TYPOGRAPHY.heading,
-    color: COLORS.onSurface,
-  },
-  chipRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.sm,
-  },
-  sourceBadge: {
-    backgroundColor: COLORS.surfaceContainer,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 2,
-    borderRadius: RADIUS.full,
-  },
-  sourceText: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
-  },
-  durationRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.sm,
-  },
-  durationText: {
-    ...TYPOGRAPHY.titleMd,
-    color: COLORS.onSurface,
-  },
-  timeSection: {
-    marginBottom: SPACING.lg,
-    gap: SPACING.sm,
-  },
-  timeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: RADIUS.lg,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.lg,
-  },
-  timeRowActive: {
-    backgroundColor: COLORS.surfaceContainerHigh,
-  },
-  timeLabel: {
-    ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
-    flex: 1,
-  },
-  timeValue: {
-    ...TYPOGRAPHY.titleMd,
-    color: COLORS.onSurface,
-    marginRight: SPACING.sm,
-  },
-  timeValueActive: {
-    color: COLORS.primary,
-  },
-  pickerContainer: {
-    marginBottom: SPACING.lg,
-  },
-  actions: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    height: 48,
-    gap: SPACING.md,
-  },
-  saveButtonWrapper: {
-    flex: 1,
-    height: 48,
-  },
-  saveButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    height: 48,
-    borderRadius: RADIUS.full,
-    gap: SPACING.sm,
-  },
-  saveButtonText: {
-    ...TYPOGRAPHY.button,
-    color: COLORS.onPrimary,
-  },
-  validationError: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.error,
-    flex: 1,
-  },
-  deleteIconButton: {
-    width: 48,
-    height: 48,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surfaceContainerLow,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  deleteButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.sm,
-    paddingVertical: SPACING.sm,
-  },
-  deleteButtonText: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.error,
-  },
-  tagsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.sm,
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: RADIUS.lg,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    marginBottom: SPACING.lg,
-  },
-  tagsPlaceholder: {
-    flex: 1,
-    ...TYPOGRAPHY.body,
-    color: COLORS.onSurfaceVariant,
-  },
-  tagsList: {
-    flex: 1,
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    overlay: {
+      flex: 1,
+      justifyContent: "flex-end",
+    },
+    backdrop: {
+      flex: 1,
+    },
+    sheet: {
+      backgroundColor: c.surfaceContainerLowest,
+      borderTopLeftRadius: RADIUS.xxl,
+      borderTopRightRadius: RADIUS.xxl,
+      paddingHorizontal: SPACING["2xl"],
+      paddingTop: SPACING.md,
+    },
+    handleBar: {
+      width: 40,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: c.outlineVariant,
+      alignSelf: "center",
+      marginBottom: SPACING.lg,
+    },
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: SPACING["2xl"],
+    },
+    headerTitle: {
+      ...TYPOGRAPHY.headingXl,
+      color: c.onSurface,
+    },
+    closeButton: {
+      padding: SPACING.sm,
+      borderRadius: RADIUS.full,
+      backgroundColor: c.surfaceContainerLow,
+    },
+    infoCard: {
+      backgroundColor: c.surfaceContainerLow,
+      borderRadius: RADIUS.xl,
+      padding: SPACING.lg,
+      marginBottom: SPACING.lg,
+      gap: SPACING.sm,
+    },
+    activityName: {
+      ...TYPOGRAPHY.heading,
+      color: c.onSurface,
+    },
+    chipRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SPACING.sm,
+    },
+    sourceBadge: {
+      backgroundColor: c.surfaceContainer,
+      paddingHorizontal: SPACING.sm,
+      paddingVertical: 2,
+      borderRadius: RADIUS.full,
+    },
+    sourceText: {
+      ...TYPOGRAPHY.bodySmall,
+      color: c.onSurfaceVariant,
+    },
+    durationRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SPACING.sm,
+    },
+    durationText: {
+      ...TYPOGRAPHY.titleMd,
+      color: c.onSurface,
+    },
+    timeSection: {
+      marginBottom: SPACING.lg,
+      gap: SPACING.sm,
+    },
+    timeRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: c.surfaceContainerLow,
+      borderRadius: RADIUS.lg,
+      paddingVertical: SPACING.md,
+      paddingHorizontal: SPACING.lg,
+    },
+    timeRowActive: {
+      backgroundColor: c.surfaceContainerHigh,
+    },
+    timeLabel: {
+      ...TYPOGRAPHY.labelUppercase,
+      color: c.onSurfaceVariant,
+      flex: 1,
+    },
+    timeValue: {
+      ...TYPOGRAPHY.titleMd,
+      color: c.onSurface,
+      marginRight: SPACING.sm,
+    },
+    timeValueActive: {
+      color: c.primary,
+    },
+    pickerContainer: {
+      marginBottom: SPACING.lg,
+    },
+    actions: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      height: 48,
+      gap: SPACING.md,
+    },
+    saveButtonWrapper: {
+      flex: 1,
+      height: 48,
+    },
+    saveButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      height: 48,
+      borderRadius: RADIUS.full,
+      gap: SPACING.sm,
+    },
+    saveButtonText: {
+      ...TYPOGRAPHY.button,
+      color: c.onPrimary,
+    },
+    validationError: {
+      ...TYPOGRAPHY.body,
+      color: c.error,
+      flex: 1,
+    },
+    deleteIconButton: {
+      width: 48,
+      height: 48,
+      borderRadius: RADIUS.full,
+      backgroundColor: c.surfaceContainerLow,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    deleteButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SPACING.sm,
+      paddingVertical: SPACING.sm,
+    },
+    deleteButtonText: {
+      ...TYPOGRAPHY.bodySmall,
+      color: c.error,
+    },
+    tagsRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SPACING.sm,
+      backgroundColor: c.surfaceContainerLow,
+      borderRadius: RADIUS.lg,
+      paddingHorizontal: SPACING.lg,
+      paddingVertical: SPACING.md,
+      marginBottom: SPACING.lg,
+    },
+    tagsPlaceholder: {
+      flex: 1,
+      ...TYPOGRAPHY.body,
+      color: c.onSurfaceVariant,
+    },
+    tagsList: {
+      flex: 1,
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 6,
+    },
+  });
+}

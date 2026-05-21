@@ -3,7 +3,8 @@ import React, { useCallback, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 
 interface SignOutPromptModalProps {
   visible: boolean;
@@ -16,6 +17,8 @@ export function SignOutPromptModal({
   onDismiss,
   onSignOut,
 }: SignOutPromptModalProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const [submitting, setSubmitting] = useState<"keep" | "wipe" | null>(null);
 
@@ -60,7 +63,7 @@ export function SignOutPromptModal({
               hitSlop={8}
               disabled={submitting !== null}
             >
-              <Feather name="x" size={20} color={COLORS.onSurfaceVariant} />
+              <Feather name="x" size={20} color={colors.onSurfaceVariant} />
             </Pressable>
           </View>
 
@@ -76,10 +79,10 @@ export function SignOutPromptModal({
               <View
                 style={[
                   styles.iconBubble,
-                  { backgroundColor: COLORS.surfaceContainer },
+                  { backgroundColor: colors.surfaceContainer },
                 ]}
               >
-                <Feather name="archive" size={20} color={COLORS.primary} />
+                <Feather name="archive" size={20} color={colors.primary} />
               </View>
               <View style={styles.optionText}>
                 <Text style={styles.optionTitle}>
@@ -92,7 +95,7 @@ export function SignOutPromptModal({
               <Feather
                 name="chevron-right"
                 size={20}
-                color={COLORS.onSurfaceVariant}
+                color={colors.onSurfaceVariant}
               />
             </Pressable>
 
@@ -107,10 +110,10 @@ export function SignOutPromptModal({
               <View
                 style={[
                   styles.iconBubble,
-                  { backgroundColor: COLORS.errorContainer },
+                  { backgroundColor: colors.errorContainer },
                 ]}
               >
-                <Feather name="trash-2" size={20} color={COLORS.onError} />
+                <Feather name="trash-2" size={20} color={colors.onError} />
               </View>
               <View style={styles.optionText}>
                 <Text style={styles.optionTitle}>
@@ -123,7 +126,7 @@ export function SignOutPromptModal({
               <Feather
                 name="chevron-right"
                 size={20}
-                color={COLORS.onSurfaceVariant}
+                color={colors.onSurfaceVariant}
               />
             </Pressable>
           </View>
@@ -133,81 +136,83 @@ export function SignOutPromptModal({
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-  },
-  backdrop: {
-    flex: 1,
-  },
-  sheet: {
-    backgroundColor: COLORS.surfaceContainerLowest,
-    borderTopLeftRadius: RADIUS.xxl,
-    borderTopRightRadius: RADIUS.xxl,
-    paddingHorizontal: SPACING["2xl"],
-    paddingTop: SPACING.md,
-  },
-  handleBar: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: COLORS.outlineVariant,
-    alignSelf: "center",
-    marginBottom: SPACING.lg,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: SPACING.md,
-    marginBottom: SPACING["2xl"],
-  },
-  title: {
-    ...TYPOGRAPHY.headingXl,
-    color: COLORS.onSurface,
-  },
-  subtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.onSurfaceVariant,
-    marginTop: SPACING.xs,
-  },
-  closeButton: {
-    padding: SPACING.sm,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surfaceContainerLow,
-  },
-  options: {
-    gap: SPACING.sm,
-  },
-  optionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.md,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.lg,
-    borderRadius: RADIUS.lg,
-    backgroundColor: COLORS.surfaceContainerLow,
-  },
-  optionPressed: {
-    backgroundColor: COLORS.surfaceContainer,
-  },
-  iconBubble: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  optionText: {
-    flex: 1,
-    gap: 2,
-  },
-  optionTitle: {
-    ...TYPOGRAPHY.titleMd,
-    color: COLORS.onSurface,
-  },
-  optionDescription: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    overlay: {
+      flex: 1,
+      justifyContent: "flex-end",
+    },
+    backdrop: {
+      flex: 1,
+    },
+    sheet: {
+      backgroundColor: c.surfaceContainerLowest,
+      borderTopLeftRadius: RADIUS.xxl,
+      borderTopRightRadius: RADIUS.xxl,
+      paddingHorizontal: SPACING["2xl"],
+      paddingTop: SPACING.md,
+    },
+    handleBar: {
+      width: 40,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: c.outlineVariant,
+      alignSelf: "center",
+      marginBottom: SPACING.lg,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: SPACING.md,
+      marginBottom: SPACING["2xl"],
+    },
+    title: {
+      ...TYPOGRAPHY.headingXl,
+      color: c.onSurface,
+    },
+    subtitle: {
+      ...TYPOGRAPHY.body,
+      color: c.onSurfaceVariant,
+      marginTop: SPACING.xs,
+    },
+    closeButton: {
+      padding: SPACING.sm,
+      borderRadius: RADIUS.full,
+      backgroundColor: c.surfaceContainerLow,
+    },
+    options: {
+      gap: SPACING.sm,
+    },
+    optionRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SPACING.md,
+      paddingVertical: SPACING.md,
+      paddingHorizontal: SPACING.lg,
+      borderRadius: RADIUS.lg,
+      backgroundColor: c.surfaceContainerLow,
+    },
+    optionPressed: {
+      backgroundColor: c.surfaceContainer,
+    },
+    iconBubble: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    optionText: {
+      flex: 1,
+      gap: 2,
+    },
+    optionTitle: {
+      ...TYPOGRAPHY.titleMd,
+      color: c.onSurface,
+    },
+    optionDescription: {
+      ...TYPOGRAPHY.bodySmall,
+      color: c.onSurfaceVariant,
+    },
+  });
+}

@@ -1,7 +1,8 @@
 import React, { useCallback } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { COLORS, SPACING, TYPOGRAPHY, RADIUS } from '@/constants/theme';
+import { SPACING, TYPOGRAPHY, RADIUS, type ThemeColors } from '@/constants/theme';
+import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 import { getCurrentTimezone, getTodayDate } from '@/lib/timezone';
 
 interface DateHeaderProps {
@@ -37,6 +38,8 @@ function addDays(dateStr: string, days: number): string {
 }
 
 export function DateHeader({ selectedDate, onDateChange }: DateHeaderProps): React.ReactElement {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const timezone = getCurrentTimezone();
   const today = getTodayDate(timezone);
   const isFuture = selectedDate >= today;
@@ -62,7 +65,7 @@ export function DateHeader({ selectedDate, onDateChange }: DateHeaderProps): Rea
           onPress={goBack}
           style={({ pressed }) => [styles.arrowButton, pressed && styles.arrowPressed]}
         >
-          <Feather name="chevron-left" size={20} color={COLORS.primary} />
+          <Feather name="chevron-left" size={20} color={colors.primary} />
         </Pressable>
         <Pressable
           onPress={goForward}
@@ -73,14 +76,15 @@ export function DateHeader({ selectedDate, onDateChange }: DateHeaderProps): Rea
             pressed && !isFuture && styles.arrowPressed,
           ]}
         >
-          <Feather name="chevron-right" size={20} color={isFuture ? COLORS.outlineVariant : COLORS.primary} />
+          <Feather name="chevron-right" size={20} color={isFuture ? colors.outlineVariant : colors.primary} />
         </Pressable>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
   container: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -90,17 +94,17 @@ const styles = StyleSheet.create({
   },
   label: {
     ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
     marginBottom: SPACING.xs,
   },
   date: {
     ...TYPOGRAPHY.headingXl,
-    color: COLORS.onSurface,
+    color: c.onSurface,
   },
   arrowPill: {
     flexDirection: 'row',
     gap: SPACING.sm,
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
     padding: 4,
     borderRadius: RADIUS.full,
   },
@@ -108,14 +112,15 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surfaceContainerLowest,
+    backgroundColor: c.surfaceContainerLowest,
     alignItems: 'center',
     justifyContent: 'center',
   },
   arrowPressed: {
-    backgroundColor: COLORS.surfaceContainer,
+    backgroundColor: c.surfaceContainer,
   },
   arrowDisabled: {
     opacity: 0.4,
   },
-});
+  });
+}

@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -11,7 +11,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import type { ImportMode, ImportSummary } from "@/lib/import-json";
 
 export interface ImportDataModalProps {
@@ -33,40 +34,44 @@ interface ModeOption {
   renderDescription: () => React.ReactNode;
 }
 
-const MODE_OPTIONS: ModeOption[] = [
-  {
-    value: "merge",
-    title: "Add to what's already here",
-    renderDescription: () => (
-      <>
-        Keep everything on this device and fill in anything new from your
-        backup. Pick this if you have{" "}
-        <Text style={styles.descriptionEmphasis}>
-          data on this device you don&apos;t want to lose
-        </Text>
-        .{" "}
-        <Text style={styles.descriptionWarning}>
-          Renamed or deleted preset activities won&apos;t be restored
-        </Text>{" "}
-        — use Replace for that.
-      </>
-    ),
-  },
-  {
-    value: "replace",
-    title: "Replace what's on this device",
-    renderDescription: () => (
-      <>
-        Wipe everything currently on this device, then load the backup. Use
-        this if you want your data back{" "}
-        <Text style={styles.descriptionEmphasis}>
-          exactly as it was when you exported
-        </Text>
-        .
-      </>
-    ),
-  },
-];
+function buildModeOptions(
+  styles: ReturnType<typeof makeStyles>,
+): ModeOption[] {
+  return [
+    {
+      value: "merge",
+      title: "Add to what's already here",
+      renderDescription: () => (
+        <>
+          Keep everything on this device and fill in anything new from your
+          backup. Pick this if you have{" "}
+          <Text style={styles.descriptionEmphasis}>
+            data on this device you don&apos;t want to lose
+          </Text>
+          .{" "}
+          <Text style={styles.descriptionWarning}>
+            Renamed or deleted preset activities won&apos;t be restored
+          </Text>{" "}
+          — use Replace for that.
+        </>
+      ),
+    },
+    {
+      value: "replace",
+      title: "Replace what's on this device",
+      renderDescription: () => (
+        <>
+          Wipe everything currently on this device, then load the backup. Use
+          this if you want your data back{" "}
+          <Text style={styles.descriptionEmphasis}>
+            exactly as it was when you exported
+          </Text>
+          .
+        </>
+      ),
+    },
+  ];
+}
 
 export function ImportDataModal({
   visible,
@@ -76,6 +81,9 @@ export function ImportDataModal({
   onClose,
 }: ImportDataModalProps): React.ReactElement {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
+  const MODE_OPTIONS = useMemo(() => buildModeOptions(styles), [styles]);
   const [mode, setMode] = useState<ImportMode>("merge");
   const [importing, setImporting] = useState(false);
 
@@ -135,7 +143,7 @@ export function ImportDataModal({
                 disabled={busy}
                 style={[styles.closeButton, busy && styles.closeButtonDisabled]}
               >
-                <Feather name="x" size={22} color={COLORS.onSurface} />
+                <Feather name="x" size={22} color={colors.onSurface} />
               </Pressable>
             </View>
 
@@ -178,7 +186,7 @@ export function ImportDataModal({
                 <Feather
                   name="alert-triangle"
                   size={16}
-                  color={COLORS.error}
+                  color={colors.error}
                 />
                 <Text style={styles.replaceWarningText}>
                   This can&apos;t be undone. Consider exporting first.
@@ -195,7 +203,7 @@ export function ImportDataModal({
                 busy && styles.exportNudgeDisabled,
               ]}
             >
-              <Feather name="download" size={18} color={COLORS.primary} />
+              <Feather name="download" size={18} color={colors.primary} />
               <Text style={styles.exportNudgeText}>
                 {exporting ? "Preparing export…" : "Export a backup first"}
               </Text>
@@ -211,12 +219,12 @@ export function ImportDataModal({
               ]}
             >
               {importing ? (
-                <ActivityIndicator color={COLORS.onPrimary} />
+                <ActivityIndicator color={colors.onPrimary} />
               ) : (
                 <Feather
                   name="upload"
                   size={18}
-                  color={COLORS.onPrimary}
+                  color={colors.onPrimary}
                 />
               )}
               <Text style={styles.primaryButtonLabel}>
@@ -230,7 +238,8 @@ export function ImportDataModal({
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: "flex-end",
@@ -239,7 +248,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sheet: {
-    backgroundColor: COLORS.surfaceContainerLowest,
+    backgroundColor: c.surfaceContainerLowest,
     borderTopLeftRadius: RADIUS.xxl,
     borderTopRightRadius: RADIUS.xxl,
     paddingTop: SPACING.md,
@@ -252,7 +261,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: COLORS.outlineVariant,
+    backgroundColor: c.outlineVariant,
     alignSelf: "center",
     marginBottom: SPACING.lg,
   },
@@ -269,16 +278,16 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...TYPOGRAPHY.headingXl,
-    color: COLORS.onSurface,
+    color: c.onSurface,
   },
   headerSubtitle: {
     ...TYPOGRAPHY.body,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
   closeButton: {
     padding: SPACING.sm,
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
   },
   closeButtonDisabled: {
     opacity: 0.4,
@@ -293,16 +302,16 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
     padding: SPACING.lg,
     borderRadius: RADIUS.xl,
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
     borderWidth: 2,
     borderColor: "transparent",
   },
   optionCardSelected: {
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.surfaceContainer,
+    borderColor: c.primary,
+    backgroundColor: c.surfaceContainer,
   },
   optionCardPressed: {
-    backgroundColor: COLORS.surfaceContainer,
+    backgroundColor: c.surfaceContainer,
   },
   optionCardDisabled: {
     opacity: 0.5,
@@ -312,19 +321,19 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: COLORS.outlineVariant,
+    borderColor: c.outlineVariant,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 2,
   },
   radioOuterSelected: {
-    borderColor: COLORS.primary,
+    borderColor: c.primary,
   },
   radioInner: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: COLORS.primary,
+    backgroundColor: c.primary,
   },
   optionText: {
     flex: 1,
@@ -332,18 +341,18 @@ const styles = StyleSheet.create({
   },
   optionTitle: {
     ...TYPOGRAPHY.titleMd,
-    color: COLORS.onSurface,
+    color: c.onSurface,
   },
   optionDescription: {
     ...TYPOGRAPHY.body,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
   descriptionEmphasis: {
-    color: COLORS.onSurface,
+    color: c.onSurface,
     fontWeight: "600",
   },
   descriptionWarning: {
-    color: COLORS.error,
+    color: c.error,
     fontWeight: "600",
   },
   replaceWarning: {
@@ -355,7 +364,7 @@ const styles = StyleSheet.create({
   },
   replaceWarningText: {
     ...TYPOGRAPHY.bodySmall,
-    color: COLORS.error,
+    color: c.error,
     flex: 1,
   },
   exportNudge: {
@@ -365,18 +374,18 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.lg,
     borderRadius: RADIUS.lg,
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
     marginBottom: SPACING.lg,
   },
   exportNudgePressed: {
-    backgroundColor: COLORS.surfaceContainer,
+    backgroundColor: c.surfaceContainer,
   },
   exportNudgeDisabled: {
     opacity: 0.6,
   },
   exportNudgeText: {
     ...TYPOGRAPHY.titleMd,
-    color: COLORS.primary,
+    color: c.primary,
   },
   primaryButton: {
     flexDirection: "row",
@@ -385,7 +394,7 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
     paddingVertical: SPACING.lg,
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.primary,
+    backgroundColor: c.primary,
   },
   primaryButtonPressed: {
     opacity: 0.85,
@@ -395,6 +404,7 @@ const styles = StyleSheet.create({
   },
   primaryButtonLabel: {
     ...TYPOGRAPHY.titleMd,
-    color: COLORS.onPrimary,
+    color: c.onPrimary,
   },
-});
+  });
+}

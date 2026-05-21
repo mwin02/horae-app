@@ -3,11 +3,12 @@ import React, { useCallback } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
 import {
   updateUserPreferences,
   type InsightsPeriod,
 } from "@/db/queries/user-preferences";
+import { useTheme, useThemedStyles, type ThemeMode } from "@/hooks/useTheme";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 
 const WEEK_DAY_OPTIONS: { value: number; label: string }[] = [
@@ -22,8 +23,16 @@ const PERIOD_OPTIONS: { value: InsightsPeriod; label: string }[] = [
   { value: "monthly", label: "Monthly" },
 ];
 
+const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
+  { value: "system", label: "Match device" },
+  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark" },
+];
+
 export default function GeneralPreferencesScreen(): React.ReactElement {
   const { preferences } = useUserPreferences();
+  const { mode: themeMode, setMode: setThemeMode } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   const handleWeekStartChange = useCallback((value: number) => {
     void updateUserPreferences({ week_start_day: value });
@@ -48,6 +57,22 @@ export default function GeneralPreferencesScreen(): React.ReactElement {
           </Text>
         </View>
 
+        <Text style={styles.sectionLabel}>Appearance</Text>
+        <View style={styles.group}>
+          {THEME_OPTIONS.map((opt) => (
+            <ChoiceRow
+              key={opt.value}
+              label={opt.label}
+              selected={themeMode === opt.value}
+              onPress={() => setThemeMode(opt.value)}
+              styles={styles}
+            />
+          ))}
+        </View>
+        <Text style={styles.helper}>
+          &ldquo;Match device&rdquo; follows your system Light/Dark setting.
+        </Text>
+
         <Text style={styles.sectionLabel}>Week starts on</Text>
         <View style={styles.group}>
           {WEEK_DAY_OPTIONS.map((opt) => (
@@ -56,6 +81,7 @@ export default function GeneralPreferencesScreen(): React.ReactElement {
               label={opt.label}
               selected={preferences.weekStartDay === opt.value}
               onPress={() => handleWeekStartChange(opt.value)}
+              styles={styles}
             />
           ))}
         </View>
@@ -68,6 +94,7 @@ export default function GeneralPreferencesScreen(): React.ReactElement {
               label={opt.label}
               selected={preferences.defaultInsightsPeriod === opt.value}
               onPress={() => handlePeriodChange(opt.value)}
+              styles={styles}
             />
           ))}
         </View>
@@ -83,9 +110,15 @@ interface ChoiceRowProps {
   label: string;
   selected: boolean;
   onPress: () => void;
+  styles: ReturnType<typeof makeStyles>;
 }
 
-function ChoiceRow({ label, selected, onPress }: ChoiceRowProps): React.ReactElement {
+function ChoiceRow({
+  label,
+  selected,
+  onPress,
+  styles,
+}: ChoiceRowProps): React.ReactElement {
   return (
     <Pressable
       onPress={onPress}
@@ -103,70 +136,72 @@ function ChoiceRow({ label, selected, onPress }: ChoiceRowProps): React.ReactEle
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-  },
-  scrollContent: {
-    paddingHorizontal: SPACING.lg,
-    paddingBottom: SPACING["4xl"],
-    gap: SPACING.md,
-  },
-  header: {
-    paddingHorizontal: SPACING.xs,
-    paddingTop: SPACING.md,
-    gap: SPACING.xs,
-  },
-  title: {
-    ...TYPOGRAPHY.headingXl,
-    color: COLORS.onSurface,
-  },
-  subtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.onSurfaceVariant,
-  },
-  sectionLabel: {
-    ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
-    marginTop: SPACING.lg,
-    marginBottom: SPACING.xs,
-    paddingHorizontal: SPACING.xs,
-  },
-  group: {
-    gap: SPACING.sm,
-  },
-  helper: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
-    paddingHorizontal: SPACING.xs,
-  },
-  choiceRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.lg,
-    borderRadius: RADIUS.lg,
-    backgroundColor: COLORS.surfaceContainerLow,
-  },
-  choiceRowSelected: {
-    backgroundColor: COLORS.surfaceContainer,
-  },
-  choiceRowPressed: {
-    opacity: 0.7,
-  },
-  choiceLabel: {
-    ...TYPOGRAPHY.titleMd,
-    color: COLORS.onSurface,
-  },
-  choiceLabelSelected: {
-    color: COLORS.primary,
-  },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: COLORS.primary,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.surface,
+    },
+    scrollContent: {
+      paddingHorizontal: SPACING.lg,
+      paddingBottom: SPACING["4xl"],
+      gap: SPACING.md,
+    },
+    header: {
+      paddingHorizontal: SPACING.xs,
+      paddingTop: SPACING.md,
+      gap: SPACING.xs,
+    },
+    title: {
+      ...TYPOGRAPHY.headingXl,
+      color: c.onSurface,
+    },
+    subtitle: {
+      ...TYPOGRAPHY.body,
+      color: c.onSurfaceVariant,
+    },
+    sectionLabel: {
+      ...TYPOGRAPHY.labelUppercase,
+      color: c.onSurfaceVariant,
+      marginTop: SPACING.lg,
+      marginBottom: SPACING.xs,
+      paddingHorizontal: SPACING.xs,
+    },
+    group: {
+      gap: SPACING.sm,
+    },
+    helper: {
+      ...TYPOGRAPHY.bodySmall,
+      color: c.onSurfaceVariant,
+      paddingHorizontal: SPACING.xs,
+    },
+    choiceRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingVertical: SPACING.md,
+      paddingHorizontal: SPACING.lg,
+      borderRadius: RADIUS.lg,
+      backgroundColor: c.surfaceContainerLow,
+    },
+    choiceRowSelected: {
+      backgroundColor: c.surfaceContainer,
+    },
+    choiceRowPressed: {
+      opacity: 0.7,
+    },
+    choiceLabel: {
+      ...TYPOGRAPHY.titleMd,
+      color: c.onSurface,
+    },
+    choiceLabelSelected: {
+      color: c.primary,
+    },
+    dot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: c.primary,
+    },
+  });
+}

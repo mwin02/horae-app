@@ -3,7 +3,8 @@ import { StyleSheet, Switch, Text, View } from "react-native";
 
 import { SettingRow } from "@/components/settings/setting-row";
 import { TimePickerRow } from "@/components/settings/time-picker-row";
-import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import { updateNotificationPreferences } from "@/db/queries";
 import type { NotificationPreferencesRecord } from "@/db/schema";
 
@@ -38,6 +39,8 @@ export function QuietHoursSection({
   prefs,
   permissionDenied,
 }: QuietHoursSectionProps): React.ReactElement {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const enabled = prefs?.quiet_hours_enabled === 1;
   const start = prefs?.quiet_hours_start ?? DEFAULT_START;
   const end = prefs?.quiet_hours_end ?? DEFAULT_END;
@@ -76,8 +79,8 @@ export function QuietHoursSection({
             value={enabled}
             onValueChange={handleToggle}
             disabled={rowsDisabled}
-            trackColor={{ true: COLORS.primary, false: COLORS.outlineVariant }}
-            thumbColor={COLORS.surfaceContainerLowest}
+            trackColor={{ true: colors.primary, false: colors.outlineVariant }}
+            thumbColor={colors.surfaceContainerLowest}
           />
         }
       />
@@ -98,13 +101,15 @@ export function QuietHoursSection({
   );
 }
 
-const styles = StyleSheet.create({
-  group: {
-    gap: SPACING.sm,
-  },
-  helper: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
-    paddingHorizontal: SPACING.xs,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    group: {
+      gap: SPACING.sm,
+    },
+    helper: {
+      ...TYPOGRAPHY.bodySmall,
+      color: c.onSurfaceVariant,
+      paddingHorizontal: SPACING.xs,
+    },
+  });
+}

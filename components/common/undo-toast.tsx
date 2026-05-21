@@ -1,4 +1,5 @@
-import { COLORS, FONTS, RADIUS, SHADOWS, SPACING, TYPOGRAPHY } from '@/constants/theme';
+import { FONTS, RADIUS, SHADOWS, SPACING, TYPOGRAPHY, type ThemeColors } from '@/constants/theme';
+import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 import { Feather } from '@expo/vector-icons';
 import React, { useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -33,6 +34,8 @@ export function UndoToast({
   onDismiss,
   durationMs = 5000,
 }: UndoToastProps): React.ReactElement | null {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(20)).current;
 
@@ -83,7 +86,7 @@ export function UndoToast({
             <Feather
               name={actionIcon}
               size={14}
-              color={COLORS.primaryFixed}
+              color={colors.primaryFixed}
               style={styles.actionIcon}
             />
           )}
@@ -94,47 +97,49 @@ export function UndoToast({
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: SPACING['3xl'],
-    alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-  },
-  toast: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.inverseSurface,
-    borderRadius: RADIUS.lg,
-    paddingVertical: SPACING.md,
-    paddingLeft: SPACING.lg,
-    paddingRight: SPACING.sm,
-    minWidth: 240,
-    maxWidth: 480,
-    ...SHADOWS.ambient,
-  },
-  message: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.inverseOnSurface,
-    flexShrink: 1,
-    marginRight: SPACING.md,
-  },
-  action: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
-  },
-  actionIcon: {
-    marginTop: -1,
-  },
-  actionLabel: {
-    fontFamily: FONTS.jakartaBold,
-    color: COLORS.primaryFixed,
-    fontSize: 14,
-    letterSpacing: 0.3,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    wrap: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: SPACING['3xl'],
+      alignItems: 'center',
+      paddingHorizontal: SPACING.lg,
+    },
+    toast: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.inverseSurface,
+      borderRadius: RADIUS.lg,
+      paddingVertical: SPACING.md,
+      paddingLeft: SPACING.lg,
+      paddingRight: SPACING.sm,
+      minWidth: 240,
+      maxWidth: 480,
+      ...SHADOWS.ambient,
+    },
+    message: {
+      ...TYPOGRAPHY.body,
+      color: c.inverseOnSurface,
+      flexShrink: 1,
+      marginRight: SPACING.md,
+    },
+    action: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.xs,
+    },
+    actionIcon: {
+      marginTop: -1,
+    },
+    actionLabel: {
+      fontFamily: FONTS.jakartaBold,
+      color: c.primaryFixed,
+      fontSize: 14,
+      letterSpacing: 0.3,
+    },
+  });
+}

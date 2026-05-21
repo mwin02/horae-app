@@ -6,7 +6,8 @@ import { WeeklyInsightsView } from "@/components/insights/views/weekly-insights-
 import { WeekNavHeader } from "@/components/insights/week-nav-header";
 import { DateHeader } from "@/components/timeline/date-header";
 import { WeekStrip } from "@/components/timeline/week-strip";
-import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import { useInsightsData, type InsightsPeriod } from "@/hooks/useInsightsData";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { getCurrentTimezone, getTodayDate } from "@/lib/timezone";
@@ -15,6 +16,8 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function InsightsScreen(): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const today = getTodayDate(getCurrentTimezone());
   const { preferences, isLoading: prefsLoading } = useUserPreferences();
   // `null` means "haven't applied the user's default yet". Once prefs finish
@@ -65,7 +68,7 @@ export default function InsightsScreen(): React.ReactElement {
       )}
 
       {isLoading ? (
-        <ActivityIndicator style={styles.loader} color={COLORS.primary} />
+        <ActivityIndicator style={styles.loader} color={colors.primary} />
       ) : isEmpty ? (
         <>
           {effectivePeriod === "daily" && (
@@ -119,28 +122,30 @@ export default function InsightsScreen(): React.ReactElement {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-  },
-  loader: {
-    marginTop: SPACING["3xl"],
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: SPACING["3xl"],
-  },
-  emptyTitle: {
-    ...TYPOGRAPHY.heading,
-    color: COLORS.onSurface,
-    marginBottom: SPACING.sm,
-  },
-  emptyBody: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.onSurfaceVariant,
-    textAlign: "center",
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.surface,
+    },
+    loader: {
+      marginTop: SPACING["3xl"],
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      paddingHorizontal: SPACING["3xl"],
+    },
+    emptyTitle: {
+      ...TYPOGRAPHY.heading,
+      color: c.onSurface,
+      marginBottom: SPACING.sm,
+    },
+    emptyBody: {
+      ...TYPOGRAPHY.body,
+      color: c.onSurfaceVariant,
+      textAlign: "center",
+    },
+  });
+}
