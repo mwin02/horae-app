@@ -1,4 +1,5 @@
-import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { FONTS, RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -18,6 +19,8 @@ export function ResumeBanner({
   categoryColor,
   onPress,
 }: ResumeBannerProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   return (
     <View style={styles.row}>
       <View style={[styles.dot, { backgroundColor: categoryColor }]} />
@@ -32,50 +35,52 @@ export function ResumeBanner({
         hitSlop={8}
         style={({ pressed }) => [styles.iconWrap, { opacity: pressed ? 0.7 : 1 }]}
       >
-        <Feather name="play" size={16} color={COLORS.onSurface} />
+        <Feather name="play" size={16} color={colors.onSurface} />
       </Pressable>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: RADIUS.lg,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.lg,
-    marginBottom: SPACING["2xl"],
-    gap: SPACING.md,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 999,
-  },
-  textCol: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "baseline",
-    gap: SPACING.sm,
-  },
-  label: {
-    ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
-  },
-  activity: {
-    fontFamily: FONTS.manropeBold,
-    fontSize: 15,
-    color: COLORS.onSurface,
-    flexShrink: 1,
-  },
-  iconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 999,
-    backgroundColor: COLORS.surfaceContainerHigh,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: c.surfaceContainerLow,
+      borderRadius: RADIUS.lg,
+      paddingVertical: SPACING.md,
+      paddingHorizontal: SPACING.lg,
+      marginBottom: SPACING["2xl"],
+      gap: SPACING.md,
+    },
+    dot: {
+      width: 8,
+      height: 8,
+      borderRadius: 999,
+    },
+    textCol: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "baseline",
+      gap: SPACING.sm,
+    },
+    label: {
+      ...TYPOGRAPHY.labelUppercase,
+      color: c.onSurfaceVariant,
+    },
+    activity: {
+      fontFamily: FONTS.manropeBold,
+      fontSize: 15,
+      color: c.onSurface,
+      flexShrink: 1,
+    },
+    iconWrap: {
+      width: 32,
+      height: 32,
+      borderRadius: 999,
+      backgroundColor: c.surfaceContainerHigh,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+  });
+}

@@ -1,7 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { COLORS, FONTS, TYPOGRAPHY } from '@/constants/theme';
+import { FONTS, TYPOGRAPHY, type ThemeColors } from '@/constants/theme';
+import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 
 // ──────────────────────────────────────────────
 // Types
@@ -86,6 +87,8 @@ export function DonutChart({
   centerLabel,
   centerSubLabel,
 }: DonutChartProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const cx = size / 2;
   const cy = size / 2;
   const outerRadius = (size - 4) / 2; // small padding for anti-aliasing
@@ -132,7 +135,7 @@ export function DonutChart({
         {total === 0 && (
           <Path
             d={describeArc(cx, cy, outerRadius, innerRadius, 0, 359.99)}
-            fill={COLORS.surfaceContainer}
+            fill={colors.surfaceContainer}
           />
         )}
         {/* Data slices */}
@@ -158,25 +161,27 @@ export function DonutChart({
 
 // ──────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  centerOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  centerLabel: {
-    fontFamily: FONTS.manropeBold,
-    fontSize: 18,
-    lineHeight: 22,
-    color: COLORS.onSurface,
-  },
-  centerSubLabel: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
-    marginTop: 2,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    centerOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    centerLabel: {
+      fontFamily: FONTS.manropeBold,
+      fontSize: 18,
+      lineHeight: 22,
+      color: c.onSurface,
+    },
+    centerSubLabel: {
+      ...TYPOGRAPHY.bodySmall,
+      color: c.onSurfaceVariant,
+      marginTop: 2,
+    },
+  });
+}

@@ -13,12 +13,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CategoryIcon } from "@/components/common/category-icon";
 import { GoalEditorModal } from "@/components/ideal-allocations/goal-editor-modal";
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import type { CategoryWithActivities } from "@/db/models";
 import { useAllCategoryGoalSummaries } from "@/hooks/useAllCategoryGoalSummaries";
 import { useCategoriesWithActivities } from "@/hooks/useCategoriesWithActivities";
 
 export default function IdealAllocationsScreen(): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const { categories, isLoading: categoriesLoading } =
     useCategoriesWithActivities();
   const { summariesByCategory, isLoading: summariesLoading } =
@@ -73,12 +76,12 @@ export default function IdealAllocationsScreen(): React.ReactElement {
           <Feather
             name="chevron-right"
             size={20}
-            color={COLORS.onSurfaceVariant}
+            color={colors.onSurfaceVariant}
           />
         </Pressable>
       );
     },
-    [summariesByCategory, handleCategoryPress],
+    [summariesByCategory, handleCategoryPress, styles, colors.onSurfaceVariant],
   );
 
   if (isLoading) {
@@ -86,7 +89,7 @@ export default function IdealAllocationsScreen(): React.ReactElement {
       <SafeAreaView style={styles.container} edges={["bottom"]}>
         <Stack.Screen options={{ title: "Ideal Allocations" }} />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -129,81 +132,83 @@ export default function IdealAllocationsScreen(): React.ReactElement {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  header: {
-    paddingHorizontal: SPACING.xl,
-    paddingTop: SPACING.lg,
-    paddingBottom: SPACING.lg,
-    gap: SPACING.xs,
-  },
-  title: {
-    ...TYPOGRAPHY.headingXl,
-    color: COLORS.onSurface,
-  },
-  subtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.onSurfaceVariant,
-  },
-  listContent: {
-    paddingHorizontal: SPACING.lg,
-    paddingBottom: SPACING["4xl"],
-    gap: SPACING.sm,
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.md,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.lg,
-    borderRadius: RADIUS.lg,
-    backgroundColor: COLORS.surfaceContainerLow,
-  },
-  rowPressed: {
-    backgroundColor: COLORS.surfaceContainer,
-  },
-  iconBubble: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  rowText: {
-    flex: 1,
-    gap: 2,
-  },
-  rowTitle: {
-    ...TYPOGRAPHY.titleMd,
-    color: COLORS.onSurface,
-  },
-  rowSummary: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurface,
-  },
-  rowSummaryMuted: {
-    color: COLORS.onSurfaceVariant,
-  },
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: SPACING["4xl"],
-    gap: SPACING.sm,
-  },
-  emptyTitle: {
-    ...TYPOGRAPHY.heading,
-    color: COLORS.onSurface,
-  },
-  emptySubtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.onSurfaceVariant,
-    textAlign: "center",
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.surface,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    header: {
+      paddingHorizontal: SPACING.xl,
+      paddingTop: SPACING.lg,
+      paddingBottom: SPACING.lg,
+      gap: SPACING.xs,
+    },
+    title: {
+      ...TYPOGRAPHY.headingXl,
+      color: c.onSurface,
+    },
+    subtitle: {
+      ...TYPOGRAPHY.body,
+      color: c.onSurfaceVariant,
+    },
+    listContent: {
+      paddingHorizontal: SPACING.lg,
+      paddingBottom: SPACING["4xl"],
+      gap: SPACING.sm,
+    },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SPACING.md,
+      paddingVertical: SPACING.md,
+      paddingHorizontal: SPACING.lg,
+      borderRadius: RADIUS.lg,
+      backgroundColor: c.surfaceContainerLow,
+    },
+    rowPressed: {
+      backgroundColor: c.surfaceContainer,
+    },
+    iconBubble: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    rowText: {
+      flex: 1,
+      gap: 2,
+    },
+    rowTitle: {
+      ...TYPOGRAPHY.titleMd,
+      color: c.onSurface,
+    },
+    rowSummary: {
+      ...TYPOGRAPHY.bodySmall,
+      color: c.onSurface,
+    },
+    rowSummaryMuted: {
+      color: c.onSurfaceVariant,
+    },
+    emptyState: {
+      alignItems: "center",
+      paddingVertical: SPACING["4xl"],
+      gap: SPACING.sm,
+    },
+    emptyTitle: {
+      ...TYPOGRAPHY.heading,
+      color: c.onSurface,
+    },
+    emptySubtitle: {
+      ...TYPOGRAPHY.body,
+      color: c.onSurfaceVariant,
+      textAlign: "center",
+    },
+  });
+}

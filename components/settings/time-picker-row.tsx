@@ -5,7 +5,13 @@ import DateTimePicker, {
 import React, { useCallback, useMemo, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import {
+  RADIUS,
+  SPACING,
+  TYPOGRAPHY,
+  type ThemeColors,
+} from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 
 export interface TimePickerRowProps {
   label: string;
@@ -43,6 +49,8 @@ export function TimePickerRow({
   onChange,
   disabled,
 }: TimePickerRowProps): React.ReactElement {
+  const { colors, isDark } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const [open, setOpen] = useState(false);
 
   const pickerValue = useMemo(() => {
@@ -87,7 +95,7 @@ export function TimePickerRow({
           <Feather
             name={open ? "chevron-down" : "chevron-right"}
             size={20}
-            color={COLORS.onSurfaceVariant}
+            color={colors.onSurfaceVariant}
           />
         </View>
       </Pressable>
@@ -98,7 +106,7 @@ export function TimePickerRow({
             mode="time"
             display={Platform.OS === "ios" ? "spinner" : "default"}
             onChange={handleChange}
-            themeVariant="light"
+            themeVariant={isDark ? "dark" : "light"}
           />
         </View>
       ) : null}
@@ -106,40 +114,42 @@ export function TimePickerRow({
   );
 }
 
-const styles = StyleSheet.create({
-  wrapper: {
-    borderRadius: RADIUS.lg,
-    backgroundColor: COLORS.surfaceContainerLow,
-    overflow: "hidden",
-  },
-  wrapperDisabled: {
-    opacity: 0.55,
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.lg,
-  },
-  rowPressed: {
-    backgroundColor: COLORS.surfaceContainer,
-  },
-  label: {
-    ...TYPOGRAPHY.titleMd,
-    color: COLORS.onSurface,
-  },
-  valueGroup: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.sm,
-  },
-  value: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.onSurface,
-  },
-  pickerHost: {
-    paddingHorizontal: SPACING.sm,
-    paddingBottom: SPACING.sm,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    wrapper: {
+      borderRadius: RADIUS.lg,
+      backgroundColor: c.surfaceContainerLow,
+      overflow: "hidden",
+    },
+    wrapperDisabled: {
+      opacity: 0.55,
+    },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingVertical: SPACING.md,
+      paddingHorizontal: SPACING.lg,
+    },
+    rowPressed: {
+      backgroundColor: c.surfaceContainer,
+    },
+    label: {
+      ...TYPOGRAPHY.titleMd,
+      color: c.onSurface,
+    },
+    valueGroup: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SPACING.sm,
+    },
+    value: {
+      ...TYPOGRAPHY.body,
+      color: c.onSurface,
+    },
+    pickerHost: {
+      paddingHorizontal: SPACING.sm,
+      paddingBottom: SPACING.sm,
+    },
+  });
+}

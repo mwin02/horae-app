@@ -1,8 +1,14 @@
 import { CategoryChip } from "@/components/common/category-chip";
 import { CategoryIconSwatch } from "@/components/insights/category-icon-swatch";
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import {
+  RADIUS,
+  SPACING,
+  TYPOGRAPHY,
+  type ThemeColors,
+} from "@/constants/theme";
 import { createRetroactiveEntry } from "@/db/queries";
 import { useCategoriesByUsage } from "@/hooks/useCategoriesByUsage";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import {
   formatDuration,
   formatTimeInTimezone,
@@ -37,8 +43,12 @@ export function GapFillModal({
   onClose,
 }: GapFillModalProps): React.ReactElement | null {
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { categories } = useCategoriesByUsage();
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
+    null,
+  );
   const [saving, setSaving] = useState(false);
   const [editedStart, setEditedStart] = useState<Date>(new Date());
   const [editedEnd, setEditedEnd] = useState<Date>(new Date());
@@ -71,19 +81,13 @@ export function GapFillModal({
     [],
   );
 
-  const handleEndChange = useCallback(
-    (_event: unknown, date?: Date): void => {
-      if (date) setEditedEnd(date);
-    },
-    [],
-  );
+  const handleEndChange = useCallback((_event: unknown, date?: Date): void => {
+    if (date) setEditedEnd(date);
+  }, []);
 
-  const handleTogglePicker = useCallback(
-    (picker: "start" | "end"): void => {
-      setActivePicker((prev) => (prev === picker ? null : picker));
-    },
-    [],
-  );
+  const handleTogglePicker = useCallback((picker: "start" | "end"): void => {
+    setActivePicker((prev) => (prev === picker ? null : picker));
+  }, []);
 
   const handleSelectActivity = useCallback(
     async (activityId: string): Promise<void> => {
@@ -160,12 +164,7 @@ export function GapFillModal({
     crossesMidnight || nearBoundary ? "datetime" : "time";
 
   return (
-    <Modal
-      visible
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
+    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={onClose} />
 
@@ -179,16 +178,10 @@ export function GapFillModal({
           <View style={styles.header}>
             <View>
               <Text style={styles.headerTitle}>Fill Gap</Text>
-              <Text style={styles.headerSubtitle}>
-                What were you doing?
-              </Text>
+              <Text style={styles.headerSubtitle}>What were you doing?</Text>
             </View>
-            <Pressable
-              style={styles.closeButton}
-              onPress={onClose}
-              hitSlop={8}
-            >
-              <Feather name="x" size={20} color={COLORS.onSurfaceVariant} />
+            <Pressable style={styles.closeButton} onPress={onClose} hitSlop={8}>
+              <Feather name="x" size={20} color={colors.onSurfaceVariant} />
             </Pressable>
           </View>
 
@@ -216,8 +209,8 @@ export function GapFillModal({
                 size={16}
                 color={
                   activePicker === "start"
-                    ? COLORS.primary
-                    : COLORS.onSurfaceVariant
+                    ? colors.primary
+                    : colors.onSurfaceVariant
                 }
               />
             </Pressable>
@@ -244,15 +237,15 @@ export function GapFillModal({
                 size={16}
                 color={
                   activePicker === "end"
-                    ? COLORS.primary
-                    : COLORS.onSurfaceVariant
+                    ? colors.primary
+                    : colors.onSurfaceVariant
                 }
               />
             </Pressable>
 
             {/* Duration */}
             <View style={styles.durationRow}>
-              <Feather name="clock" size={14} color={COLORS.onSurfaceVariant} />
+              <Feather name="clock" size={14} color={colors.onSurfaceVariant} />
               <Text style={styles.durationText}>
                 {isValid ? formatDuration(durationSeconds) : "—"}
               </Text>
@@ -269,7 +262,7 @@ export function GapFillModal({
                 onChange={pickerOnChange}
                 minimumDate={pickerMin}
                 maximumDate={pickerMax}
-                themeVariant="light"
+                themeVariant={isDark ? "dark" : "light"}
               />
             </View>
           )}
@@ -284,86 +277,86 @@ export function GapFillModal({
           {/* Category filter — hidden while a time picker is open so it
               doesn't get squeezed by the picker's vertical footprint. */}
           {activePicker === null && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoryRow}
-          >
-            <Pressable
-              style={[
-                styles.filterChip,
-                !selectedCategoryId && styles.filterChipActive,
-              ]}
-              onPress={() => setSelectedCategoryId(null)}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.categoryRow}
             >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  !selectedCategoryId && styles.filterChipTextActive,
-                ]}
-              >
-                All
-              </Text>
-            </Pressable>
-            {categories.map((cat) => (
               <Pressable
-                key={cat.id}
-                onPress={() =>
-                  setSelectedCategoryId(
-                    cat.id === selectedCategoryId ? null : cat.id,
-                  )
-                }
-                style={
-                  cat.id === selectedCategoryId
-                    ? styles.selectedChipWrapper
-                    : undefined
-                }
+                style={[
+                  styles.filterChip,
+                  !selectedCategoryId && styles.filterChipActive,
+                ]}
+                onPress={() => setSelectedCategoryId(null)}
               >
-                <CategoryChip name={cat.name} color={cat.color} />
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    !selectedCategoryId && styles.filterChipTextActive,
+                  ]}
+                >
+                  All
+                </Text>
               </Pressable>
-            ))}
-          </ScrollView>
+              {categories.map((cat) => (
+                <Pressable
+                  key={cat.id}
+                  onPress={() =>
+                    setSelectedCategoryId(
+                      cat.id === selectedCategoryId ? null : cat.id,
+                    )
+                  }
+                  style={
+                    cat.id === selectedCategoryId
+                      ? styles.selectedChipWrapper
+                      : undefined
+                  }
+                >
+                  <CategoryChip name={cat.name} color={cat.color} />
+                </Pressable>
+              ))}
+            </ScrollView>
           )}
 
           {/* Activity list — also hidden during picker for the same reason. */}
           {activePicker === null && (
-          <FlatList
-            data={filteredActivities}
-            keyExtractor={(item) => item.id}
-            style={styles.activityList}
-            renderItem={({ item }) => (
-              <Pressable
-                style={({ pressed }) => [
-                  styles.activityRow,
-                  pressed && styles.activityRowPressed,
-                ]}
-                onPress={() => handleSelectActivity(item.id)}
-                disabled={saving || !isValid}
-              >
-                <CategoryIconSwatch
-                  icon={item.icon}
-                  color={item.categoryColor}
-                  size={28}
-                  iconSize={16}
-                />
-                <Text style={styles.activityName} numberOfLines={1}>
-                  {item.name}
-                </Text>
-                <Text
-                  style={[
-                    styles.activityCategory,
-                    { color: item.categoryColor },
+            <FlatList
+              data={filteredActivities}
+              keyExtractor={(item) => item.id}
+              style={styles.activityList}
+              renderItem={({ item }) => (
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.activityRow,
+                    pressed && styles.activityRowPressed,
                   ]}
-                  numberOfLines={1}
+                  onPress={() => handleSelectActivity(item.id)}
+                  disabled={saving || !isValid}
                 >
-                  {item.categoryName}
-                </Text>
-              </Pressable>
-            )}
-            ListEmptyComponent={
-              <Text style={styles.emptyText}>No activities found</Text>
-            }
-          />
+                  <CategoryIconSwatch
+                    icon={item.icon}
+                    color={item.categoryColor}
+                    size={28}
+                    iconSize={16}
+                  />
+                  <Text style={styles.activityName} numberOfLines={1}>
+                    {item.name}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.activityCategory,
+                      { color: item.categoryColor },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {item.categoryName}
+                  </Text>
+                </Pressable>
+              )}
+              ListEmptyComponent={
+                <Text style={styles.emptyText}>No activities found</Text>
+              }
+            />
           )}
         </View>
       </View>
@@ -371,153 +364,155 @@ export function GapFillModal({
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-  },
-  backdrop: {
-    flex: 1,
-  },
-  sheet: {
-    backgroundColor: COLORS.surfaceContainerLowest,
-    borderTopLeftRadius: RADIUS.xxl,
-    borderTopRightRadius: RADIUS.xxl,
-    paddingHorizontal: SPACING["2xl"],
-    paddingTop: SPACING.md,
-    maxHeight: "85%",
-  },
-  handleBar: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: COLORS.outlineVariant,
-    alignSelf: "center",
-    marginBottom: SPACING.lg,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: SPACING["2xl"],
-  },
-  headerTitle: {
-    ...TYPOGRAPHY.headingXl,
-    color: COLORS.onSurface,
-  },
-  headerSubtitle: {
-    ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
-    marginTop: SPACING.xs,
-  },
-  closeButton: {
-    padding: SPACING.sm,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surfaceContainerLow,
-  },
-  timeSection: {
-    marginBottom: SPACING.lg,
-    gap: SPACING.sm,
-  },
-  timePickerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: RADIUS.lg,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.lg,
-  },
-  timePickerRowActive: {
-    backgroundColor: COLORS.surfaceContainerHigh,
-  },
-  timeLabel: {
-    ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
-    flex: 1,
-  },
-  timeValue: {
-    ...TYPOGRAPHY.titleMd,
-    color: COLORS.onSurface,
-    marginRight: SPACING.sm,
-  },
-  timeValueActive: {
-    color: COLORS.primary,
-  },
-  durationRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.sm,
-    paddingHorizontal: SPACING.sm,
-    paddingTop: SPACING.xs,
-  },
-  durationText: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.onSurfaceVariant,
-  },
-  pickerContainer: {
-    marginBottom: SPACING.lg,
-  },
-  validationError: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.error,
-    textAlign: "center",
-    marginBottom: SPACING.lg,
-  },
-  categoryRow: {
-    gap: SPACING.sm,
-    paddingBottom: SPACING.lg,
-  },
-  filterChip: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surfaceContainerLow,
-  },
-  filterChipActive: {
-    backgroundColor: COLORS.primary,
-  },
-  filterChipText: {
-    ...TYPOGRAPHY.labelSm,
-    color: COLORS.onSurfaceVariant,
-  },
-  filterChipTextActive: {
-    color: COLORS.onPrimary,
-  },
-  selectedChipWrapper: {
-    borderWidth: 2,
-    borderColor: COLORS.primary,
-    borderRadius: RADIUS.full,
-  },
-  activityList: {
-    maxHeight: 300,
-  },
-  activityRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.md,
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: RADIUS.lg,
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-    marginBottom: SPACING.sm,
-  },
-  activityRowPressed: {
-    backgroundColor: COLORS.surfaceContainerHigh,
-  },
-  activityName: {
-    flex: 6,
-    ...TYPOGRAPHY.titleMd,
-    color: COLORS.onSurface,
-  },
-  activityCategory: {
-    flex: 4,
-    ...TYPOGRAPHY.bodySmall,
-    textAlign: "right",
-  },
-  emptyText: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.outlineVariant,
-    textAlign: "center",
-    paddingVertical: SPACING["3xl"],
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    overlay: {
+      flex: 1,
+      justifyContent: "flex-end",
+    },
+    backdrop: {
+      flex: 1,
+    },
+    sheet: {
+      backgroundColor: c.surfaceContainerLowest,
+      borderTopLeftRadius: RADIUS.xxl,
+      borderTopRightRadius: RADIUS.xxl,
+      paddingHorizontal: SPACING["2xl"],
+      paddingTop: SPACING.md,
+      maxHeight: "85%",
+    },
+    handleBar: {
+      width: 40,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: c.outlineVariant,
+      alignSelf: "center",
+      marginBottom: SPACING.lg,
+    },
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      marginBottom: SPACING["2xl"],
+    },
+    headerTitle: {
+      ...TYPOGRAPHY.headingXl,
+      color: c.onSurface,
+    },
+    headerSubtitle: {
+      ...TYPOGRAPHY.labelUppercase,
+      color: c.onSurfaceVariant,
+      marginTop: SPACING.xs,
+    },
+    closeButton: {
+      padding: SPACING.sm,
+      borderRadius: RADIUS.full,
+      backgroundColor: c.surfaceContainerLow,
+    },
+    timeSection: {
+      marginBottom: SPACING.lg,
+      gap: SPACING.sm,
+    },
+    timePickerRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: c.surfaceContainerLow,
+      borderRadius: RADIUS.lg,
+      paddingVertical: SPACING.md,
+      paddingHorizontal: SPACING.lg,
+    },
+    timePickerRowActive: {
+      backgroundColor: c.surfaceContainerHigh,
+    },
+    timeLabel: {
+      ...TYPOGRAPHY.labelUppercase,
+      color: c.onSurfaceVariant,
+      flex: 1,
+    },
+    timeValue: {
+      ...TYPOGRAPHY.titleMd,
+      color: c.onSurface,
+      marginRight: SPACING.sm,
+    },
+    timeValueActive: {
+      color: c.primary,
+    },
+    durationRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SPACING.sm,
+      paddingHorizontal: SPACING.sm,
+      paddingTop: SPACING.xs,
+    },
+    durationText: {
+      ...TYPOGRAPHY.body,
+      color: c.onSurfaceVariant,
+    },
+    pickerContainer: {
+      marginBottom: SPACING.lg,
+    },
+    validationError: {
+      ...TYPOGRAPHY.body,
+      color: c.error,
+      textAlign: "center",
+      marginBottom: SPACING.lg,
+    },
+    categoryRow: {
+      gap: SPACING.sm,
+      paddingBottom: SPACING.lg,
+    },
+    filterChip: {
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.sm,
+      borderRadius: RADIUS.full,
+      backgroundColor: c.surfaceContainerLow,
+    },
+    filterChipActive: {
+      backgroundColor: c.primary,
+    },
+    filterChipText: {
+      ...TYPOGRAPHY.labelSm,
+      color: c.onSurfaceVariant,
+    },
+    filterChipTextActive: {
+      color: c.onPrimary,
+    },
+    selectedChipWrapper: {
+      borderWidth: 2,
+      borderColor: c.primary,
+      borderRadius: RADIUS.full,
+    },
+    activityList: {
+      maxHeight: 300,
+    },
+    activityRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SPACING.md,
+      backgroundColor: c.surfaceContainerLow,
+      borderRadius: RADIUS.lg,
+      paddingVertical: SPACING.sm,
+      paddingHorizontal: SPACING.md,
+      marginBottom: SPACING.sm,
+    },
+    activityRowPressed: {
+      backgroundColor: c.surfaceContainerHigh,
+    },
+    activityName: {
+      flex: 6,
+      ...TYPOGRAPHY.titleMd,
+      color: c.onSurface,
+    },
+    activityCategory: {
+      flex: 4,
+      ...TYPOGRAPHY.bodySmall,
+      textAlign: "right",
+    },
+    emptyText: {
+      ...TYPOGRAPHY.body,
+      color: c.outlineVariant,
+      textAlign: "center",
+      paddingVertical: SPACING["3xl"],
+    },
+  });
+}

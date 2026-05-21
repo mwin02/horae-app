@@ -17,12 +17,15 @@ import { CategoryIcon } from "@/components/common/category-icon";
 import { GradientButton } from "@/components/common/gradient-button";
 import { ManageActivityRow } from "@/components/manage/manage-activity-row";
 import { CreateActivityModal } from "@/components/timer/create-activity-modal";
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import type { ActivityItem, CategoryWithActivities } from "@/db/models";
 import { archiveActivity } from "@/db/queries";
 import { useCategoriesWithActivities } from "@/hooks/useCategoriesWithActivities";
 
 export default function ManageActivitiesScreen(): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const { categories, isLoading } = useCategoriesWithActivities();
   const [createVisible, setCreateVisible] = useState(false);
   const [editing, setEditing] = useState<ActivityItem | null>(null);
@@ -96,7 +99,7 @@ export default function ManageActivitiesScreen(): React.ReactElement {
       <SafeAreaView style={styles.container} edges={["bottom"]}>
         <Stack.Screen options={{ title: "Manage Activities" }} />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -194,7 +197,7 @@ export default function ManageActivitiesScreen(): React.ReactElement {
           size={60}
           onPress={() => setCreateVisible(true)}
         >
-          <Feather name="plus" size={28} color={COLORS.onPrimary} />
+          <Feather name="plus" size={28} color={colors.onPrimary} />
         </GradientButton>
       </View>
 
@@ -215,92 +218,94 @@ export default function ManageActivitiesScreen(): React.ReactElement {
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: SPACING.xl,
-    paddingTop: SPACING.lg,
-    paddingBottom: SPACING.xs,
-  },
-  title: {
-    ...TYPOGRAPHY.headingXl,
-    color: COLORS.onSurface,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.lg,
-  },
-  sectionLabel: {
-    ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
-    marginBottom: SPACING.md,
-  },
-  categoryScroll: {
-    flexGrow: 0,
-    marginBottom: SPACING["2xl"],
-  },
-  categoryScrollContent: {
-    gap: SPACING.md,
-  },
-  categoryColumn: {
-    gap: SPACING.md,
-  },
-  categoryCard: {
-    width: 160,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.md,
-    borderRadius: RADIUS.xl,
-    paddingVertical: SPACING.lg,
-    paddingHorizontal: SPACING.lg,
-  },
-  categoryCardName: {
-    ...TYPOGRAPHY.titleMd,
-    flexShrink: 1,
-  },
-  activitiesHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: SPACING.md,
-  },
-  viewAllText: {
-    ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.primary,
-  },
-  activityList: {
-    flex: 1,
-  },
-  activityListContent: {
-    gap: SPACING.sm,
-    paddingBottom: 120,
-  },
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: SPACING["4xl"],
-    gap: SPACING.sm,
-  },
-  emptyTitle: {
-    ...TYPOGRAPHY.heading,
-    color: COLORS.onSurface,
-  },
-  emptySubtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.onSurfaceVariant,
-    textAlign: "center",
-  },
-  fabWrapper: {
-    position: "absolute",
-    right: SPACING.xl,
-    bottom: SPACING.xl,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    header: {
+      paddingHorizontal: SPACING.xl,
+      paddingTop: SPACING.lg,
+      paddingBottom: SPACING.xs,
+    },
+    title: {
+      ...TYPOGRAPHY.headingXl,
+      color: c.onSurface,
+    },
+    container: {
+      flex: 1,
+      backgroundColor: c.surface,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: SPACING.lg,
+      paddingTop: SPACING.lg,
+    },
+    sectionLabel: {
+      ...TYPOGRAPHY.labelUppercase,
+      color: c.onSurfaceVariant,
+      marginBottom: SPACING.md,
+    },
+    categoryScroll: {
+      flexGrow: 0,
+      marginBottom: SPACING["2xl"],
+    },
+    categoryScrollContent: {
+      gap: SPACING.md,
+    },
+    categoryColumn: {
+      gap: SPACING.md,
+    },
+    categoryCard: {
+      width: 160,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SPACING.md,
+      borderRadius: RADIUS.xl,
+      paddingVertical: SPACING.lg,
+      paddingHorizontal: SPACING.lg,
+    },
+    categoryCardName: {
+      ...TYPOGRAPHY.titleMd,
+      flexShrink: 1,
+    },
+    activitiesHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: SPACING.md,
+    },
+    viewAllText: {
+      ...TYPOGRAPHY.labelUppercase,
+      color: c.primary,
+    },
+    activityList: {
+      flex: 1,
+    },
+    activityListContent: {
+      gap: SPACING.sm,
+      paddingBottom: 120,
+    },
+    emptyState: {
+      alignItems: "center",
+      paddingVertical: SPACING["4xl"],
+      gap: SPACING.sm,
+    },
+    emptyTitle: {
+      ...TYPOGRAPHY.heading,
+      color: c.onSurface,
+    },
+    emptySubtitle: {
+      ...TYPOGRAPHY.body,
+      color: c.onSurfaceVariant,
+      textAlign: "center",
+    },
+    fabWrapper: {
+      position: "absolute",
+      right: SPACING.xl,
+      bottom: SPACING.xl,
+    },
+  });
+}

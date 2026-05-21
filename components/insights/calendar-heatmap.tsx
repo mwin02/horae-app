@@ -1,4 +1,5 @@
-import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from '@/constants/theme';
+import { FONTS, RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from '@/constants/theme';
+import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 import {
   useMonthlyCoverage,
   type DayCoverageCell,
@@ -20,6 +21,7 @@ export function CalendarHeatmap({
   monthDate,
   onDayPress,
 }: CalendarHeatmapProps): React.ReactElement | null {
+  const styles = useThemedStyles(makeStyles);
   const { days, leadingBlankCount, isLoading } = useMonthlyCoverage(monthDate);
   const { preferences } = useUserPreferences();
   const dowLabels = useMemo(
@@ -79,12 +81,15 @@ function HeatmapCell({
   day: DayCoverageCell;
   onPress: (date: string) => void;
 }): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
+  const intensityColors = getIntensityColors(colors);
   const intensity = getIntensityBucket(day.coverage);
   const bg =
     day.trackedSeconds === 0
-      ? COLORS.surfaceContainer
-      : INTENSITY_COLORS[intensity];
-  const textColor = intensity >= 3 ? COLORS.onPrimary : COLORS.onSurface;
+      ? colors.surfaceContainer
+      : intensityColors[intensity];
+  const textColor = intensity >= 3 ? colors.onPrimary : colors.onSurface;
 
   return (
     <Pressable
@@ -109,6 +114,9 @@ function HeatmapCell({
 // ──────────────────────────────────────────────
 
 function IntensityLegend(): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
+  const intensityColors = getIntensityColors(colors);
   return (
     <View style={styles.legend}>
       <Text style={styles.legendLabel}>Less</Text>
@@ -116,10 +124,10 @@ function IntensityLegend(): React.ReactElement {
         <View
           style={[
             styles.legendCell,
-            { backgroundColor: COLORS.surfaceContainer },
+            { backgroundColor: colors.surfaceContainer },
           ]}
         />
-        {INTENSITY_COLORS.slice(1).map((color, i) => (
+        {intensityColors.slice(1).map((color, i) => (
           <View
             key={i}
             style={[styles.legendCell, { backgroundColor: color }]}
@@ -137,13 +145,15 @@ function IntensityLegend(): React.ReactElement {
  * 5-step intensity ramp built on the primary color family.
  * 0 = untracked (caller substitutes surfaceContainer).
  */
-const INTENSITY_COLORS = [
-  COLORS.surfaceContainer,
-  COLORS.primaryContainer,
-  COLORS.primaryFixedDim,
-  COLORS.primary,
-  COLORS.primaryDim,
-];
+function getIntensityColors(c: ThemeColors): string[] {
+  return [
+    c.surfaceContainer,
+    c.primaryContainer,
+    c.primaryFixedDim,
+    c.primary,
+    c.primaryDim,
+  ];
+}
 
 /** Map coverage [0..1] to bucket index [0..4]. */
 function getIntensityBucket(coverage: number): number {
@@ -162,75 +172,77 @@ const CELL_SIZE = Math.floor(
   (Dimensions.get('window').width - SCREEN_PADDING - CELL_GAP * 6) / 7,
 );
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: RADIUS.xl,
-    padding: SPACING['2xl'],
-  },
-  sectionLabel: {
-    ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
-    marginBottom: SPACING.xs,
-  },
-  subtitle: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
-    marginBottom: SPACING.lg,
-  },
-  dowRow: {
-    flexDirection: 'row',
-    marginBottom: SPACING.xs,
-  },
-  dowLabel: {
-    flex: 1,
-    textAlign: 'center',
-    fontFamily: FONTS.jakartaMedium,
-    fontSize: 11,
-    lineHeight: 14,
-    color: COLORS.onSurfaceVariant,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: CELL_GAP,
-  },
-  cell: {
-    width: CELL_SIZE,
-    height: CELL_SIZE,
-    borderRadius: RADIUS.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cellToday: {
-    borderWidth: 2,
-    borderColor: COLORS.primary,
-  },
-  cellText: {
-    fontFamily: FONTS.jakartaSemiBold,
-    fontSize: 11,
-    lineHeight: 14,
-  },
-  legend: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: SPACING.xs,
-    marginTop: SPACING.md,
-  },
-  legendLabel: {
-    fontFamily: FONTS.jakartaMedium,
-    fontSize: 10,
-    lineHeight: 12,
-    color: COLORS.onSurfaceVariant,
-  },
-  legendCells: {
-    flexDirection: 'row',
-    gap: 2,
-  },
-  legendCell: {
-    width: 12,
-    height: 12,
-    borderRadius: 3,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      backgroundColor: c.surfaceContainerLow,
+      borderRadius: RADIUS.xl,
+      padding: SPACING['2xl'],
+    },
+    sectionLabel: {
+      ...TYPOGRAPHY.labelUppercase,
+      color: c.onSurfaceVariant,
+      marginBottom: SPACING.xs,
+    },
+    subtitle: {
+      ...TYPOGRAPHY.bodySmall,
+      color: c.onSurfaceVariant,
+      marginBottom: SPACING.lg,
+    },
+    dowRow: {
+      flexDirection: 'row',
+      marginBottom: SPACING.xs,
+    },
+    dowLabel: {
+      flex: 1,
+      textAlign: 'center',
+      fontFamily: FONTS.jakartaMedium,
+      fontSize: 11,
+      lineHeight: 14,
+      color: c.onSurfaceVariant,
+    },
+    grid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: CELL_GAP,
+    },
+    cell: {
+      width: CELL_SIZE,
+      height: CELL_SIZE,
+      borderRadius: RADIUS.sm,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    cellToday: {
+      borderWidth: 2,
+      borderColor: c.primary,
+    },
+    cellText: {
+      fontFamily: FONTS.jakartaSemiBold,
+      fontSize: 11,
+      lineHeight: 14,
+    },
+    legend: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      gap: SPACING.xs,
+      marginTop: SPACING.md,
+    },
+    legendLabel: {
+      fontFamily: FONTS.jakartaMedium,
+      fontSize: 10,
+      lineHeight: 12,
+      color: c.onSurfaceVariant,
+    },
+    legendCells: {
+      flexDirection: 'row',
+      gap: 2,
+    },
+    legendCell: {
+      width: 12,
+      height: 12,
+      borderRadius: 3,
+    },
+  });
+}

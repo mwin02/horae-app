@@ -2,7 +2,8 @@ import { Feather } from "@expo/vector-icons";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 
 export interface PermissionBannerProps {
   onOpenSettings: () => void;
@@ -11,10 +12,12 @@ export interface PermissionBannerProps {
 export function PermissionBanner({
   onOpenSettings,
 }: PermissionBannerProps): React.ReactElement {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.container}>
       <View style={styles.iconBubble}>
-        <Feather name="bell-off" size={18} color={COLORS.error} />
+        <Feather name="bell-off" size={18} color={colors.error} />
       </View>
       <View style={styles.textBlock}>
         <Text style={styles.title}>Notifications are off</Text>
@@ -32,7 +35,7 @@ export function PermissionBanner({
           <Feather
             name="external-link"
             size={14}
-            color={COLORS.onErrorContainer}
+            color={colors.onErrorContainer}
           />
         </Pressable>
       </View>
@@ -40,13 +43,14 @@ export function PermissionBanner({
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
   container: {
     flexDirection: "row",
     gap: SPACING.md,
     padding: SPACING.lg,
     borderRadius: RADIUS.lg,
-    backgroundColor: COLORS.onError,
+    backgroundColor: c.onError,
   },
   iconBubble: {
     width: 36,
@@ -54,7 +58,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: COLORS.surfaceContainerLowest,
+    backgroundColor: c.surfaceContainerLowest,
   },
   textBlock: {
     flex: 1,
@@ -62,11 +66,11 @@ const styles = StyleSheet.create({
   },
   title: {
     ...TYPOGRAPHY.titleMd,
-    color: COLORS.error,
+    color: c.error,
   },
   body: {
     ...TYPOGRAPHY.body,
-    color: COLORS.onErrorContainer,
+    color: c.onErrorContainer,
   },
   button: {
     marginTop: SPACING.xs,
@@ -77,13 +81,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surfaceContainerLowest,
+    backgroundColor: c.surfaceContainerLowest,
   },
   buttonPressed: {
-    backgroundColor: COLORS.surfaceContainer,
+    backgroundColor: c.surfaceContainer,
   },
   buttonLabel: {
     ...TYPOGRAPHY.body,
-    color: COLORS.onErrorContainer,
+    color: c.onErrorContainer,
   },
-});
+  });
+}

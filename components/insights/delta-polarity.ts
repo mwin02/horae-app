@@ -1,4 +1,4 @@
-import { COLORS } from "@/constants/theme";
+import { type ThemeColors } from "@/constants/theme";
 import type { GoalDirection } from "@/db/models";
 import type { IdealAllocationRow } from "@/db/queries";
 
@@ -47,14 +47,14 @@ export interface DeltaPalette {
   bg: string;
 }
 
-export function deltaPalette(polarity: DeltaPolarity): DeltaPalette {
+export function deltaPalette(polarity: DeltaPolarity, c: ThemeColors): DeltaPalette {
   if (polarity === "good") {
-    return { fg: COLORS.secondary, bg: COLORS.secondaryContainer };
+    return { fg: c.secondary, bg: c.secondaryContainer };
   }
   if (polarity === "bad") {
-    return { fg: COLORS.error, bg: COLORS.errorContainer };
+    return { fg: c.error, bg: c.errorContainer };
   }
-  return { fg: COLORS.outline, bg: COLORS.surfaceContainer };
+  return { fg: c.outline, bg: c.surfaceContainer };
 }
 
 /**

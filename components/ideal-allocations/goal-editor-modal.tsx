@@ -14,7 +14,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CategoryIcon } from "@/components/common/category-icon";
 import { GradientButton } from "@/components/common/gradient-button";
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import type {
   CategoryWithActivities,
   GoalDirection,
@@ -61,6 +62,8 @@ export function GoalEditorModal({
   category,
   onClose,
 }: GoalEditorModalProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const {
     periodKind: savedPeriodKind,
@@ -290,7 +293,7 @@ export function GoalEditorModal({
                 </View>
               </View>
               <Pressable onPress={handleClose} style={styles.closeButton}>
-                <Feather name="x" size={22} color={COLORS.onSurface} />
+                <Feather name="x" size={22} color={colors.onSurface} />
               </Pressable>
             </View>
 
@@ -383,7 +386,7 @@ export function GoalEditorModal({
                 style={styles.clearButton}
                 disabled={submitting}
               >
-                <Feather name="trash-2" size={16} color={COLORS.error} />
+                <Feather name="trash-2" size={16} color={colors.error} />
                 <Text style={styles.clearButtonText}>Clear goal</Text>
               </Pressable>
             )}
@@ -394,7 +397,7 @@ export function GoalEditorModal({
               onPress={handleSave}
               disabled={submitting || isLoading}
             >
-              <Feather name="check" size={18} color={COLORS.onPrimary} />
+              <Feather name="check" size={18} color={colors.onPrimary} />
             </GradientButton>
           </ScrollView>
         </View>
@@ -412,6 +415,7 @@ interface ModeButtonProps {
 }
 
 function ModeButton({ label, active, onPress }: ModeButtonProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   return (
     <Pressable
       style={[styles.modeButton, active && styles.modeButtonActive]}
@@ -435,6 +439,7 @@ function DirectionButton({
   active,
   onPress,
 }: DirectionButtonProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   return (
     <Pressable
       style={[
@@ -474,6 +479,7 @@ function HMInputRow({
   onChange,
   maxHours = 23,
 }: HMInputRowProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   const hMaxLength = maxHours >= 100 ? 3 : 2;
   return (
     <View style={styles.hmRow}>
@@ -549,7 +555,8 @@ function formatHM(minutes: number): string {
 
 // ──────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: "flex-end",
@@ -558,7 +565,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sheet: {
-    backgroundColor: COLORS.surfaceContainerLowest,
+    backgroundColor: c.surfaceContainerLowest,
     borderTopLeftRadius: RADIUS.xxl,
     borderTopRightRadius: RADIUS.xxl,
     paddingTop: SPACING.md,
@@ -571,7 +578,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: COLORS.outlineVariant,
+    backgroundColor: c.outlineVariant,
     alignSelf: "center",
     marginBottom: SPACING.lg,
   },
@@ -601,23 +608,23 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...TYPOGRAPHY.headingXl,
-    color: COLORS.onSurface,
+    color: c.onSurface,
   },
   headerSubtitle: {
     ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
   closeButton: {
     padding: SPACING.sm,
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
   },
   modeRow: {
     flexDirection: "row",
     gap: SPACING.sm,
     padding: 4,
     borderRadius: RADIUS.xl,
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
     marginBottom: SPACING.lg,
   },
   modeButton: {
@@ -628,19 +635,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modeButtonActive: {
-    backgroundColor: COLORS.surfaceContainerLowest,
+    backgroundColor: c.surfaceContainerLowest,
   },
   modeButtonText: {
     ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
   modeButtonTextActive: {
-    color: COLORS.onSurface,
+    color: c.onSurface,
     fontWeight: "600",
   },
   sectionLabel: {
     ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
     marginBottom: SPACING.sm,
   },
   directionRow: {
@@ -648,7 +655,7 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
     padding: 4,
     borderRadius: RADIUS.xl,
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
     marginBottom: SPACING.xs,
   },
   directionButton: {
@@ -659,19 +666,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   directionButtonActive: {
-    backgroundColor: COLORS.surfaceContainerLowest,
+    backgroundColor: c.surfaceContainerLowest,
   },
   directionButtonText: {
     ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
   directionButtonTextActive: {
-    color: COLORS.onSurface,
+    color: c.onSurface,
     fontWeight: "600",
   },
   directionHelper: {
     ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
     marginBottom: SPACING.lg,
   },
   inputsBlock: {
@@ -682,14 +689,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
     borderRadius: RADIUS.xl,
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.lg,
   },
   hmLabel: {
     ...TYPOGRAPHY.titleMd,
-    color: COLORS.onSurface,
+    color: c.onSurface,
   },
   hmInputs: {
     flexDirection: "row",
@@ -698,8 +705,8 @@ const styles = StyleSheet.create({
   },
   hmInput: {
     ...TYPOGRAPHY.body,
-    color: COLORS.onSurface,
-    backgroundColor: COLORS.surfaceContainerLowest,
+    color: c.onSurface,
+    backgroundColor: c.surfaceContainerLowest,
     borderRadius: RADIUS.md,
     paddingVertical: SPACING.xs,
     paddingHorizontal: SPACING.sm,
@@ -708,12 +715,12 @@ const styles = StyleSheet.create({
   },
   hmUnit: {
     ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
     marginRight: SPACING.xs,
   },
   totalLine: {
     ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
     textAlign: "center",
     marginTop: SPACING.sm,
   },
@@ -727,6 +734,7 @@ const styles = StyleSheet.create({
   },
   clearButtonText: {
     ...TYPOGRAPHY.bodySmall,
-    color: COLORS.error,
+    color: c.error,
   },
-});
+  });
+}

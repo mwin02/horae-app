@@ -10,7 +10,8 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
 } from "react-native-reanimated";
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import {
   restoreDefaultsForPeriod,
   toggleHidden,
@@ -54,6 +55,8 @@ export function CustomizableCardList({
   editMode,
   onEditModeChange,
 }: CustomizableCardListProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const { preferences } = useInsightPreferences();
   const order = preferences.orders[period];
   const hidden = preferences.hidden[period];
@@ -257,7 +260,7 @@ export function CustomizableCardList({
       {ListHeaderComponent ?? null}
       {allHidden ? (
         <View style={styles.emptyState}>
-          <Feather name="eye-off" size={28} color={COLORS.onSurfaceVariant} />
+          <Feather name="eye-off" size={28} color={colors.onSurfaceVariant} />
           <Text style={styles.emptyTitle}>No cards visible</Text>
           <Text style={styles.emptySubtitle}>
             Show a card from the list below or restore defaults.
@@ -284,7 +287,7 @@ export function CustomizableCardList({
               <Feather
                 name="eye-off"
                 size={16}
-                color={COLORS.onSurfaceVariant}
+                color={colors.onSurfaceVariant}
               />
               <Text style={styles.hiddenRowLabel}>
                 {card.label ?? card.id}
@@ -307,7 +310,7 @@ export function CustomizableCardList({
             <Feather
               name="rotate-ccw"
               size={14}
-              color={COLORS.onSurfaceVariant}
+              color={colors.onSurfaceVariant}
             />
             <Text style={styles.restoreButtonText}>Restore defaults</Text>
           </Pressable>
@@ -355,6 +358,7 @@ export function CustomizableCardList({
 }
 
 function Separator(): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   return <View style={styles.separator} />;
 }
 
@@ -381,6 +385,8 @@ function CardCell({
   onPress,
   registerRef,
 }: CardCellProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const isFocused = focusedId === card.id;
   const isDimmed = focusedId !== null && !isFocused;
 
@@ -440,7 +446,7 @@ function CardCell({
               ]}
               accessibilityLabel="Hide card"
             >
-              <Feather name="eye-off" size={16} color={COLORS.onSurface} />
+              <Feather name="eye-off" size={16} color={colors.onSurface} />
             </Pressable>
             <Pressable
               onPressIn={drag}
@@ -448,7 +454,7 @@ function CardCell({
               accessibilityLabel="Drag to reorder"
               style={styles.overlayButton}
             >
-              <Feather name="menu" size={18} color={COLORS.onSurface} />
+              <Feather name="menu" size={18} color={colors.onSurface} />
             </Pressable>
           </View>
         ) : null}
@@ -457,7 +463,8 @@ function CardCell({
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
   root: {
     flex: 1,
   },
@@ -486,12 +493,12 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surfaceContainerHighest,
+    backgroundColor: c.surfaceContainerHighest,
     alignItems: "center",
     justifyContent: "center",
   },
   overlayButtonPressed: {
-    backgroundColor: COLORS.surfaceContainerHigh,
+    backgroundColor: c.surfaceContainerHigh,
   },
   editToolbar: {
     flexDirection: "row",
@@ -499,24 +506,24 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: SPACING.xl,
     paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.surface,
+    backgroundColor: c.surface,
   },
   editToolbarLabel: {
     ...TYPOGRAPHY.labelSm,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
   doneButton: {
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm,
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.primary,
+    backgroundColor: c.primary,
   },
   doneButtonPressed: {
-    backgroundColor: COLORS.primaryDim,
+    backgroundColor: c.primaryDim,
   },
   doneButtonText: {
     ...TYPOGRAPHY.button,
-    color: COLORS.onPrimary,
+    color: c.onPrimary,
     fontSize: 14,
   },
   hiddenSection: {
@@ -525,7 +532,7 @@ const styles = StyleSheet.create({
   },
   hiddenHeader: {
     ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
     paddingHorizontal: SPACING.sm,
   },
   hiddenRow: {
@@ -535,19 +542,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
     borderRadius: RADIUS.lg,
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
   },
   hiddenRowPressed: {
-    backgroundColor: COLORS.surfaceContainer,
+    backgroundColor: c.surfaceContainer,
   },
   hiddenRowLabel: {
     ...TYPOGRAPHY.body,
-    color: COLORS.onSurface,
+    color: c.onSurface,
     flex: 1,
   },
   hiddenRowAction: {
     ...TYPOGRAPHY.labelSm,
-    color: COLORS.primary,
+    color: c.primary,
   },
   footerActions: {
     marginTop: SPACING.lg,
@@ -560,14 +567,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm,
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
   },
   restoreButtonPressed: {
-    backgroundColor: COLORS.surfaceContainer,
+    backgroundColor: c.surfaceContainer,
   },
   restoreButtonText: {
     ...TYPOGRAPHY.labelSm,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
   emptyState: {
     alignItems: "center",
@@ -576,12 +583,13 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     ...TYPOGRAPHY.titleMd,
-    color: COLORS.onSurface,
+    color: c.onSurface,
   },
   emptySubtitle: {
     ...TYPOGRAPHY.body,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
     textAlign: "center",
     paddingHorizontal: SPACING.xl,
   },
-});
+  });
+}

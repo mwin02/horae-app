@@ -10,9 +10,12 @@ import { TimelineCanvas } from '@/components/timeline/timeline-canvas';
 import type { TimelineEntryData } from '@/hooks/useTimelineData';
 import { useTimelineData } from '@/hooks/useTimelineData';
 import { useUIStore } from '@/store/uiStore';
-import { COLORS, SPACING } from '@/constants/theme';
+import { SPACING, type ThemeColors } from '@/constants/theme';
+import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 
 export default function TimelineScreen(): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const selectedDate = useUIStore((s) => s.selectedDate);
   const setSelectedDate = useUIStore((s) => s.setSelectedDate);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
@@ -64,7 +67,7 @@ export default function TimelineScreen(): React.ReactElement {
       />
 
       {isLoading ? (
-        <ActivityIndicator style={styles.loader} color={COLORS.primary} />
+        <ActivityIndicator style={styles.loader} color={colors.primary} />
       ) : (
         <TimelineCanvas
           items={items}
@@ -83,12 +86,14 @@ export default function TimelineScreen(): React.ReactElement {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-  },
-  loader: {
-    marginTop: SPACING['3xl'],
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.surface,
+    },
+    loader: {
+      marginTop: SPACING['3xl'],
+    },
+  });
+}

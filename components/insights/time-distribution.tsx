@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { CategoryIconSwatch } from "./category-icon-swatch";
 import type { CategoryInsight } from "@/db/models";
-import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { FONTS, RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 
 const MINUTES_PER_DAY = 24 * 60;
 
@@ -21,6 +22,8 @@ export function TimeDistribution({
   period,
   selectedDate,
 }: TimeDistributionProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const [showPercent, setShowPercent] = useState(false);
   const periodTotalMinutes = getPeriodTotalMinutes(period, selectedDate);
   const tracked = Math.min(totalTrackedMinutes, periodTotalMinutes);
@@ -63,7 +66,7 @@ export function TimeDistribution({
         ))}
         {untracked > 0 && (
           <View
-            style={{ flex: untracked, backgroundColor: COLORS.outlineVariant }}
+            style={{ flex: untracked, backgroundColor: colors.outlineVariant }}
           />
         )}
       </View>
@@ -125,9 +128,10 @@ function getPeriodTotalMinutes(period: Period, selectedDate: string): number {
   return MINUTES_PER_DAY * days;
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
   container: {
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
     borderRadius: RADIUS.xl,
     padding: SPACING.lg,
   },
@@ -143,13 +147,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 14,
     letterSpacing: 1.3,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
   eyebrowMeta: {
     fontFamily: FONTS.jakartaMedium,
     fontSize: 11,
     lineHeight: 14,
-    color: COLORS.outline,
+    color: c.outline,
     fontVariant: ["tabular-nums"],
   },
   heroRow: {
@@ -164,21 +168,21 @@ const styles = StyleSheet.create({
     fontSize: 28,
     lineHeight: 32,
     letterSpacing: -0.5,
-    color: COLORS.onSurface,
+    color: c.onSurface,
     fontVariant: ["tabular-nums"],
   },
   heroSub: {
     fontFamily: FONTS.jakartaMedium,
     fontSize: 11,
     lineHeight: 14,
-    color: COLORS.outline,
+    color: c.outline,
   },
   barTrack: {
     flexDirection: "row",
     height: 14,
     borderRadius: 7,
     overflow: "hidden",
-    backgroundColor: COLORS.outlineVariant,
+    backgroundColor: c.outlineVariant,
     marginBottom: SPACING.md,
   },
   legend: {
@@ -197,7 +201,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.jakartaMedium,
     fontSize: 12,
     lineHeight: 16,
-    color: COLORS.onSurface,
+    color: c.onSurface,
     flex: 1,
     minWidth: 0,
   },
@@ -205,7 +209,8 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.jakartaSemiBold,
     fontSize: 11,
     lineHeight: 14,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
     fontVariant: ["tabular-nums"],
   },
-});
+  });
+}

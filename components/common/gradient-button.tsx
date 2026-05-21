@@ -1,7 +1,8 @@
 import React from 'react';
 import { Pressable, Text, StyleSheet, type ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, TYPOGRAPHY, RADIUS, SHADOWS } from '@/constants/theme';
+import { TYPOGRAPHY, RADIUS, SHADOWS, type ThemeColors } from '@/constants/theme';
+import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 
 interface GradientButtonProps {
   onPress: () => void;
@@ -22,6 +23,8 @@ export function GradientButton({
   disabled = false,
   style,
 }: GradientButtonProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const isCircle = shape === 'circle';
   const circleStyle: ViewStyle = isCircle
     ? { width: size, height: size, borderRadius: size / 2 }
@@ -37,7 +40,7 @@ export function GradientButton({
       ]}
     >
       <LinearGradient
-        colors={[COLORS.gradientStart, COLORS.gradientEnd]}
+        colors={[colors.gradientStart, colors.gradientEnd]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[
@@ -57,23 +60,25 @@ export function GradientButton({
   );
 }
 
-const styles = StyleSheet.create({
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: RADIUS.full,
-  },
-  circle: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  label: {
-    ...TYPOGRAPHY.button,
-    color: COLORS.onPrimary,
-    flexShrink: 1,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    pill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      paddingHorizontal: 32,
+      paddingVertical: 16,
+      borderRadius: RADIUS.full,
+    },
+    circle: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    label: {
+      ...TYPOGRAPHY.button,
+      color: c.onPrimary,
+      flexShrink: 1,
+    },
+  });
+}

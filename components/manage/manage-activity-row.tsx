@@ -4,7 +4,8 @@ import { Feather } from "@expo/vector-icons";
 import { Swipeable, RectButton } from "react-native-gesture-handler";
 import { CategoryIconSwatch } from "@/components/insights/category-icon-swatch";
 import type { ActivityItem } from "@/db/models";
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 
 interface ManageActivityRowProps {
   activity: ActivityItem;
@@ -17,6 +18,8 @@ export function ManageActivityRow({
   onRename,
   onDelete,
 }: ManageActivityRowProps): React.ReactElement {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const swipeableRef = useRef<Swipeable>(null);
 
   const handleArchivePress = useCallback((): void => {
@@ -27,7 +30,7 @@ export function ManageActivityRow({
   const renderRightActions = useCallback(
     (): React.ReactElement => (
       <RectButton style={styles.archiveAction} onPress={handleArchivePress}>
-        <Feather name="archive" size={20} color={COLORS.onPrimary} />
+        <Feather name="archive" size={20} color={colors.onPrimary} />
         <Text style={styles.archiveLabel}>Archive</Text>
       </RectButton>
     ),
@@ -67,19 +70,20 @@ export function ManageActivityRow({
           accessibilityRole="button"
           accessibilityLabel={`Edit ${activity.name}`}
         >
-          <Feather name="edit-2" size={16} color={COLORS.primary} />
+          <Feather name="edit-2" size={16} color={colors.primary} />
         </Pressable>
       </Pressable>
     </Swipeable>
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
     gap: SPACING.md,
-    backgroundColor: COLORS.surfaceContainerLowest,
+    backgroundColor: c.surfaceContainerLowest,
     borderRadius: RADIUS.lg,
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.lg,
@@ -89,7 +93,7 @@ const styles = StyleSheet.create({
   },
   name: {
     ...TYPOGRAPHY.titleMd,
-    color: COLORS.onSurface,
+    color: c.onSurface,
   },
   category: {
     ...TYPOGRAPHY.bodySmall,
@@ -101,10 +105,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
   },
   archiveAction: {
-    backgroundColor: COLORS.error,
+    backgroundColor: c.error,
     justifyContent: "center",
     alignItems: "center",
     width: 100,
@@ -115,7 +119,8 @@ const styles = StyleSheet.create({
   },
   archiveLabel: {
     ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onPrimary,
+    color: c.onPrimary,
     fontSize: 11,
   },
-});
+  });
+}

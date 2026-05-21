@@ -14,10 +14,13 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { GradientButton } from "@/components/common/gradient-button";
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function ForgotPasswordScreen(): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   const { sendPasswordReset } = useAuth();
   const [email, setEmail] = useState("");
@@ -76,7 +79,7 @@ export default function ForgotPasswordScreen(): React.ReactElement {
                 value={email}
                 onChangeText={setEmail}
                 placeholder="you@example.com"
-                placeholderTextColor={COLORS.onSurfaceVariant}
+                placeholderTextColor={colors.onSurfaceVariant}
                 autoCapitalize="none"
                 autoComplete="email"
                 autoCorrect={false}
@@ -95,7 +98,7 @@ export default function ForgotPasswordScreen(): React.ReactElement {
               onPress={handleSubmit}
               disabled={submitting}
             >
-              <Feather name="mail" size={18} color={COLORS.onPrimary} />
+              <Feather name="mail" size={18} color={colors.onPrimary} />
             </GradientButton>
 
             <Pressable onPress={goBack} style={styles.linkRow}>
@@ -108,61 +111,63 @@ export default function ForgotPasswordScreen(): React.ReactElement {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: SPACING.xl,
-    paddingTop: SPACING.lg,
-    paddingBottom: SPACING["3xl"],
-  },
-  header: {
-    gap: SPACING.xs,
-    marginBottom: SPACING["2xl"],
-  },
-  title: {
-    ...TYPOGRAPHY.headingXl,
-    color: COLORS.onSurface,
-  },
-  subtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.onSurfaceVariant,
-  },
-  form: {
-    gap: SPACING.lg,
-  },
-  field: {
-    gap: SPACING.xs,
-  },
-  label: {
-    ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
-  },
-  input: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.onSurface,
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: RADIUS.lg,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-  },
-  error: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.error,
-  },
-  info: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.secondary,
-  },
-  linkRow: {
-    alignSelf: "center",
-    paddingVertical: SPACING.sm,
-  },
-  linkText: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.primary,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.surface,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      paddingHorizontal: SPACING.xl,
+      paddingTop: SPACING.lg,
+      paddingBottom: SPACING["3xl"],
+    },
+    header: {
+      gap: SPACING.xs,
+      marginBottom: SPACING["2xl"],
+    },
+    title: {
+      ...TYPOGRAPHY.headingXl,
+      color: c.onSurface,
+    },
+    subtitle: {
+      ...TYPOGRAPHY.body,
+      color: c.onSurfaceVariant,
+    },
+    form: {
+      gap: SPACING.lg,
+    },
+    field: {
+      gap: SPACING.xs,
+    },
+    label: {
+      ...TYPOGRAPHY.labelUppercase,
+      color: c.onSurfaceVariant,
+    },
+    input: {
+      ...TYPOGRAPHY.body,
+      color: c.onSurface,
+      backgroundColor: c.surfaceContainerLow,
+      borderRadius: RADIUS.lg,
+      paddingHorizontal: SPACING.lg,
+      paddingVertical: SPACING.md,
+    },
+    error: {
+      ...TYPOGRAPHY.bodySmall,
+      color: c.error,
+    },
+    info: {
+      ...TYPOGRAPHY.bodySmall,
+      color: c.secondary,
+    },
+    linkRow: {
+      alignSelf: "center",
+      paddingVertical: SPACING.sm,
+    },
+    linkText: {
+      ...TYPOGRAPHY.body,
+      color: c.primary,
+    },
+  });
+}

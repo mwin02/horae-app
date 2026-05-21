@@ -1,5 +1,6 @@
 import { SuggestedCard } from "@/components/home/suggested-card";
-import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useThemedStyles } from "@/hooks/useTheme";
 import type { RecommendedActivity } from "@/db/models";
 import React from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
@@ -17,6 +18,7 @@ export function SuggestedRow({
   recommendations,
   onSelect,
 }: SuggestedRowProps): React.ReactElement | null {
+  const styles = useThemedStyles(makeStyles);
   if (recommendations.length === 0) return null;
 
   return (
@@ -43,21 +45,23 @@ export function SuggestedRow({
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    marginBottom: SPACING["3xl"],
-    // Bleed the row to the screen edges so cards can scroll under the
-    // padding of the parent ScrollView.
-    marginHorizontal: -SPACING.lg,
-  },
-  heading: {
-    ...TYPOGRAPHY.heading,
-    color: COLORS.onSurface,
-    marginBottom: SPACING.md,
-    paddingHorizontal: SPACING.lg,
-  },
-  scrollContent: {
-    paddingHorizontal: SPACING.lg,
-    gap: SPACING.md,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    wrap: {
+      marginBottom: SPACING["3xl"],
+      // Bleed the row to the screen edges so cards can scroll under the
+      // padding of the parent ScrollView.
+      marginHorizontal: -SPACING.lg,
+    },
+    heading: {
+      ...TYPOGRAPHY.heading,
+      color: c.onSurface,
+      marginBottom: SPACING.md,
+      paddingHorizontal: SPACING.lg,
+    },
+    scrollContent: {
+      paddingHorizontal: SPACING.lg,
+      gap: SPACING.md,
+    },
+  });
+}

@@ -1,4 +1,5 @@
-import { COLORS, SPACING } from "@/constants/theme";
+import { SPACING, type ThemeColors } from "@/constants/theme";
+import { useThemedStyles } from "@/hooks/useTheme";
 import {
   type TimelineItem,
   minutesSinceMidnight,
@@ -95,6 +96,7 @@ export function TimelineCanvas({
   onEntryPress,
   onGapPress,
 }: TimelineCanvasProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   const isToday = selectedDate === getTodayDate(getCurrentTimezone());
 
   // Adaptive density: scale pixels-per-minute by viewport height so smaller
@@ -712,7 +714,8 @@ export function TimelineCanvas({
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
   scrollContent: {
     position: "relative",
   },
@@ -725,13 +728,13 @@ const styles = StyleSheet.create({
   hourText: {
     fontFamily: "PlusJakartaSans_700Bold",
     fontSize: 11,
-    color: COLORS.onSurfaceVariant + "80", // 50% opacity
+    color: c.onSurfaceVariant + "80", // 50% opacity
   },
   trackLine: {
     position: "absolute",
     top: 0,
     width: 2,
-    backgroundColor: COLORS.surfaceContainer,
+    backgroundColor: c.surfaceContainer,
     borderRadius: 1,
   },
   blockWrapper: {
@@ -753,4 +756,5 @@ const styles = StyleSheet.create({
     // the chip's attached-edge border where they meet.
     zIndex: 9,
   },
-});
+  });
+}

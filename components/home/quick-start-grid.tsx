@@ -1,5 +1,6 @@
 import { CategoryIcon } from "@/components/common/category-icon";
-import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { FONTS, RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import type { QuickStartActivity } from "@/hooks/useQuickStartActivities";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -24,6 +25,8 @@ export function QuickStartGrid({
   activeActivityId,
   onActivityPress,
 }: QuickStartGridProps): React.ReactElement | null {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
 
   // Pair activities into [top, bottom] columns. The most-used activities
@@ -48,7 +51,7 @@ export function QuickStartGrid({
           hitSlop={8}
           style={styles.manageBtn}
         >
-          <Feather name="settings" size={12} color={COLORS.onSurfaceVariant} />
+          <Feather name="settings" size={12} color={colors.onSurfaceVariant} />
           <Text style={styles.manageLabel}>Manage</Text>
         </Pressable>
       </View>
@@ -88,6 +91,7 @@ interface TileProps {
 }
 
 function Tile({ activity, isActive, onPress }: TileProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   return (
     <Pressable
       onPress={() => onPress(activity.id)}
@@ -135,73 +139,75 @@ function withAlpha(hex: string, alpha: number): string {
 
 const TILE_HEIGHT = 56;
 
-const styles = StyleSheet.create({
-  wrap: {
-    marginBottom: SPACING["3xl"],
-    marginHorizontal: -SPACING.lg,
-  },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: SPACING.md,
-    paddingHorizontal: SPACING.lg,
-  },
-  heading: {
-    ...TYPOGRAPHY.heading,
-    color: COLORS.onSurface,
-  },
-  manageBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  manageLabel: {
-    ...TYPOGRAPHY.labelUppercase,
-    fontSize: 11,
-    color: COLORS.onSurfaceVariant,
-  },
-  scrollContent: {
-    paddingHorizontal: SPACING.lg,
-    gap: SPACING.sm,
-  },
-  column: {
-    width: TILE_WIDTH,
-    gap: SPACING.sm,
-  },
-  tile: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.sm,
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: RADIUS.lg,
-    paddingHorizontal: SPACING.md,
-    height: TILE_HEIGHT,
-  },
-  tileActive: {
-    backgroundColor: COLORS.surfaceContainerHigh,
-  },
-  tileSpacer: {
-    height: TILE_HEIGHT,
-  },
-  iconTile: {
-    width: 32,
-    height: 32,
-    borderRadius: 999,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  tileText: {
-    flex: 1,
-    minWidth: 0,
-  },
-  eyebrow: {
-    ...TYPOGRAPHY.labelUppercase,
-    fontSize: 10,
-  },
-  tileLabel: {
-    fontFamily: FONTS.manropeBold,
-    fontSize: 14,
-    color: COLORS.onSurface,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    wrap: {
+      marginBottom: SPACING["3xl"],
+      marginHorizontal: -SPACING.lg,
+    },
+    headerRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: SPACING.md,
+      paddingHorizontal: SPACING.lg,
+    },
+    heading: {
+      ...TYPOGRAPHY.heading,
+      color: c.onSurface,
+    },
+    manageBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+    },
+    manageLabel: {
+      ...TYPOGRAPHY.labelUppercase,
+      fontSize: 11,
+      color: c.onSurfaceVariant,
+    },
+    scrollContent: {
+      paddingHorizontal: SPACING.lg,
+      gap: SPACING.sm,
+    },
+    column: {
+      width: TILE_WIDTH,
+      gap: SPACING.sm,
+    },
+    tile: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SPACING.sm,
+      backgroundColor: c.surfaceContainerLow,
+      borderRadius: RADIUS.lg,
+      paddingHorizontal: SPACING.md,
+      height: TILE_HEIGHT,
+    },
+    tileActive: {
+      backgroundColor: c.surfaceContainerHigh,
+    },
+    tileSpacer: {
+      height: TILE_HEIGHT,
+    },
+    iconTile: {
+      width: 32,
+      height: 32,
+      borderRadius: 999,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    tileText: {
+      flex: 1,
+      minWidth: 0,
+    },
+    eyebrow: {
+      ...TYPOGRAPHY.labelUppercase,
+      fontSize: 10,
+    },
+    tileLabel: {
+      fontFamily: FONTS.manropeBold,
+      fontSize: 14,
+      color: c.onSurface,
+    },
+  });
+}

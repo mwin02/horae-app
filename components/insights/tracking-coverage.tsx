@@ -1,4 +1,5 @@
-import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { FONTS, RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useThemedStyles } from "@/hooks/useTheme";
 import type { DayCoverage } from "@/db/models";
 import { formatDuration } from "@/lib/timezone";
 import React, { useEffect, useRef } from "react";
@@ -13,6 +14,7 @@ export function TrackingCoverage({
   coverage,
   period,
 }: TrackingCoverageProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   const { trackedMinutes, coveragePercent } = coverage;
 
   const trackedHours = formatDuration(trackedMinutes * 60);
@@ -93,56 +95,58 @@ function getCoverageMessage(
 
 // ──────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: RADIUS.xl,
-    padding: SPACING["2xl"],
-  },
-  sectionLabel: {
-    ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
-    marginBottom: SPACING.lg,
-  },
-  percentRow: {
-    flexDirection: "row",
-    alignItems: "baseline",
-  },
-  percentValue: {
-    fontFamily: FONTS.manropeExtraBold,
-    fontSize: 48,
-    lineHeight: 48,
-    letterSpacing: -2,
-    color: COLORS.primary,
-    fontVariant: ["tabular-nums"],
-  },
-  percentSign: {
-    fontFamily: FONTS.manropeBold,
-    fontSize: 24,
-    lineHeight: 28,
-    color: COLORS.primary,
-    marginLeft: 2,
-  },
-  subtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.onSurfaceVariant,
-    marginTop: SPACING.xs,
-    marginBottom: SPACING.xl,
-  },
-  progressTrack: {
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: COLORS.surfaceContainer,
-    overflow: "hidden",
-    marginBottom: SPACING.md,
-  },
-  progressFill: {
-    height: "100%",
-    borderRadius: 5,
-    backgroundColor: COLORS.primary,
-  },
-  message: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      backgroundColor: c.surfaceContainerLow,
+      borderRadius: RADIUS.xl,
+      padding: SPACING["2xl"],
+    },
+    sectionLabel: {
+      ...TYPOGRAPHY.labelUppercase,
+      color: c.onSurfaceVariant,
+      marginBottom: SPACING.lg,
+    },
+    percentRow: {
+      flexDirection: "row",
+      alignItems: "baseline",
+    },
+    percentValue: {
+      fontFamily: FONTS.manropeExtraBold,
+      fontSize: 48,
+      lineHeight: 48,
+      letterSpacing: -2,
+      color: c.primary,
+      fontVariant: ["tabular-nums"],
+    },
+    percentSign: {
+      fontFamily: FONTS.manropeBold,
+      fontSize: 24,
+      lineHeight: 28,
+      color: c.primary,
+      marginLeft: 2,
+    },
+    subtitle: {
+      ...TYPOGRAPHY.body,
+      color: c.onSurfaceVariant,
+      marginTop: SPACING.xs,
+      marginBottom: SPACING.xl,
+    },
+    progressTrack: {
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: c.surfaceContainer,
+      overflow: "hidden",
+      marginBottom: SPACING.md,
+    },
+    progressFill: {
+      height: "100%",
+      borderRadius: 5,
+      backgroundColor: c.primary,
+    },
+    message: {
+      ...TYPOGRAPHY.bodySmall,
+      color: c.onSurfaceVariant,
+    },
+  });
+}

@@ -8,7 +8,8 @@ import Animated, {
   withSequence,
   Easing,
 } from 'react-native-reanimated';
-import { COLORS, RADIUS } from '@/constants/theme';
+import { RADIUS, type ThemeColors } from '@/constants/theme';
+import { useThemedStyles } from '@/hooks/useTheme';
 
 interface CurrentTimeIndicatorProps {
   timezone: string;
@@ -25,6 +26,7 @@ function formatNowTime(timezone: string): string {
 }
 
 export function CurrentTimeIndicator({ timezone }: CurrentTimeIndicatorProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   const [timeLabel, setTimeLabel] = useState(() => formatNowTime(timezone));
 
   // Update the time label every 30 seconds
@@ -63,18 +65,19 @@ export function CurrentTimeIndicator({ timezone }: CurrentTimeIndicatorProps): R
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
     height: 20,
   },
   timePill: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: c.primary,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: RADIUS.full,
-    shadowColor: COLORS.primary,
+    shadowColor: c.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
@@ -88,17 +91,18 @@ const styles = StyleSheet.create({
   line: {
     flex: 1,
     height: 2,
-    backgroundColor: COLORS.primary,
+    backgroundColor: c.primary,
   },
   dot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: COLORS.primary,
-    shadowColor: COLORS.primary,
+    backgroundColor: c.primary,
+    shadowColor: c.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 3,
   },
-});
+  });
+}

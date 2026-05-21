@@ -1,7 +1,8 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useThemedStyles } from "@/hooks/useTheme";
 
 export interface ThresholdOption {
   label: string;
@@ -27,6 +28,7 @@ export function ThresholdPicker({
   onChange,
   disabled,
 }: ThresholdPickerProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
   const matchedValue = THRESHOLD_PRESETS.some((p) => p.value === value)
     ? value
     : null;
@@ -63,7 +65,8 @@ export function ThresholdPicker({
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
   row: {
     flexDirection: "row",
     gap: SPACING.sm,
@@ -76,19 +79,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm,
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
   },
   chipPressed: {
-    backgroundColor: COLORS.surfaceContainer,
+    backgroundColor: c.surfaceContainer,
   },
   chipSelected: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: c.primary,
   },
   chipLabel: {
     ...TYPOGRAPHY.body,
-    color: COLORS.onSurface,
+    color: c.onSurface,
   },
   chipLabelSelected: {
-    color: COLORS.onPrimary,
+    color: c.onPrimary,
   },
-});
+  });
+}

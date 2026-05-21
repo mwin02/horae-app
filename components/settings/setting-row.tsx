@@ -2,7 +2,8 @@ import { Feather } from "@expo/vector-icons";
 import React, { type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 
 export type SettingRowProps = {
   title: string;
@@ -23,6 +24,8 @@ export function SettingRow({
   iconBackground,
   iconChildren,
 }: SettingRowProps): React.ReactElement {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const isNavigation = typeof onPress === "function";
 
   const content = (
@@ -57,7 +60,7 @@ export function SettingRow({
         <Feather
           name="chevron-right"
           size={20}
-          color={COLORS.onSurfaceVariant}
+          color={colors.onSurfaceVariant}
         />
       ) : null)}
     </>
@@ -84,7 +87,8 @@ export function SettingRow({
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
@@ -92,10 +96,10 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.lg,
     borderRadius: RADIUS.lg,
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
   },
   rowPressed: {
-    backgroundColor: COLORS.surfaceContainer,
+    backgroundColor: c.surfaceContainer,
   },
   rowDisabled: {
     opacity: 0.55,
@@ -106,7 +110,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: COLORS.surfaceContainer,
+    backgroundColor: c.surfaceContainer,
   },
   rowText: {
     flex: 1,
@@ -114,13 +118,14 @@ const styles = StyleSheet.create({
   },
   rowTitle: {
     ...TYPOGRAPHY.titleMd,
-    color: COLORS.onSurface,
+    color: c.onSurface,
   },
   rowSummary: {
     ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
   disabledText: {
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
-});
+  });
+}

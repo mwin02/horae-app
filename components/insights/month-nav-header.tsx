@@ -1,7 +1,8 @@
 import React, { useCallback } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from '@/constants/theme';
+import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from '@/constants/theme';
+import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 import { getCurrentTimezone, getTodayDate } from '@/lib/timezone';
 
 interface MonthNavHeaderProps {
@@ -35,6 +36,8 @@ export function MonthNavHeader({
   selectedDate,
   onDateChange,
 }: MonthNavHeaderProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const firstOfSelected = getFirstOfMonth(selectedDate);
   const firstOfToday = getFirstOfMonth(getTodayDate(getCurrentTimezone()));
   const isCurrentMonth = firstOfSelected >= firstOfToday;
@@ -58,7 +61,7 @@ export function MonthNavHeader({
           onPress={goBack}
           style={({ pressed }) => [styles.arrowButton, pressed && styles.arrowPressed]}
         >
-          <Feather name="chevron-left" size={20} color={COLORS.primary} />
+          <Feather name="chevron-left" size={20} color={colors.primary} />
         </Pressable>
         <Pressable
           onPress={goForward}
@@ -72,7 +75,7 @@ export function MonthNavHeader({
           <Feather
             name="chevron-right"
             size={20}
-            color={isCurrentMonth ? COLORS.outlineVariant : COLORS.primary}
+            color={isCurrentMonth ? colors.outlineVariant : colors.primary}
           />
         </Pressable>
       </View>
@@ -80,42 +83,44 @@ export function MonthNavHeader({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    marginBottom: SPACING.lg,
-  },
-  label: {
-    ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
-    marginBottom: SPACING.xs,
-  },
-  monthLabel: {
-    ...TYPOGRAPHY.headingXl,
-    color: COLORS.onSurface,
-  },
-  arrowPill: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-    backgroundColor: COLORS.surfaceContainerLow,
-    padding: 4,
-    borderRadius: RADIUS.full,
-  },
-  arrowButton: {
-    width: 40,
-    height: 40,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surfaceContainerLowest,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  arrowPressed: {
-    backgroundColor: COLORS.surfaceContainer,
-  },
-  arrowDisabled: {
-    opacity: 0.4,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: SPACING.lg,
+      marginBottom: SPACING.lg,
+    },
+    label: {
+      ...TYPOGRAPHY.labelUppercase,
+      color: c.onSurfaceVariant,
+      marginBottom: SPACING.xs,
+    },
+    monthLabel: {
+      ...TYPOGRAPHY.headingXl,
+      color: c.onSurface,
+    },
+    arrowPill: {
+      flexDirection: 'row',
+      gap: SPACING.sm,
+      backgroundColor: c.surfaceContainerLow,
+      padding: 4,
+      borderRadius: RADIUS.full,
+    },
+    arrowButton: {
+      width: 40,
+      height: 40,
+      borderRadius: RADIUS.full,
+      backgroundColor: c.surfaceContainerLowest,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    arrowPressed: {
+      backgroundColor: c.surfaceContainer,
+    },
+    arrowDisabled: {
+      opacity: 0.4,
+    },
+  });
+}

@@ -5,11 +5,12 @@ import {
 import { GradientButton } from "@/components/common/gradient-button";
 import {
   CATEGORY_PALETTE,
-  COLORS,
   RADIUS,
   SPACING,
   TYPOGRAPHY,
+  type ThemeColors,
 } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import type { CategoryWithActivities } from "@/db/models";
 import { updateCategory } from "@/db/queries";
 import { Feather } from "@expo/vector-icons";
@@ -37,6 +38,8 @@ export function EditCategoryModal({
   onClose,
   category,
 }: EditCategoryModalProps): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const [color, setColor] = useState<string>(
     category?.color ?? CATEGORY_PALETTE[0],
@@ -98,7 +101,7 @@ export function EditCategoryModal({
               </Text>
             </View>
             <Pressable onPress={handleClose} style={styles.closeButton}>
-              <Feather name="x" size={22} color={COLORS.onSurface} />
+              <Feather name="x" size={22} color={colors.onSurface} />
             </Pressable>
           </View>
 
@@ -132,7 +135,7 @@ export function EditCategoryModal({
                   ]}
                 >
                   {isSelected && (
-                    <Feather name="check" size={16} color={COLORS.onPrimary} />
+                    <Feather name="check" size={16} color={colors.onPrimary} />
                   )}
                 </Pressable>
               );
@@ -163,7 +166,7 @@ export function EditCategoryModal({
                   <CategoryIcon
                     icon={iconKey}
                     size={20}
-                    color={isSelected ? color : COLORS.onSurfaceVariant}
+                    color={isSelected ? color : colors.onSurfaceVariant}
                   />
                 </Pressable>
               );
@@ -176,7 +179,7 @@ export function EditCategoryModal({
             onPress={handleSubmit}
             disabled={!canSubmit}
           >
-            <Feather name="check" size={18} color={COLORS.onPrimary} />
+            <Feather name="check" size={18} color={colors.onPrimary} />
           </GradientButton>
         </View>
       </KeyboardAvoidingView>
@@ -184,103 +187,105 @@ export function EditCategoryModal({
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-  },
-  backdrop: {
-    flex: 1,
-  },
-  sheet: {
-    backgroundColor: COLORS.surfaceContainerLowest,
-    borderTopLeftRadius: RADIUS.xxl,
-    borderTopRightRadius: RADIUS.xxl,
-    paddingHorizontal: SPACING["2xl"],
-    paddingTop: SPACING.md,
-  },
-  handleBar: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: COLORS.outlineVariant,
-    alignSelf: "center",
-    marginBottom: SPACING.lg,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: SPACING["2xl"],
-  },
-  headerTextWrap: {
-    flex: 1,
-    marginRight: SPACING.md,
-  },
-  headerTitle: {
-    ...TYPOGRAPHY.headingXl,
-    color: COLORS.onSurface,
-  },
-  headerSubtitle: {
-    ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
-    marginTop: SPACING.xs,
-  },
-  closeButton: {
-    padding: SPACING.sm,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surfaceContainerLow,
-  },
-  sectionLabel: {
-    ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
-    marginBottom: SPACING.md,
-  },
-  previewRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.md,
-    marginBottom: SPACING.lg,
-  },
-  previewBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: RADIUS.lg,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  appearanceScroll: {
-    flexGrow: 0,
-    marginBottom: SPACING.md,
-  },
-  swatchRow: {
-    gap: SPACING.sm,
-    paddingRight: SPACING.lg,
-  },
-  swatch: {
-    width: 36,
-    height: 36,
-    borderRadius: RADIUS.full,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  swatchSelected: {
-    borderWidth: 2,
-    borderColor: COLORS.onSurface,
-  },
-  iconRow: {
-    gap: SPACING.sm,
-    paddingRight: SPACING.lg,
-    paddingBottom: SPACING.md,
-  },
-  iconTile: {
-    width: 44,
-    height: 44,
-    borderRadius: RADIUS.md,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderWidth: 1,
-    borderColor: "transparent",
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    overlay: {
+      flex: 1,
+      justifyContent: "flex-end",
+    },
+    backdrop: {
+      flex: 1,
+    },
+    sheet: {
+      backgroundColor: c.surfaceContainerLowest,
+      borderTopLeftRadius: RADIUS.xxl,
+      borderTopRightRadius: RADIUS.xxl,
+      paddingHorizontal: SPACING["2xl"],
+      paddingTop: SPACING.md,
+    },
+    handleBar: {
+      width: 40,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: c.outlineVariant,
+      alignSelf: "center",
+      marginBottom: SPACING.lg,
+    },
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      marginBottom: SPACING["2xl"],
+    },
+    headerTextWrap: {
+      flex: 1,
+      marginRight: SPACING.md,
+    },
+    headerTitle: {
+      ...TYPOGRAPHY.headingXl,
+      color: c.onSurface,
+    },
+    headerSubtitle: {
+      ...TYPOGRAPHY.labelUppercase,
+      color: c.onSurfaceVariant,
+      marginTop: SPACING.xs,
+    },
+    closeButton: {
+      padding: SPACING.sm,
+      borderRadius: RADIUS.full,
+      backgroundColor: c.surfaceContainerLow,
+    },
+    sectionLabel: {
+      ...TYPOGRAPHY.labelUppercase,
+      color: c.onSurfaceVariant,
+      marginBottom: SPACING.md,
+    },
+    previewRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SPACING.md,
+      marginBottom: SPACING.lg,
+    },
+    previewBadge: {
+      width: 44,
+      height: 44,
+      borderRadius: RADIUS.lg,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    appearanceScroll: {
+      flexGrow: 0,
+      marginBottom: SPACING.md,
+    },
+    swatchRow: {
+      gap: SPACING.sm,
+      paddingRight: SPACING.lg,
+    },
+    swatch: {
+      width: 36,
+      height: 36,
+      borderRadius: RADIUS.full,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    swatchSelected: {
+      borderWidth: 2,
+      borderColor: c.onSurface,
+    },
+    iconRow: {
+      gap: SPACING.sm,
+      paddingRight: SPACING.lg,
+      paddingBottom: SPACING.md,
+    },
+    iconTile: {
+      width: 44,
+      height: 44,
+      borderRadius: RADIUS.md,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: c.surfaceContainerLow,
+      borderWidth: 1,
+      borderColor: "transparent",
+    },
+  });
+}

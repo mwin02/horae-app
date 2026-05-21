@@ -2,7 +2,8 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ActiveDot } from '@/components/common/active-dot';
 import { CategoryIcon } from '@/components/common/category-icon';
-import { COLORS, SPACING, TYPOGRAPHY, RADIUS } from '@/constants/theme';
+import { SPACING, TYPOGRAPHY, RADIUS, type ThemeColors } from '@/constants/theme';
+import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 import { formatDuration } from '@/lib/timezone';
 import { Feather } from '@expo/vector-icons';
 
@@ -35,6 +36,8 @@ export function TimelineBlock({
   variant = 'normal',
   onPress,
 }: TimelineBlockProps): React.ReactElement {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const isCompact = height < 64;
 
   if (variant === 'bar') {
@@ -121,7 +124,7 @@ export function TimelineBlock({
               {isRunning && <ActiveDot />}
             </View>
             {note ? (
-              <Feather name="file-text" size={12} color={COLORS.onSurfaceVariant} />
+              <Feather name="file-text" size={12} color={colors.onSurfaceVariant} />
             ) : null}
           </View>
         </>
@@ -130,7 +133,8 @@ export function TimelineBlock({
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
   container: {
     borderLeftWidth: 3,
     borderRadius: RADIUS.lg,
@@ -154,7 +158,7 @@ const styles = StyleSheet.create({
   },
   compactDuration: {
     ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
   // Full layout
   topRow: {
@@ -171,7 +175,7 @@ const styles = StyleSheet.create({
   },
   activityName: {
     ...TYPOGRAPHY.titleMd,
-    color: COLORS.onSurface,
+    color: c.onSurface,
     flex: 1,
   },
   categoryBadge: {
@@ -196,7 +200,7 @@ const styles = StyleSheet.create({
   },
   duration: {
     ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
   continuesTop: {
     position: 'absolute',
@@ -232,6 +236,7 @@ const styles = StyleSheet.create({
   },
   barDuration: {
     ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
-});
+  });
+}

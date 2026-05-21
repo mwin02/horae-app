@@ -1,5 +1,6 @@
 import { CategoryIconSwatch } from './category-icon-swatch';
-import { COLORS, FONTS, RADIUS, SPACING, TYPOGRAPHY } from '@/constants/theme';
+import { FONTS, RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from '@/constants/theme';
+import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 import { useDayRhythm } from '@/hooks/useDayRhythm';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -18,6 +19,8 @@ const HOUR_LABELS: { hour: number; label: string }[] = [
 export function DayRhythmStrip({
   date,
 }: DayRhythmStripProps): React.ReactElement | null {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const { hours, legend, isLoading } = useDayRhythm(date);
 
   if (isLoading) return null;
@@ -31,7 +34,7 @@ export function DayRhythmStrip({
 
       <View style={styles.strip}>
         {hours.map((h) => {
-          const color = h.dominant?.color ?? COLORS.surfaceContainer;
+          const color = h.dominant?.color ?? colors.surfaceContainer;
           // Fade uncovered-ish hours slightly so the rhythm reads cleanly
           const opacity =
             h.dominant == null
@@ -77,59 +80,61 @@ export function DayRhythmStrip({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: RADIUS.xl,
-    padding: SPACING['2xl'],
-  },
-  sectionLabel: {
-    ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
-    marginBottom: SPACING.xs,
-  },
-  subtitle: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
-    marginBottom: SPACING.lg,
-  },
-  strip: {
-    flexDirection: 'row',
-    height: 28,
-    borderRadius: RADIUS.sm,
-    overflow: 'hidden',
-    backgroundColor: COLORS.surfaceContainer,
-    gap: 1,
-  },
-  cell: {
-    flex: 1,
-  },
-  axisRow: {
-    height: 16,
-    marginTop: SPACING.xs,
-    position: 'relative',
-  },
-  axisLabel: {
-    position: 'absolute',
-    fontFamily: FONTS.jakartaMedium,
-    fontSize: 11,
-    lineHeight: 14,
-    color: COLORS.onSurfaceVariant,
-    transform: [{ translateX: -8 }],
-  },
-  legend: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: SPACING.md,
-    marginTop: SPACING.md,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-  },
-  legendText: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurface,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      backgroundColor: c.surfaceContainerLow,
+      borderRadius: RADIUS.xl,
+      padding: SPACING['2xl'],
+    },
+    sectionLabel: {
+      ...TYPOGRAPHY.labelUppercase,
+      color: c.onSurfaceVariant,
+      marginBottom: SPACING.xs,
+    },
+    subtitle: {
+      ...TYPOGRAPHY.bodySmall,
+      color: c.onSurfaceVariant,
+      marginBottom: SPACING.lg,
+    },
+    strip: {
+      flexDirection: 'row',
+      height: 28,
+      borderRadius: RADIUS.sm,
+      overflow: 'hidden',
+      backgroundColor: c.surfaceContainer,
+      gap: 1,
+    },
+    cell: {
+      flex: 1,
+    },
+    axisRow: {
+      height: 16,
+      marginTop: SPACING.xs,
+      position: 'relative',
+    },
+    axisLabel: {
+      position: 'absolute',
+      fontFamily: FONTS.jakartaMedium,
+      fontSize: 11,
+      lineHeight: 14,
+      color: c.onSurfaceVariant,
+      transform: [{ translateX: -8 }],
+    },
+    legend: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: SPACING.md,
+      marginTop: SPACING.md,
+    },
+    legendItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.xs,
+    },
+    legendText: {
+      ...TYPOGRAPHY.bodySmall,
+      color: c.onSurface,
+    },
+  });
+}

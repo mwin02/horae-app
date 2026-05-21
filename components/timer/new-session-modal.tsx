@@ -3,7 +3,8 @@ import { CategoryIconSwatch } from "@/components/insights/category-icon-swatch";
 import { GradientButton } from "@/components/common/gradient-button";
 import { TagChip } from "@/components/common/tag-chip";
 import { TagPicker } from "@/components/common/tag-picker";
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import type { ActivityItem, CategoryWithActivities } from "@/db/models";
 import { useTags } from "@/hooks/useTags";
 import { Feather } from "@expo/vector-icons";
@@ -34,6 +35,8 @@ export function NewSessionModal({
   categories,
 }: NewSessionModalProps): React.ReactElement {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
     null,
   );
@@ -115,7 +118,7 @@ export function NewSessionModal({
             {item.categoryName}
           </Text>
           {isSelected && (
-            <Feather name="check-circle" size={18} color={COLORS.primary} />
+            <Feather name="check-circle" size={18} color={colors.primary} />
           )}
         </Pressable>
       );
@@ -142,17 +145,17 @@ export function NewSessionModal({
           {/* Close */}
           <View style={styles.closeRow}>
             <Pressable onPress={handleClose} style={styles.closeButton}>
-              <Feather name="x" size={22} color={COLORS.onSurface} />
+              <Feather name="x" size={22} color={colors.onSurface} />
             </Pressable>
           </View>
 
           {/* Search */}
           <View style={styles.searchContainer}>
-            <Feather name="search" size={18} color={COLORS.onSurfaceVariant} />
+            <Feather name="search" size={18} color={colors.onSurfaceVariant} />
             <TextInput
               style={styles.searchInput}
               placeholder="What are you working on?"
-              placeholderTextColor={COLORS.onSurfaceVariant}
+              placeholderTextColor={colors.onSurfaceVariant}
               value={searchQuery}
               onChangeText={setSearchQuery}
               autoCorrect={false}
@@ -227,7 +230,7 @@ export function NewSessionModal({
             style={styles.tagsRow}
             onPress={() => setTagPickerOpen(true)}
           >
-            <Feather name="tag" size={14} color={COLORS.onSurfaceVariant} />
+            <Feather name="tag" size={14} color={colors.onSurfaceVariant} />
             {selectedTags.length === 0 ? (
               <Text style={styles.tagsPlaceholder}>Add tags (optional)</Text>
             ) : (
@@ -240,7 +243,7 @@ export function NewSessionModal({
             <Feather
               name="chevron-right"
               size={16}
-              color={COLORS.onSurfaceVariant}
+              color={colors.onSurfaceVariant}
             />
           </Pressable>
 
@@ -251,7 +254,7 @@ export function NewSessionModal({
             onPress={handleStart}
             disabled={!selectedActivityId}
           >
-            <Feather name="play" size={18} color={COLORS.onPrimary} />
+            <Feather name="play" size={18} color={colors.onPrimary} />
           </GradientButton>
         </View>
 
@@ -266,7 +269,8 @@ export function NewSessionModal({
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: "flex-end",
@@ -275,7 +279,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sheet: {
-    backgroundColor: COLORS.surfaceContainerLowest,
+    backgroundColor: c.surfaceContainerLowest,
     borderTopLeftRadius: RADIUS.xxl,
     borderTopRightRadius: RADIUS.xxl,
     paddingHorizontal: SPACING["2xl"],
@@ -286,7 +290,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: COLORS.outlineVariant,
+    backgroundColor: c.outlineVariant,
     alignSelf: "center",
     marginBottom: SPACING.lg,
   },
@@ -298,13 +302,13 @@ const styles = StyleSheet.create({
   closeButton: {
     padding: SPACING.sm,
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
   },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
     gap: SPACING.md,
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
     borderRadius: RADIUS.xl,
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
@@ -313,12 +317,12 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     ...TYPOGRAPHY.body,
-    color: COLORS.onSurface,
+    color: c.onSurface,
     padding: 0,
   },
   sectionLabel: {
     ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
     marginBottom: SPACING.md,
   },
   categoryScroll: {
@@ -333,21 +337,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: SPACING.md,
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
     borderRadius: RADIUS.xl,
     paddingVertical: SPACING.lg,
     paddingHorizontal: SPACING.lg,
   },
   categoryCardSelected: {
-    backgroundColor: COLORS.surfaceContainerHigh,
+    backgroundColor: c.surfaceContainerHigh,
   },
   categoryCardName: {
     ...TYPOGRAPHY.titleMd,
-    color: COLORS.onSurface,
+    color: c.onSurface,
     flexShrink: 1,
   },
   categoryCardNameSelected: {
-    color: COLORS.primary,
+    color: c.primary,
   },
   activitiesHeader: {
     flexDirection: "row",
@@ -357,7 +361,7 @@ const styles = StyleSheet.create({
   },
   viewAllText: {
     ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.primary,
+    color: c.primary,
   },
   activityList: {
     flex: 1,
@@ -370,18 +374,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: SPACING.md,
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
     borderRadius: RADIUS.lg,
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.md,
   },
   activityRowSelected: {
-    backgroundColor: COLORS.surfaceContainerHigh,
+    backgroundColor: c.surfaceContainerHigh,
   },
   activityName: {
     flex: 6,
     ...TYPOGRAPHY.titleMd,
-    color: COLORS.onSurface,
+    color: c.onSurface,
   },
   activityCategory: {
     flex: 4,
@@ -392,7 +396,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: SPACING.sm,
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
     borderRadius: RADIUS.lg,
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
@@ -401,7 +405,7 @@ const styles = StyleSheet.create({
   tagsPlaceholder: {
     flex: 1,
     ...TYPOGRAPHY.body,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
   tagChipsRow: {
     flex: 1,
@@ -409,4 +413,5 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 6,
   },
-});
+  });
+}

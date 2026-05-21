@@ -7,7 +7,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { DeleteDataModal } from "@/components/manage/delete-data-modal";
 import { ImportDataModal } from "@/components/manage/import-data-modal";
 import { SettingRow } from "@/components/settings/setting-row";
-import { COLORS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import {
   deleteAllTimeEntries,
   deleteAllUserData,
@@ -87,6 +88,8 @@ function formatImportSummary(summary: ImportSummary): string {
 }
 
 export default function ManageDataScreen(): React.ReactElement {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const [isExportingJson, setIsExportingJson] = useState(false);
   const [isExportingCsv, setIsExportingCsv] = useState(false);
   const [deleteScope, setDeleteScope] = useState<DeleteScope | null>(null);
@@ -186,7 +189,7 @@ export default function ManageDataScreen(): React.ReactElement {
             <Feather
               name="hard-drive"
               size={18}
-              color={COLORS.onPrimaryContainer}
+              color={colors.onPrimaryContainer}
             />
             <Text style={styles.aboutTitle}>
               Your data lives on this device
@@ -215,9 +218,9 @@ export default function ManageDataScreen(): React.ReactElement {
             }
             onPress={runJsonExport}
             disabled={isExportingJson}
-            iconBackground={COLORS.surfaceContainer}
+            iconBackground={colors.surfaceContainer}
             iconChildren={
-              <Feather name="download" size={20} color={COLORS.primary} />
+              <Feather name="download" size={20} color={colors.primary} />
             }
           />
           <SettingRow
@@ -229,9 +232,9 @@ export default function ManageDataScreen(): React.ReactElement {
             }
             onPress={handleExportCsv}
             disabled={isExportingCsv}
-            iconBackground={COLORS.surfaceContainer}
+            iconBackground={colors.surfaceContainer}
             iconChildren={
-              <Feather name="file-text" size={20} color={COLORS.primary} />
+              <Feather name="file-text" size={20} color={colors.primary} />
             }
           />
         </View>
@@ -242,9 +245,9 @@ export default function ManageDataScreen(): React.ReactElement {
             title="Restore from a backup"
             description="Bring data back from a JSON file you exported"
             onPress={() => setIsImportModalOpen(true)}
-            iconBackground={COLORS.surfaceContainer}
+            iconBackground={colors.surfaceContainer}
             iconChildren={
-              <Feather name="upload" size={20} color={COLORS.primary} />
+              <Feather name="upload" size={20} color={colors.primary} />
             }
           />
         </View>
@@ -255,18 +258,18 @@ export default function ManageDataScreen(): React.ReactElement {
             title="Delete time entries"
             description="Wipe all tracked entries; keep categories, activities, tags"
             onPress={() => setDeleteScope("entries")}
-            iconBackground={COLORS.surfaceContainer}
+            iconBackground={colors.surfaceContainer}
             iconChildren={
-              <Feather name="trash-2" size={20} color={COLORS.error} />
+              <Feather name="trash-2" size={20} color={colors.error} />
             }
           />
           <SettingRow
             title="Delete all data"
             description="Reset everything on this device and restore presets"
             onPress={() => setDeleteScope("all")}
-            iconBackground={COLORS.surfaceContainer}
+            iconBackground={colors.surfaceContainer}
             iconChildren={
-              <Feather name="alert-triangle" size={20} color={COLORS.error} />
+              <Feather name="alert-triangle" size={20} color={colors.error} />
             }
           />
         </View>
@@ -294,61 +297,63 @@ export default function ManageDataScreen(): React.ReactElement {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-  },
-  scrollContent: {
-    paddingHorizontal: SPACING.lg,
-    paddingBottom: SPACING["4xl"],
-    gap: SPACING.md,
-  },
-  header: {
-    paddingHorizontal: SPACING.xs,
-    paddingTop: SPACING.md,
-    gap: SPACING.xs,
-  },
-  title: {
-    ...TYPOGRAPHY.headingXl,
-    color: COLORS.onSurface,
-  },
-  warning: {
-    color: COLORS.error,
-  },
-  subtitle: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.onSurfaceVariant,
-  },
-  sectionLabel: {
-    ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
-    marginTop: SPACING.lg,
-    marginBottom: SPACING.xs,
-    paddingHorizontal: SPACING.xs,
-  },
-  group: {
-    gap: SPACING.sm,
-  },
-  aboutCard: {
-    backgroundColor: COLORS.primaryContainer,
-    borderRadius: 20,
-    padding: SPACING.lg,
-    marginTop: SPACING.md,
-    gap: SPACING.sm,
-  },
-  aboutHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.sm,
-  },
-  aboutTitle: {
-    ...TYPOGRAPHY.titleMd,
-    color: COLORS.onPrimaryContainer,
-    flex: 1,
-  },
-  aboutBody: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.onPrimaryContainer,
-  },
-});
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.surface,
+    },
+    scrollContent: {
+      paddingHorizontal: SPACING.lg,
+      paddingBottom: SPACING["4xl"],
+      gap: SPACING.md,
+    },
+    header: {
+      paddingHorizontal: SPACING.xs,
+      paddingTop: SPACING.md,
+      gap: SPACING.xs,
+    },
+    title: {
+      ...TYPOGRAPHY.headingXl,
+      color: c.onSurface,
+    },
+    warning: {
+      color: c.error,
+    },
+    subtitle: {
+      ...TYPOGRAPHY.body,
+      color: c.onSurfaceVariant,
+    },
+    sectionLabel: {
+      ...TYPOGRAPHY.labelUppercase,
+      color: c.onSurfaceVariant,
+      marginTop: SPACING.lg,
+      marginBottom: SPACING.xs,
+      paddingHorizontal: SPACING.xs,
+    },
+    group: {
+      gap: SPACING.sm,
+    },
+    aboutCard: {
+      backgroundColor: c.primaryContainer,
+      borderRadius: 20,
+      padding: SPACING.lg,
+      marginTop: SPACING.md,
+      gap: SPACING.sm,
+    },
+    aboutHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: SPACING.sm,
+    },
+    aboutTitle: {
+      ...TYPOGRAPHY.titleMd,
+      color: c.onPrimaryContainer,
+      flex: 1,
+    },
+    aboutBody: {
+      ...TYPOGRAPHY.body,
+      color: c.onPrimaryContainer,
+    },
+  });
+}

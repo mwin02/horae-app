@@ -1,6 +1,7 @@
 import { GradientButton } from "@/components/common/gradient-button";
 import { TAG_COLOR_PALETTE } from "@/components/common/tag-chip";
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import type { TagItem } from "@/db/models";
 import { createTag, updateTag } from "@/db/queries";
 import { Feather } from "@expo/vector-icons";
@@ -29,6 +30,8 @@ export function CreateTagModal({
   initialTag,
 }: CreateTagModalProps): React.ReactElement {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const isEdit = !!initialTag;
   const [name, setName] = useState(initialTag?.name ?? "");
   const [color, setColor] = useState<string>(
@@ -99,7 +102,7 @@ export function CreateTagModal({
               </Text>
             </View>
             <Pressable onPress={handleClose} style={styles.closeButton}>
-              <Feather name="x" size={22} color={COLORS.onSurface} />
+              <Feather name="x" size={22} color={colors.onSurface} />
             </Pressable>
           </View>
 
@@ -108,7 +111,7 @@ export function CreateTagModal({
             <TextInput
               style={styles.input}
               placeholder="e.g. Client Work"
-              placeholderTextColor={COLORS.onSurfaceVariant}
+              placeholderTextColor={colors.onSurfaceVariant}
               value={name}
               onChangeText={setName}
               autoCorrect={false}
@@ -133,7 +136,7 @@ export function CreateTagModal({
                   accessibilityLabel={`Color ${c}`}
                 >
                   {selected && (
-                    <Feather name="check" size={16} color={COLORS.onPrimary} />
+                    <Feather name="check" size={16} color={colors.onPrimary} />
                   )}
                 </Pressable>
               );
@@ -157,7 +160,7 @@ export function CreateTagModal({
             <Feather
               name={isEdit ? "check" : "plus"}
               size={18}
-              color={COLORS.onPrimary}
+              color={colors.onPrimary}
             />
           </GradientButton>
           </ScrollView>
@@ -167,7 +170,8 @@ export function CreateTagModal({
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: "flex-end",
@@ -176,7 +180,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sheet: {
-    backgroundColor: COLORS.surfaceContainerLowest,
+    backgroundColor: c.surfaceContainerLowest,
     borderTopLeftRadius: RADIUS.xxl,
     borderTopRightRadius: RADIUS.xxl,
     paddingTop: SPACING.md,
@@ -189,7 +193,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: COLORS.outlineVariant,
+    backgroundColor: c.outlineVariant,
     alignSelf: "center",
     marginBottom: SPACING.lg,
   },
@@ -201,25 +205,25 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...TYPOGRAPHY.headingXl,
-    color: COLORS.onSurface,
+    color: c.onSurface,
   },
   headerSubtitle: {
     ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
     marginTop: SPACING.xs,
   },
   closeButton: {
     padding: SPACING.sm,
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
   },
   sectionLabel: {
     ...TYPOGRAPHY.labelUppercase,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
     marginBottom: SPACING.md,
   },
   inputContainer: {
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
     borderRadius: RADIUS.xl,
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
@@ -227,7 +231,7 @@ const styles = StyleSheet.create({
   },
   input: {
     ...TYPOGRAPHY.body,
-    color: COLORS.onSurface,
+    color: c.onSurface,
     padding: 0,
   },
   colorRow: {
@@ -245,6 +249,7 @@ const styles = StyleSheet.create({
   },
   swatchSelected: {
     borderWidth: 2,
-    borderColor: COLORS.onSurface,
+    borderColor: c.onSurface,
   },
-});
+  });
+}

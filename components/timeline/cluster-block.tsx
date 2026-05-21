@@ -1,5 +1,6 @@
 import { CategoryIcon } from "@/components/common/category-icon";
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from "@/constants/theme";
+import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import type { TimelineCluster } from "@/hooks/useTimelineData";
 import { formatDuration } from "@/lib/timezone";
 import { Feather } from "@expo/vector-icons";
@@ -29,6 +30,8 @@ export function ClusterBlock({
   onToggle,
   onEntryPress,
 }: ClusterBlockProps): React.ReactElement {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   // Mixed cluster (long dominant + short tail[s]) — renders the dominant
   // entry as a normal block with thin tail strips above/below for the short
   // attachments. Falls back to the all-short summary path if there isn't
@@ -138,7 +141,7 @@ export function ClusterBlock({
           <Feather
             name="chevron-up"
             size={14}
-            color={COLORS.onSurfaceVariant}
+            color={colors.onSurfaceVariant}
           />
         </Pressable>
         {cluster.entries.map((entry) => (
@@ -207,19 +210,20 @@ export function ClusterBlock({
       <Feather
         name="chevron-down"
         size={14}
-        color={COLORS.onSurfaceVariant + "80"}
+        color={colors.onSurfaceVariant + "80"}
       />
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
   // Collapsed state
   collapsedContainer: {
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: c.surfaceContainerLow,
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    borderColor: COLORS.outlineVariant + "26",
+    borderColor: c.outlineVariant + "26",
     paddingHorizontal: SPACING.md,
     flexDirection: "row",
     alignItems: "center",
@@ -246,20 +250,20 @@ const styles = StyleSheet.create({
   },
   summaryText: {
     ...TYPOGRAPHY.titleMd,
-    color: COLORS.onSurface,
+    color: c.onSurface,
   },
   summaryDuration: {
     ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
   // Expanded state
   expandedContainer: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: c.surface,
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    borderColor: COLORS.outlineVariant + "26",
+    borderColor: c.outlineVariant + "26",
     overflow: "hidden",
-    shadowColor: COLORS.onSurface,
+    shadowColor: c.onSurface,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
@@ -274,7 +278,7 @@ const styles = StyleSheet.create({
   },
   collapseLabel: {
     ...TYPOGRAPHY.labelSm,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
   expandedRow: {
     flexDirection: "row",
@@ -285,16 +289,16 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
   },
   rowPressed: {
-    backgroundColor: COLORS.surfaceContainer + "80",
+    backgroundColor: c.surfaceContainer + "80",
   },
   expandedName: {
     ...TYPOGRAPHY.body,
-    color: COLORS.onSurface,
+    color: c.onSurface,
     flex: 1,
   },
   expandedDuration: {
     ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
   // Mixed-cluster tail strip
   tailStrip: {
@@ -317,6 +321,7 @@ const styles = StyleSheet.create({
   },
   tailDuration: {
     ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
+    color: c.onSurfaceVariant,
   },
-});
+  });
+}
