@@ -20,25 +20,39 @@ Working draft of every piece of copy / config you'll paste into App Store Connec
 
 ## Promotional Text (170 chars, updatable without review)
 
+Pick one of the three options below — all keep the anti-schedule thesis but resolve the "no planning required" vs "set realistic goals" tension differently. Updatable anytime without review, so you can A/B these post-launch.
+
+**Option A — drop "goals" from promo entirely** *(135 chars, recommended)*
 ```
-Built for people who can't stick to schedules. Track where your time actually goes, set realistic goals, and watch the patterns emerge — no planning required.
+Built for people who can't stick to schedules. Track where your time actually goes and watch the patterns emerge — no planning required.
 ```
-*157 chars*
+
+**Option B — goals as post-hoc nudges** *(145 chars)*
+```
+Built for people who can't stick to schedules. Track where your time actually goes, see the patterns emerge, then nudge them toward what matters.
+```
+
+**Option C — reframe goals as targets** *(157 chars)*
+```
+Built for people who can't stick to schedules. Track what you actually do, set the targets that matter, and see how the real day compares — no plan required.
+```
+
+Recommendation: **A** — tightest, no internal tension, and goals get their dedicated paragraph in the description anyway.
 
 ---
 
 ## Keywords (100 chars, comma-separated, no spaces)
 
 ```
-time,productivity,goals,focus,timer,habits,adhd,journal,log,routine,daily,day,planner,schedule
+time,productivity,goals,focus,timer,habits,adhd,journal,log,routine,daily,planner,schedule,minimal
 ```
-*94 chars — leaves headroom for one swap.*
+*99 chars.*
 
 Notes:
-- Words in the app name and subtitle are already indexed by Apple; don't repeat them here. (That's why "tracking" / "track" / "day" — wait, "day" IS in subtitle, drop it.)
-- Revised: `time,productivity,goals,focus,timer,habits,adhd,journal,log,routine,daily,planner,schedule,minimal` *(99 chars)*
-- "schedule" is intentional — Horae is the anti-schedule alternative.
-- "adhd" widens reach to a community that genuinely benefits from descriptive (vs. prescriptive) tracking. Drop if you want.
+- Words in the app name and subtitle are already indexed by Apple; don't repeat them here. That's why `track`, `tracking`, and `day` (all in the title/subtitle) are not in the keyword list.
+- `schedule` is intentional — Horae is the anti-schedule alternative.
+- `adhd` widens reach to a community that genuinely benefits from descriptive (vs. prescriptive) tracking. Keep.
+- Swap candidates if a keyword underperforms post-launch: `tracker` (high-intent, not in title) is the strongest alternative — could replace `journal` or `log`.
 
 ---
 
@@ -85,19 +99,23 @@ If schedules don't work for you, give Horae a try. Track honestly. See clearly. 
 
 ## Support URL
 
-Until the landing page is live, point this to a public support page. Cheapest options:
-- GitHub repo issues: `https://github.com/mwin02/horae-app/issues` (works immediately)
-- Once `horae.app` (or chosen domain) ships: `https://horae.app/support`
+`https://usehorae.com/support`
 
-App Store Connect requires the URL to be publicly reachable when you submit. A 404 is a rejection.
+App Store Connect requires the URL to be publicly reachable when you submit. A 404 is a rejection — verify the landing-site `/support` route is live before pressing submit.
 
 ## Marketing URL (optional)
 
-Same as Support URL once landing page exists. Skip until then.
+`https://usehorae.com/`
 
 ## Privacy Policy URL (REQUIRED)
 
-Same domain as landing page (e.g. `https://horae.app/privacy`). Apple WILL reject submissions without a working privacy policy URL. The privacy policy text is drafted in [`privacy-policy.md`](./privacy-policy.md).
+`https://usehorae.com/privacy`
+
+Apple WILL reject submissions without a working privacy policy URL. The privacy policy text is drafted in [`privacy-policy.md`](./privacy-policy.md) and rendered at the URL above by the `landing/` Next.js app (it reads from `landing/content/privacy-policy.md`, which is auto-synced from `docs/privacy-policy.md` via the `sync:docs` script).
+
+## Support email
+
+`support@usehorae.com` — also the contact address in the privacy policy and the destination of the in-app feedback button.
 
 ---
 
@@ -137,18 +155,30 @@ Expected result: **4+**
 
 ## Screenshots
 
-Apple only strictly requires the **6.7" iPhone** size: **1290 × 2796 PNG**. Provide 3–6 screenshots; 5 is the sweet spot.
+Apple only strictly requires the **6.7" iPhone** size: **1290 × 2796 PNG**. Provide 3–10 screenshots; 8 is the planned set.
 
-Capture from the iPhone 15 Pro Max or 16 Pro Max simulator: ⌘ + S saves to Desktop, then drag into App Store Connect. Use the same color scheme (light or dark) across all 5 — visual consistency reads as polish.
+Capture from the iPhone 15 Pro Max or 16 Pro Max simulator: ⌘ + S saves to Desktop, then drag into App Store Connect. Use the same color scheme (light or dark) across all screens — visual consistency reads as polish.
 
-Suggested screens, in order:
-1. **Active timer card** (hero) — running session, elapsed time clearly visible.
-2. **Day timeline** with a full day filled in (variety of categories, no gaps if possible).
-3. **Insights — Daily** showing category breakdown bars.
-4. **Insights — Activity drill-down** with the donut chart visible.
-5. **New session modal** showing 4–6 categories in the picker (variety = "this fits my life").
+Each slot is a **composed marketing screenshot**, not a raw simulator capture: solid background + headline + the real screen content. See the **Screenshot design spec** below for layout and typography. The screen content itself must be a real capture — Apple forbids mocked UI that doesn't exist in the app.
 
-Optional 6th: a focused shot of the goal vs. actual comparison if it photographs well.
+Slot-by-slot plan (8 screens, story arc: *capture → reflect → set targets → compare → drill → start → make it yours → privacy*):
+
+| # | Screen | Headline (≤7 words) | Subhead (optional, ≤10 words) |
+| --- | --- | --- | --- |
+| 1 | **Active timer card** (hero) — running session, elapsed time clearly visible | `Track your day, not your plan` | `Start a timer. That's the whole loop.` |
+| 2 | **Day timeline** with a full day filled in (variety of categories, no gaps) | `See where your hours actually went` | `The day you had, not the one you planned.` |
+| 3 | **Ideal allocations** ([app/ideal-allocations.tsx](app/ideal-allocations.tsx)) — goal-setting screen with category targets visible | `Set the targets that matter to you` | `Daily or weekly. No streaks. No guilt.` |
+| 4 | **Insights — Daily** showing actual-vs-ideal comparison bars | `Patterns, not pressure` | `Your real time, against the targets you set.` |
+| 5 | **Insights — Activity drill-down** with the donut chart visible | `Find where the day disappeared` | `Drill into any category. No spreadsheets.` |
+| 6 | **New session modal** showing 4–6 categories in the picker | `Real life isn't just work` | `Sleep, Health, Family — track what matters.` |
+| 7 | **Manage categories** ([app/manage-categories.tsx](app/manage-categories.tsx)) — list of categories with colors and icons, ideally mid-edit | `Make it yours` | `Add, rename, recolor. Your life, your categories.` |
+| 8 | **Settings → Manage data** | `Everything stays on your iPhone` | `No accounts. No cloud. Export or wipe anytime.` |
+
+Notes:
+- Slots 3 (goals) and 7 (customization) carry the "this app adapts to you" story — they were added because the original 6 emphasized capture/analysis but understated how much the app bends to fit a non-standard life.
+- Slot 4's headline previously read "Real time vs. the targets you set yourself" — shortened so it doesn't echo the slot-3 subhead.
+- Privacy-first is a key differentiator and is otherwise invisible in the screenshot reel — that's why slot 8 exists.
+- Apple allows up to 10 screenshots; 8 is well within the budget and leaves room to add an "app preview" video later without crowding.
 
 Pre-capture checklist:
 - [ ] Use realistic-sounding activity names ("Deep work", "Morning run", "Reading"). Avoid placeholder text.
@@ -158,11 +188,44 @@ Pre-capture checklist:
 
 ---
 
+### Screenshot design spec
+
+The goal is **clean and indie**, not corporate. The brand voice is honest and anti-prescriptive — heavy illustrations or stock-photo backgrounds would contradict the positioning. Aim for the visual register of Bear, Things, or Streaks.
+
+**Canvas:** 1290 × 2796 (6.7" iPhone), exported PNG, sRGB.
+
+**Background:** single flat off-white `#F7F5F2` (or a very subtle vertical gradient to `#EFEBE6` at the bottom). Same background across all 6 — consistency reads as polish. Avoid pure white (#FFF) — it looks unfinished and clashes with the App Store carousel chrome.
+
+**Layout (top → bottom):**
+1. **Headline** — 96 pt, Manrope Bold, color `#1A1A1A`, centered, max 2 lines. Top padding: 180 pt from the canvas top. Tight tracking (-1%).
+2. **Subhead** (optional) — 44 pt, Plus Jakarta Sans Regular, color `#5A5A5A`, centered, max 1 line. 32 pt below the headline.
+3. **Device screen** — real capture, no iPhone bezel/frame (frameless reads more modern in 2026). Width: 1050 pt centered. Rounded corners at 72 pt radius to imply the device. Drop shadow: 0/40/80 px, 12% black opacity. Top edge sits 180 pt below the subhead.
+4. **Bottom safe area** — leave ≥120 pt below the device so nothing crowds the App Store page indicator dots.
+
+**Per-screen background tint (optional, subtle):** if all 6 in flat off-white feels flat, give each screen a barely-perceptible accent wash matching the dominant category color in that capture — e.g. timeline shot has a 3%-opacity warm tint, insights shot has a 3% cool tint. Keep it whisper-quiet; the test is "does it still look like one coherent set when you scroll the carousel fast?".
+
+**Don't:**
+- ❌ Add fake reviews, awards, or "Featured in" badges (Apple rejects fabricated social proof).
+- ❌ Mock UI elements that don't exist in the app (Apple guideline 2.3.3).
+- ❌ Use comic-sans-tier serifs, neon gradients, or 3D mockups. The category is full of those and they all look like 2015.
+- ❌ Crowd the headline with the screen — 180 pt breathing room above and below is the difference between "polished" and "indie-amateur".
+
+**Suggested tools:** Figma (free, frame template `App Store Screenshot 6.7"` available in community files), or Screenshots.pro / Picasso if you want a faster preset-driven workflow. Figma gives more control; presets ship faster. For v1, Figma is worth the extra hour.
+
+**Order of operations:**
+1. Capture clean app screens from the iPhone 16 Pro Max simulator into one folder.
+2. In Figma: build one template frame with the background + headline placeholder + screen-image placeholder + shadow.
+3. Duplicate × 6, swap headline text + screen capture per slot.
+4. Export all 6 at 1× as PNG.
+5. Drag into App Store Connect; verify order is 1 → 6 (Apple uses upload order as carousel order).
+
+---
+
 ## Pre-submission checklist (in App Store Connect)
 
 - [ ] App icon uploaded (Apple pulls it from the build, so just verify it shows correctly in the listing preview)
 - [ ] All metadata in this doc pasted in
-- [ ] 5 screenshots uploaded
+- [ ] 8 screenshots uploaded
 - [ ] Privacy Policy URL reachable
 - [ ] Support URL reachable
 - [ ] App Privacy questionnaire answered

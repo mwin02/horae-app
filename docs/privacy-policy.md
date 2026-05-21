@@ -1,8 +1,10 @@
 # Privacy Policy — Horae
 
-*Last updated: TODO — set to the date you publish this.*
+*Last updated: 2026-05-20.*
 
 This is the privacy policy for the Horae iPhone app ("Horae", "the app", "we"). It explains what data the app handles and what happens to it. Plain English, no fine-print games.
+
+Horae is built by Myo Zaw Win, an independent developer. For privacy questions or data requests, contact `support@usehorae.com`.
 
 ## The short version
 
@@ -41,7 +43,9 @@ A crash report does NOT contain:
 
 We've configured the app to strip these fields out of every crash report before it leaves your phone. The code that does this is open-source and reviewable in the project repository.
 
-Sentry's privacy policy: https://sentry.io/privacy/
+Under GDPR, our legal basis for sending these anonymous crash reports is **legitimate interest** — we need to know when the app is broken in order to fix it. Sentry is a US-based service; transfers from outside the US are covered by the standard data-transfer mechanisms described in Sentry's data processing terms.
+
+Sentry's privacy policy: https://sentry.io/privacy/ — Sentry's DPA: https://sentry.io/legal/dpa/
 
 ### That's it
 
@@ -66,6 +70,15 @@ Because we don't store your data on our servers, the typical "request your data"
 - **Deletion:** Settings → Manage data → Delete time entries (keeps categories) or Delete all data (resets the app to first-launch state). Or simply uninstall the app, which removes all stored data from your device.
 - **Crash report deletion:** Crash reports retained by Sentry are anonymous; we cannot link them back to you because they contain no identifiers. They expire from Sentry's storage on Sentry's standard retention schedule. If you want crash reports to never be sent, uninstall the app — there is no in-app toggle for this in v1, but we plan to add one.
 
+## California residents (CCPA)
+
+If you live in California, you have specific rights under the CCPA. Most of them are trivially satisfied here because the app collects nothing about you on our end:
+
+- **Right to know:** We don't collect personal information server-side. The only data we receive is the anonymous crash data described above.
+- **Right to delete:** Any data you've entered lives on your iPhone — use Settings → Manage data to delete it, or uninstall the app.
+- **Right to opt out of sale or sharing:** We do not sell or share your personal information with anyone, for any purpose. There is nothing to opt out of.
+- **Right to non-discrimination:** Exercising any of these rights will not affect your use of the app.
+
 ## Future updates: optional cloud sync
 
 A future version of Horae may offer **optional** cloud sync (for backup and using the app across multiple devices). When that ships:
@@ -82,8 +95,8 @@ If we change this policy, we'll update the "Last updated" date at the top and no
 
 Questions, concerns, or data requests:
 
-📧 **TODO — replace with the dedicated support email before publishing.** *(See the "Pre-submission blockers" section in the launch plan; the in-app feedback button currently falls back to a personal Gmail address.)*
+📧 `support@usehorae.com`
 
 ---
 
-*Horae is built by an independent developer. The source code for the iOS app is publicly viewable on GitHub.*
+*Horae is built by Myo Zaw Win, an independent developer. The source code for the iOS app is publicly viewable on GitHub.*
