@@ -27,7 +27,7 @@ export function FinalCTA() {
             lineHeight: 1.5,
           }}
         >
-          Free on iPhone. No accounts, no setup. Coming to the App Store soon.
+          Free on iPhone. No accounts, no setup.
         </p>
         <div className="inline-flex flex-col items-center gap-3.5">
           <AppStoreBadge height={60} />

@@ -28,24 +28,8 @@ export function Hero() {
 
       <div className="relative z-[2] grid md:grid-cols-[1.05fr_1fr] gap-10 md:gap-16 items-center">
         <div>
-          <div
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-white"
-            style={{
-              boxShadow: '0 4px 16px -4px rgba(40,43,81,0.1)',
-              fontSize: 12,
-              letterSpacing: '0.04em',
-              color: 'var(--color-on-surface-variant)',
-              fontWeight: 600,
-            }}
-          >
-            <span
-              className="w-1.5 h-1.5 rounded-full"
-              style={{ background: 'var(--color-primary)' }}
-            />
-            NEW · COMING TO THE APP STORE
-          </div>
           <h1
-            className="font-display font-extrabold mt-7"
+            className="font-display font-extrabold"
             style={{
               fontSize: 'clamp(48px, 7vw, 88px)',
               lineHeight: 0.96,
