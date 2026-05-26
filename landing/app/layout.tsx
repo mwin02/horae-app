@@ -23,7 +23,7 @@ const SITE = 'https://usehorae.com';
 // Information → "Apple ID"). When set, the layout emits the
 // apple-itunes-app meta which triggers Safari's native install banner
 // on iPhones — a meaningful conversion boost for mobile landing traffic.
-const APP_STORE_ID = '';
+const APP_STORE_ID = '6771047445';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),
