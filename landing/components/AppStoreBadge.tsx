@@ -4,9 +4,6 @@
  * from /public. We use a plain <img> rather than next/image because:
  *   - SVGs don't benefit from raster optimisation
  *   - keeps Apple's exact vector intact, no Next/Image cropping concerns
- *
- * TODO(launch): replace href="#" with the real App Store URL once Apple
- * approves the app.
  */
 type Props = {
   /** Pixel height. Apple requires >= 40pt; default 60 on desktop. */
@@ -17,11 +14,13 @@ type Props = {
 // Apple's official badge artwork is 119.66407 × 40 — preserve that ratio.
 const ASPECT = 119.66407 / 40;
 
+const APP_STORE_URL = 'https://apps.apple.com/app/horae/id6771047445';
+
 export function AppStoreBadge({ height = 60, className }: Props) {
   const width = height * ASPECT;
   return (
     <a
-      href="#"
+      href={APP_STORE_URL}
       aria-label="Download Horae on the App Store"
       className={`inline-flex transition-transform hover:-translate-y-0.5 ${className ?? ''}`}
       style={{ height, width }}

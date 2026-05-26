@@ -51,15 +51,14 @@ landing/
   public/icon.png          # from ../assets/images/icon.png
 ```
 
-## Outstanding launch TODOs
+## Launch checklist (resolved)
 
-Search the codebase for `TODO(launch)` to find the one remaining item:
+All build-out items are in place:
 
-1. **App Store URL** — `AppStoreBadge.tsx` links to `#`. Swap in the real
-   App Store URL once Apple approves the app.
-
-The following items were resolved during build-out and are kept here as
-a record of what's already in place:
+- **App Store URL** — `AppStoreBadge.tsx` links to
+  `https://apps.apple.com/app/horae/id6771047445`. `app/layout.tsx` sets
+  `APP_STORE_ID = '6771047445'` so the Safari Smart App Banner and the
+  SoftwareApplication JSON-LD `installUrl`/`downloadUrl` are populated.
 
 - **App Store badge artwork** — Apple's official SVG is in
   `public/app-store-badge.svg` and rendered by `AppStoreBadge.tsx`.
