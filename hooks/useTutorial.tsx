@@ -14,7 +14,6 @@ export type TutorialPhase = "idle" | "welcome" | "done";
 interface TutorialContextValue {
   phase: TutorialPhase;
   finish: () => void;
-  replay: () => void;
 }
 
 const TutorialContext = createContext<TutorialContextValue | null>(null);
@@ -44,14 +43,9 @@ export function TutorialProvider({
     void setTutorialSeen(true);
   }, []);
 
-  const replay = useCallback(() => {
-    setPhase("welcome");
-    void setTutorialSeen(false);
-  }, []);
-
   const value = useMemo<TutorialContextValue>(
-    () => ({ phase, finish, replay }),
-    [phase, finish, replay],
+    () => ({ phase, finish }),
+    [phase, finish],
   );
 
   return (

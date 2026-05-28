@@ -12,7 +12,6 @@ import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import { NOTIFICATION_PREFERENCES_QUERY } from "@/db/queries";
 import type { NotificationPreferencesRecord } from "@/db/schema";
 import { useAuth } from "@/hooks/useAuth";
-import { useTutorial } from "@/hooks/useTutorial";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { seedDemoDay } from "@/lib/dev-seed";
 import { sendFeedback } from "@/lib/feedback";
@@ -70,7 +69,6 @@ export default function SettingsScreen(): React.ReactElement {
   const prefs = prefsData.length > 0 ? prefsData[0] : null;
   const { preferences } = useUserPreferences();
   const { user, signOut } = useAuth();
-  const { replay: replayTutorial } = useTutorial();
   const [signOutPromptVisible, setSignOutPromptVisible] = useState(false);
 
   const handleSignIn = useCallback(() => {
@@ -257,16 +255,7 @@ export default function SettingsScreen(): React.ReactElement {
           }
         />
 
-        <Text style={styles.sectionLabel}>Help</Text>
-        <SettingRow
-          title="Replay intro"
-          description="See the welcome walkthrough again"
-          onPress={replayTutorial}
-          iconBackground={colors.surfaceContainer}
-          iconChildren={
-            <Feather name="compass" size={20} color={colors.primary} />
-          }
-        />
+        <Text style={styles.sectionLabel}>Help us improve</Text>
         <SettingRow
           title="Report a bug"
           onPress={handleReportBug}

@@ -14,7 +14,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import {
+  RADIUS,
+  SPACING,
+  TYPOGRAPHY,
+  type ThemeColors,
+} from "@/constants/theme";
 import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import { useTutorial } from "@/hooks/useTutorial";
 
@@ -44,20 +49,35 @@ const SLIDES: readonly Slide[] = [
     title: "Start an activity",
     body: "Begin tracking the moment something starts — no setup required.",
     bullets: [
-      { icon: "disc", text: "Tap the ring at the top to pick any activity" },
-      { icon: "zap", text: "Or hit a quick-start chip below it for one-tap tracking" },
-      { icon: "rotate-ccw", text: "Forgot to stop the timer? Resume or split it later" },
+      { icon: "disc", text: "Tap start activity to select an activity" },
+      {
+        icon: "zap",
+        text: "Click on any activity under quick start to switch or start with one tap",
+      },
+      {
+        icon: "rotate-ccw",
+        text: "Forgot to stop the timer? You can edit it later in the timeline",
+      },
     ],
   },
   {
     icon: "sliders",
     eyebrow: "Make it yours",
-    title: "Customize activities & categories",
+    title: "Customize activities",
     body: "Your day doesn't look like anyone else's — your tracker shouldn't either.",
     bullets: [
-      { icon: "grid", text: "Add, hide, or reorder categories from Settings → Manage" },
-      { icon: "edit-3", text: "Rename or recolor any activity from Settings → Manage activities" },
-      { icon: "tag", text: "Use tags for cross-cutting context like client, project, or place" },
+      {
+        icon: "grid",
+        text: "Create the activities that matter to you, delete the ones that don't",
+      },
+      {
+        icon: "edit-3",
+        text: "Recolor or set custom icons for any activity",
+      },
+      {
+        icon: "tag",
+        text: "Use tags for cross-cutting context like client, project, or place",
+      },
     ],
   },
   {
@@ -66,9 +86,18 @@ const SLIDES: readonly Slide[] = [
     title: "Backfill & edit your day",
     body: "Life happens away from the phone. Patch the gaps whenever you remember.",
     bullets: [
-      { icon: "plus-circle", text: "Tap any empty gap on the timeline to log past time" },
-      { icon: "edit-2", text: "Tap an existing entry to tweak its time, category, or notes" },
-      { icon: "trash-2", text: "Mistakes are soft-deletes — undo from the toast" },
+      {
+        icon: "plus-circle",
+        text: "Tap any empty gap on the timeline to log past time",
+      },
+      {
+        icon: "edit-2",
+        text: "Tap an existing entry to tweak its time",
+      },
+      {
+        icon: "trash-2",
+        text: "Delete any entry that doesn't belong — it won't mess with your stats or goals",
+      },
     ],
   },
   {
@@ -77,9 +106,18 @@ const SLIDES: readonly Slide[] = [
     title: "See what matters to you",
     body: "Pin the charts that answer your questions and hide the rest.",
     bullets: [
-      { icon: "settings", text: "Tap the sliders icon in the top-right to choose your charts" },
-      { icon: "target", text: "Set goals per category to compare ideal vs actual" },
-      { icon: "trending-up", text: "Watch streaks and week-over-week trends build up" },
+      {
+        icon: "settings",
+        text: "Customize your insights dashboard with the metrics that matter to you",
+      },
+      {
+        icon: "target",
+        text: "Set goals per category to compare ideal vs actual",
+      },
+      {
+        icon: "trending-up",
+        text: "Watch streaks and week-over-week trends build up",
+      },
     ],
   },
   {
@@ -88,16 +126,25 @@ const SLIDES: readonly Slide[] = [
     title: "Track from anywhere on your phone",
     body: "Horae lives on your Home Screen and Lock Screen so you never have to open the app to start, stop, or check in.",
     bullets: [
-      { icon: "grid", text: "Add the Home Screen widget to start a session in one tap" },
-      { icon: "activity", text: "A Live Activity keeps the running timer on your Lock Screen and Dynamic Island" },
-      { icon: "bell", text: "Optional reminders nudge you if a timer's been running too long" },
+      {
+        icon: "grid",
+        text: "Add the Home Screen widget to start a session in one tap",
+      },
+      {
+        icon: "activity",
+        text: "A Live Activity keeps the running timer on your Lock Screen and Dynamic Island",
+      },
+      {
+        icon: "bell",
+        text: "Optional reminders nudge you if a timer's been running too long",
+      },
     ],
   },
   {
     icon: "check-circle",
     eyebrow: "You're set",
     title: "Start tracking",
-    body: "You can replay this intro anytime from Settings → Help. Now go find your hours.",
+    body: "That's the tour. Now go find your hours.",
   },
 ] as const;
 
@@ -178,11 +225,7 @@ export function WelcomeCarousel(): React.ReactElement | null {
                 showsVerticalScrollIndicator={false}
               >
                 <View style={styles.iconWrap}>
-                  <Feather
-                    name={slide.icon}
-                    size={48}
-                    color={colors.primary}
-                  />
+                  <Feather name={slide.icon} size={48} color={colors.primary} />
                 </View>
                 <Text style={styles.eyebrow}>{slide.eyebrow}</Text>
                 <Text style={styles.title}>{slide.title}</Text>
