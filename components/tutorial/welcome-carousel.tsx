@@ -262,10 +262,12 @@ function makeStyles(c: ThemeColors) {
       width: SCREEN_WIDTH,
     },
     slideContent: {
+      flexGrow: 1,
       paddingHorizontal: SPACING["3xl"],
-      paddingTop: SPACING["2xl"],
+      paddingTop: SPACING["4xl"],
       paddingBottom: SPACING.xl,
       alignItems: "center",
+      justifyContent: "center",
       gap: SPACING.md,
     },
     iconWrap: {
