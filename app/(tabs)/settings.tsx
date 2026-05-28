@@ -259,8 +259,8 @@ export default function SettingsScreen(): React.ReactElement {
 
         <Text style={styles.sectionLabel}>Help</Text>
         <SettingRow
-          title="Replay tutorial"
-          description="Walk through the first-run tour again"
+          title="Replay intro"
+          description="See the welcome walkthrough again"
           onPress={replayTutorial}
           iconBackground={colors.surfaceContainer}
           iconChildren={
