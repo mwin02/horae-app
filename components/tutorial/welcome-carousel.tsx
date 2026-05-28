@@ -12,7 +12,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
   RADIUS,
@@ -154,6 +154,7 @@ export function WelcomeCarousel(): React.ReactElement | null {
   const { phase, finish } = useTutorial();
   const styles = useThemedStyles(makeStyles);
   const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const [pageIndex, setPageIndex] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -196,8 +197,13 @@ export function WelcomeCarousel(): React.ReactElement | null {
         }
         style={styles.gradient}
       >
-        <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-          <View style={styles.topBar}>
+        <SafeAreaView style={styles.safe} edges={["bottom"]}>
+          <View
+            style={[
+              styles.topBar,
+              { paddingTop: Math.max(insets.top, SPACING.md) + SPACING.sm },
+            ]}
+          >
             <Pressable
               onPress={finish}
               hitSlop={12}
@@ -293,7 +299,6 @@ function makeStyles(c: ThemeColors) {
       flexDirection: "row",
       justifyContent: "flex-end",
       paddingHorizontal: SPACING.xl,
-      paddingTop: SPACING.md,
     },
     skipText: {
       ...TYPOGRAPHY.button,
