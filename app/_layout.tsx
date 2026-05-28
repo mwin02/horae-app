@@ -38,6 +38,8 @@ import { useLiveActivity } from "@/hooks/useLiveActivity";
 import { useNotificationScheduler } from "@/hooks/useNotificationScheduler";
 import { useTimerDeepLinks } from "@/hooks/useTimerDeepLinks";
 import { useWidgetSnapshot } from "@/hooks/useWidgetSnapshot";
+import { TutorialProvider } from "@/hooks/useTutorial";
+import { TutorialOverlay } from "@/components/tutorial/tutorial-overlay";
 import { db } from "@/lib/powersync";
 import { initSentry, wrap } from "@/lib/sentry";
 
@@ -183,6 +185,7 @@ function RootLayoutNav() {
     <GestureHandlerRootView style={{ flex: 1 }}>
     <PowerSyncContext.Provider value={db}>
       <AuthProvider>
+      <TutorialProvider>
       <NotificationSchedulerMount />
       <LiveActivityMount />
       <WidgetSnapshotMount />
@@ -252,7 +255,9 @@ function RootLayoutNav() {
             }}
           />
         </Stack>
+        <TutorialOverlay />
       </NavigationThemeProvider>
+      </TutorialProvider>
       </AuthProvider>
     </PowerSyncContext.Provider>
     </GestureHandlerRootView>
