@@ -55,8 +55,8 @@ const SLIDES: readonly Slide[] = [
     title: "Customize activities & categories",
     body: "Your day doesn't look like anyone else's — your tracker shouldn't either.",
     bullets: [
-      { icon: "edit-3", text: "Long-press any quick-start chip to rename or recolor it" },
       { icon: "grid", text: "Add, hide, or reorder categories from Settings → Manage" },
+      { icon: "edit-3", text: "Rename or recolor any activity from Settings → Manage activities" },
       { icon: "tag", text: "Use tags for cross-cutting context like client, project, or place" },
     ],
   },
