@@ -83,6 +83,17 @@ const SLIDES: readonly Slide[] = [
     ],
   },
   {
+    icon: "smartphone",
+    eyebrow: "Beyond the app",
+    title: "Track from anywhere on your phone",
+    body: "Horae lives on your Home Screen and Lock Screen so you never have to open the app to start, stop, or check in.",
+    bullets: [
+      { icon: "grid", text: "Add the Home Screen widget to start a session in one tap" },
+      { icon: "activity", text: "A Live Activity keeps the running timer on your Lock Screen and Dynamic Island" },
+      { icon: "bell", text: "Optional reminders nudge you if a timer's been running too long" },
+    ],
+  },
+  {
     icon: "check-circle",
     eyebrow: "You're set",
     title: "Start tracking",
