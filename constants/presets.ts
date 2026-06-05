@@ -12,6 +12,14 @@
  * goal that references it. Renames of `name`/`color`/`icon` are fine.
  */
 
+/**
+ * Upper bound on the number of *active* (non-archived) categories a user may
+ * have at once. Sized to the CATEGORY_PALETTE length (16 distinct colors) so we
+ * never force color collisions in the timeline / Insights donut. Enforced at
+ * creation only — never on import, so restoring a backup can't lose data.
+ */
+export const MAX_CATEGORIES = 16;
+
 export interface PresetActivity {
   id: string;
   name: string;

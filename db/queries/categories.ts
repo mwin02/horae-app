@@ -1,7 +1,21 @@
+import { MAX_CATEGORIES } from '@/constants/presets';
 import { db } from '@/lib/powersync';
 import { generateId } from '@/lib/uuid';
 import type { CategoryRecord } from '../schema';
 import { nowUTC } from './_helpers';
+
+/**
+ * Thrown by `createCategory` when the active-category cap (`MAX_CATEGORIES`)
+ * would be exceeded. The UI gates the create button on `countActiveCategories`,
+ * but this guards against races / programmatic callers. Import deliberately
+ * bypasses this by inserting rows directly, so a backup can never be rejected.
+ */
+export class CategoryLimitExceededError extends Error {
+  constructor() {
+    super(`Cannot exceed ${MAX_CATEGORIES} categories`);
+    this.name = 'CategoryLimitExceededError';
+  }
+}
 
 /** Get all active (non-archived, non-deleted) categories ordered by sort_order */
 export async function getCategories(): Promise<CategoryRecord[]> {
@@ -10,6 +24,15 @@ export async function getCategories(): Promise<CategoryRecord[]> {
      WHERE is_archived = 0 AND deleted_at IS NULL
      ORDER BY sort_order, name`
   );
+}
+
+/** Count active (non-archived, non-deleted) categories — counts toward the cap. */
+export async function countActiveCategories(): Promise<number> {
+  const row = await db.getOptional<{ count: number }>(
+    `SELECT COUNT(*) as count FROM categories
+     WHERE is_archived = 0 AND deleted_at IS NULL`
+  );
+  return row?.count ?? 0;
 }
 
 /** Get a single category by ID */
@@ -27,6 +50,9 @@ export async function createCategory(params: {
   icon: string | null;
   sortOrder?: number;
 }): Promise<string> {
+  if ((await countActiveCategories()) >= MAX_CATEGORIES) {
+    throw new CategoryLimitExceededError();
+  }
   const id = generateId();
   const now = nowUTC();
   await db.execute(

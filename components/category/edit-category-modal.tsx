@@ -12,10 +12,15 @@ import {
 } from "@/constants/theme";
 import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import type { CategoryWithActivities } from "@/db/models";
-import { updateCategory } from "@/db/queries";
+import {
+  CategoryLimitExceededError,
+  createCategory,
+  updateCategory,
+} from "@/db/queries";
 import { Feather } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useState } from "react";
 import {
+  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -23,6 +28,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -30,17 +36,23 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 interface EditCategoryModalProps {
   visible: boolean;
   onClose: () => void;
+  /** null = create mode; a category = edit mode */
   category: CategoryWithActivities | null;
+  /** sort_order to assign to a newly created category (create mode only) */
+  nextSortOrder?: number;
 }
 
 export function EditCategoryModal({
   visible,
   onClose,
   category,
+  nextSortOrder = 0,
 }: EditCategoryModalProps): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const isEdit = category !== null;
+  const [name, setName] = useState<string>(category?.name ?? "");
   const [color, setColor] = useState<string>(
     category?.color ?? CATEGORY_PALETTE[0],
   );
@@ -48,9 +60,10 @@ export function EditCategoryModal({
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (visible && category) {
-      setColor(category.color);
-      setIcon(category.icon);
+    if (visible) {
+      setName(category?.name ?? "");
+      setColor(category?.color ?? CATEGORY_PALETTE[0]);
+      setIcon(category?.icon ?? null);
       setSubmitting(false);
     }
   }, [visible, category]);
@@ -59,19 +72,33 @@ export function EditCategoryModal({
     onClose();
   }, [onClose]);
 
-  const canSubmit = !submitting && category !== null;
+  const trimmedName = name.trim();
+  const canSubmit = !submitting && trimmedName.length > 0;
 
   const handleSubmit = useCallback(async (): Promise<void> => {
-    if (!canSubmit || !category) return;
+    if (!canSubmit) return;
     setSubmitting(true);
     try {
-      await updateCategory(category.id, { color, icon });
+      if (category) {
+        await updateCategory(category.id, { name: trimmedName, color, icon });
+      } else {
+        await createCategory({
+          name: trimmedName,
+          color,
+          icon,
+          sortOrder: nextSortOrder,
+        });
+      }
       onClose();
     } catch (err) {
       setSubmitting(false);
+      if (err instanceof CategoryLimitExceededError) {
+        Alert.alert("Category limit reached", err.message);
+        return;
+      }
       console.error("Failed to save category", err);
     }
-  }, [canSubmit, category, color, icon, onClose]);
+  }, [canSubmit, category, trimmedName, color, icon, nextSortOrder, onClose]);
 
   return (
     <Modal
@@ -94,15 +121,29 @@ export function EditCategoryModal({
           <View style={styles.header}>
             <View style={styles.headerTextWrap}>
               <Text style={styles.headerTitle} numberOfLines={1}>
-                {category?.name ?? "Edit Category"}
+                {isEdit ? category?.name : "New Category"}
               </Text>
               <Text style={styles.headerSubtitle}>
-                Recolor or pick an icon
+                {isEdit ? "Rename, recolor, or pick an icon" : "Add a category"}
               </Text>
             </View>
             <Pressable onPress={handleClose} style={styles.closeButton}>
               <Feather name="x" size={22} color={colors.onSurface} />
             </Pressable>
+          </View>
+
+          <Text style={styles.sectionLabel}>Name</Text>
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. Side Project"
+              placeholderTextColor={colors.onSurfaceVariant}
+              value={name}
+              onChangeText={setName}
+              autoCorrect={false}
+              maxLength={30}
+              returnKeyType="done"
+            />
           </View>
 
           <Text style={styles.sectionLabel}>Appearance</Text>
@@ -175,11 +216,23 @@ export function EditCategoryModal({
 
           <GradientButton
             shape="pill"
-            label={submitting ? "Saving..." : "Save Changes"}
+            label={
+              submitting
+                ? isEdit
+                  ? "Saving..."
+                  : "Creating..."
+                : isEdit
+                  ? "Save Changes"
+                  : "Create Category"
+            }
             onPress={handleSubmit}
             disabled={!canSubmit}
           >
-            <Feather name="check" size={18} color={colors.onPrimary} />
+            <Feather
+              name={isEdit ? "check" : "plus"}
+              size={18}
+              color={colors.onPrimary}
+            />
           </GradientButton>
         </View>
       </KeyboardAvoidingView>
@@ -239,6 +292,18 @@ function makeStyles(c: ThemeColors) {
       ...TYPOGRAPHY.labelUppercase,
       color: c.onSurfaceVariant,
       marginBottom: SPACING.md,
+    },
+    inputContainer: {
+      backgroundColor: c.surfaceContainerLow,
+      borderRadius: RADIUS.xl,
+      paddingHorizontal: SPACING.lg,
+      paddingVertical: SPACING.md,
+      marginBottom: SPACING["2xl"],
+    },
+    input: {
+      ...TYPOGRAPHY.body,
+      color: c.onSurface,
+      padding: 0,
     },
     previewRow: {
       flexDirection: "row",
