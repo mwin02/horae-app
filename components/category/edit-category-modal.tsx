@@ -3,6 +3,7 @@ import {
   CategoryIcon,
 } from "@/components/common/category-icon";
 import { GradientButton } from "@/components/common/gradient-button";
+import { ModalBackdrop } from "@/components/common/modal-backdrop";
 import {
   CATEGORY_PALETTE,
   RADIUS,
@@ -111,7 +112,7 @@ export function EditCategoryModal({
         style={styles.overlay}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <Pressable style={styles.backdrop} onPress={handleClose} />
+        <ModalBackdrop onPress={handleClose} />
 
         <View
           style={[styles.sheet, { paddingBottom: insets.bottom + SPACING.lg }]}
@@ -245,9 +246,6 @@ function makeStyles(c: ThemeColors) {
     overlay: {
       flex: 1,
       justifyContent: "flex-end",
-    },
-    backdrop: {
-      flex: 1,
     },
     sheet: {
       backgroundColor: c.surfaceContainerLowest,
