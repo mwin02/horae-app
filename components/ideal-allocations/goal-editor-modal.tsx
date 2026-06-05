@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CategoryIcon } from "@/components/common/category-icon";
 import { GradientButton } from "@/components/common/gradient-button";
+import { ModalBackdrop } from "@/components/common/modal-backdrop";
 import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
 import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import type {
@@ -255,7 +256,7 @@ export function GoalEditorModal({
       onRequestClose={handleClose}
     >
       <View style={styles.overlay}>
-        <Pressable style={styles.backdrop} onPress={handleClose} />
+        <ModalBackdrop onPress={handleClose} />
 
         <View style={styles.sheet}>
           <View style={styles.handleBar} />
@@ -560,9 +561,6 @@ function makeStyles(c: ThemeColors) {
   overlay: {
     flex: 1,
     justifyContent: "flex-end",
-  },
-  backdrop: {
-    flex: 1,
   },
   sheet: {
     backgroundColor: c.surfaceContainerLowest,

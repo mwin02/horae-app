@@ -3,6 +3,7 @@ import {
   CategoryIcon,
 } from "@/components/common/category-icon";
 import { GradientButton } from "@/components/common/gradient-button";
+import { ModalBackdrop } from "@/components/common/modal-backdrop";
 import {
   FONTS,
   RADIUS,
@@ -135,7 +136,7 @@ export function CreateActivityModal({
       onRequestClose={handleClose}
     >
       <View style={styles.overlay}>
-        <Pressable style={styles.backdrop} onPress={handleClose} />
+        <ModalBackdrop onPress={handleClose} />
 
         <View style={styles.sheet}>
           <View style={styles.handleBar} />
@@ -317,9 +318,6 @@ function makeStyles(c: ThemeColors) {
   overlay: {
     flex: 1,
     justifyContent: "flex-end",
-  },
-  backdrop: {
-    flex: 1,
   },
   sheet: {
     backgroundColor: c.surfaceContainerLowest,

@@ -1,4 +1,5 @@
 import { GradientButton } from "@/components/common/gradient-button";
+import { ModalBackdrop } from "@/components/common/modal-backdrop";
 import { TAG_COLOR_PALETTE } from "@/components/common/tag-chip";
 import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
 import { useTheme, useThemedStyles } from "@/hooks/useTheme";
@@ -78,7 +79,7 @@ export function CreateTagModal({
       onRequestClose={handleClose}
     >
       <View style={styles.overlay}>
-        <Pressable style={styles.backdrop} onPress={handleClose} />
+        <ModalBackdrop onPress={handleClose} />
 
         <View style={styles.sheet}>
           <View style={styles.handleBar} />
@@ -175,9 +176,6 @@ function makeStyles(c: ThemeColors) {
   overlay: {
     flex: 1,
     justifyContent: "flex-end",
-  },
-  backdrop: {
-    flex: 1,
   },
   sheet: {
     backgroundColor: c.surfaceContainerLowest,
