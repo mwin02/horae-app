@@ -62,6 +62,8 @@ export interface ActivityItem {
   categoryColor: string;
   name: string;
   isPreset: boolean;
+  /** True when the user has favorited this activity (pins it to the top of pickers). */
+  isFavorite: boolean;
   /** Resolved display icon (override or category fallback); null = no icon. */
   icon: string | null;
   /** Raw activity-level override (null = inherit from category). */
