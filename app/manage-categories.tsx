@@ -1,10 +1,10 @@
 import { Feather } from "@expo/vector-icons";
 import { Stack } from "expo-router";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
-  Pressable,
   StyleSheet,
   Text,
   View,
@@ -12,71 +12,79 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EditCategoryModal } from "@/components/category/edit-category-modal";
-import { CategoryIcon } from "@/components/common/category-icon";
-import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
+import { GradientButton } from "@/components/common/gradient-button";
+import { ManageCategoryRow } from "@/components/manage/manage-category-row";
+import { MAX_CATEGORIES } from "@/constants/presets";
+import { SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
 import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import type { CategoryWithActivities } from "@/db/models";
+import { archiveCategory } from "@/db/queries";
 import { useCategoriesWithActivities } from "@/hooks/useCategoriesWithActivities";
-
-interface ManageCategoryRowProps {
-  category: CategoryWithActivities;
-  onEdit: (category: CategoryWithActivities) => void;
-}
-
-function ManageCategoryRow({
-  category,
-  onEdit,
-}: ManageCategoryRowProps): React.ReactElement {
-  const styles = useThemedStyles(makeStyles);
-  const { colors } = useTheme();
-  const activityCount = category.activities.length;
-  return (
-    <Pressable style={styles.row} onPress={() => onEdit(category)}>
-      <View
-        style={[styles.iconBadge, { backgroundColor: category.color + "22" }]}
-      >
-        <CategoryIcon
-          icon={category.icon ?? "circle"}
-          size={20}
-          color={category.color}
-        />
-      </View>
-      <View style={styles.info}>
-        <Text style={styles.name} numberOfLines={1}>
-          {category.name}
-        </Text>
-        <Text style={styles.subtitle} numberOfLines={1}>
-          {activityCount} {activityCount === 1 ? "activity" : "activities"}
-        </Text>
-      </View>
-      <Pressable
-        onPress={() => onEdit(category)}
-        style={styles.editButton}
-        hitSlop={8}
-        accessibilityRole="button"
-        accessibilityLabel={`Edit ${category.name}`}
-      >
-        <Feather name="edit-2" size={16} color={colors.primary} />
-      </Pressable>
-    </Pressable>
-  );
-}
 
 export default function ManageCategoriesScreen(): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   const { categories, isLoading } = useCategoriesWithActivities();
   const [editing, setEditing] = useState<CategoryWithActivities | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  // Active categories drive the cap; `categories` from the hook is already
+  // filtered to active rows, so its length is the live count.
+  const atLimit = categories.length >= MAX_CATEGORIES;
+  const nextSortOrder = useMemo(
+    () => categories.reduce((max, c) => Math.max(max, c.sortOrder), -1) + 1,
+    [categories],
+  );
 
   const handleEdit = useCallback((category: CategoryWithActivities): void => {
     setEditing(category);
   }, []);
 
+  const handleDelete = useCallback((category: CategoryWithActivities): void => {
+    const activeCount = category.activities.length;
+    if (activeCount > 0) {
+      Alert.alert(
+        "Remove its activities first",
+        `"${category.name}" still has ${activeCount} ${
+          activeCount === 1 ? "activity" : "activities"
+        }. Archive them on the Manage Activities screen before removing the category.`,
+      );
+      return;
+    }
+    Alert.alert(
+      `Remove "${category.name}"?`,
+      "Past time entries are preserved. The category is hidden everywhere and won't count toward your limit.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await archiveCategory(category.id);
+            } catch (err) {
+              console.error("Failed to remove category", err);
+            }
+          },
+        },
+      ],
+    );
+  }, []);
+
+  const closeModal = useCallback((): void => {
+    setEditing(null);
+    setCreating(false);
+  }, []);
+
   const renderRow = useCallback(
     ({ item }: { item: CategoryWithActivities }): React.ReactElement => (
-      <ManageCategoryRow category={item} onEdit={handleEdit} />
+      <ManageCategoryRow
+        category={item}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
     ),
-    [handleEdit],
+    [handleEdit, handleDelete],
   );
 
   if (isLoading) {
@@ -96,6 +104,9 @@ export default function ManageCategoriesScreen(): React.ReactElement {
 
       <View style={styles.header}>
         <Text style={styles.title}>Manage Categories</Text>
+        <Text style={styles.headerSubtitle}>
+          {categories.length} of {MAX_CATEGORIES} categories
+        </Text>
       </View>
 
       <FlatList
@@ -105,6 +116,14 @@ export default function ManageCategoriesScreen(): React.ReactElement {
         style={styles.list}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        ListFooterComponent={
+          atLimit ? (
+            <Text style={styles.limitNote}>
+              You&apos;ve reached the {MAX_CATEGORIES}-category limit. Remove one
+              to add another.
+            </Text>
+          ) : null
+        }
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>No categories</Text>
@@ -112,10 +131,23 @@ export default function ManageCategoriesScreen(): React.ReactElement {
         }
       />
 
+      {!atLimit && (
+        <View style={styles.fabWrapper} pointerEvents="box-none">
+          <GradientButton
+            shape="circle"
+            size={60}
+            onPress={() => setCreating(true)}
+          >
+            <Feather name="plus" size={28} color={colors.onPrimary} />
+          </GradientButton>
+        </View>
+      )}
+
       <EditCategoryModal
-        visible={editing !== null}
-        onClose={() => setEditing(null)}
+        visible={editing !== null || creating}
+        onClose={closeModal}
         category={editing}
+        nextSortOrder={nextSortOrder}
       />
     </SafeAreaView>
   );
@@ -141,6 +173,11 @@ function makeStyles(c: ThemeColors) {
       ...TYPOGRAPHY.headingXl,
       color: c.onSurface,
     },
+    headerSubtitle: {
+      ...TYPOGRAPHY.bodySmall,
+      color: c.onSurfaceVariant,
+      marginTop: SPACING.xs,
+    },
     list: {
       flex: 1,
     },
@@ -148,42 +185,6 @@ function makeStyles(c: ThemeColors) {
       paddingHorizontal: SPACING.lg,
       paddingBottom: SPACING["4xl"],
       gap: SPACING.sm,
-    },
-    row: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: SPACING.md,
-      backgroundColor: c.surfaceContainerLowest,
-      borderRadius: RADIUS.lg,
-      paddingVertical: SPACING.md,
-      paddingHorizontal: SPACING.lg,
-    },
-    iconBadge: {
-      width: 36,
-      height: 36,
-      borderRadius: RADIUS.md,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    info: {
-      flex: 1,
-    },
-    name: {
-      ...TYPOGRAPHY.titleMd,
-      color: c.onSurface,
-    },
-    subtitle: {
-      ...TYPOGRAPHY.bodySmall,
-      color: c.onSurfaceVariant,
-      marginTop: 2,
-    },
-    editButton: {
-      width: 32,
-      height: 32,
-      alignItems: "center",
-      justifyContent: "center",
-      borderRadius: RADIUS.full,
-      backgroundColor: c.surfaceContainerLow,
     },
     emptyState: {
       alignItems: "center",
@@ -193,6 +194,18 @@ function makeStyles(c: ThemeColors) {
     emptyTitle: {
       ...TYPOGRAPHY.heading,
       color: c.onSurface,
+    },
+    limitNote: {
+      ...TYPOGRAPHY.bodySmall,
+      color: c.onSurfaceVariant,
+      textAlign: "center",
+      paddingHorizontal: SPACING.xl,
+      paddingTop: SPACING.lg,
+    },
+    fabWrapper: {
+      position: "absolute",
+      right: SPACING.xl,
+      bottom: SPACING.xl,
     },
   });
 }
