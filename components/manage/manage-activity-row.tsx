@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { Swipeable, RectButton } from "react-native-gesture-handler";
 import { CategoryIconSwatch } from "@/components/insights/category-icon-swatch";
+import { FavoriteStar } from "@/components/common/favorite-star";
 import type { ActivityItem } from "@/db/models";
 import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
 import { useTheme, useThemedStyles } from "@/hooks/useTheme";
@@ -63,6 +64,11 @@ export function ManageActivityRow({
             {activity.categoryName}
           </Text>
         </View>
+        <FavoriteStar
+          activityId={activity.id}
+          isFavorite={activity.isFavorite}
+          size={18}
+        />
         <Pressable
           onPress={() => onRename(activity)}
           style={styles.editButton}
