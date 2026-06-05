@@ -38,8 +38,8 @@ export async function createActivity(params: {
   const id = generateId();
   const now = nowUTC();
   await db.execute(
-    `INSERT INTO activities (id, user_id, category_id, name, icon, is_preset, sort_order, is_archived, created_at, updated_at)
-     VALUES (?, NULL, ?, ?, ?, 0, ?, 0, ?, ?)`,
+    `INSERT INTO activities (id, user_id, category_id, name, icon, is_preset, is_favorite, sort_order, is_archived, created_at, updated_at)
+     VALUES (?, NULL, ?, ?, ?, 0, 0, ?, 0, ?, ?)`,
     [
       id,
       params.categoryId,
@@ -51,6 +51,17 @@ export async function createActivity(params: {
     ]
   );
   return id;
+}
+
+/** Toggle (or set) an activity's favorite flag. Favorites pin to the top of pickers. */
+export async function setActivityFavorite(
+  id: string,
+  isFavorite: boolean
+): Promise<void> {
+  await db.execute(
+    'UPDATE activities SET is_favorite = ?, updated_at = ? WHERE id = ?',
+    [isFavorite ? 1 : 0, nowUTC(), id]
+  );
 }
 
 /**

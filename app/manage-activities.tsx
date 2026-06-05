@@ -62,7 +62,9 @@ export default function ManageActivitiesScreen(): React.ReactElement {
     setSelectedCategoryId((prev) => (prev === categoryId ? null : categoryId));
   }, []);
 
-  // All activities, filtered to selected category (or all categories)
+  // All activities, filtered to selected category (or all categories).
+  // Favorites float to the top across categories (partition keeps the hook's
+  // within-group ordering stable).
   const visibleActivities = useMemo((): ActivityItem[] => {
     const result: ActivityItem[] = [];
     for (const category of categories) {
@@ -71,7 +73,10 @@ export default function ManageActivitiesScreen(): React.ReactElement {
         result.push(activity);
       }
     }
-    return result;
+    return [
+      ...result.filter((a) => a.isFavorite),
+      ...result.filter((a) => !a.isFavorite),
+    ];
   }, [categories, selectedCategoryId]);
 
   // Build rows of 2 for the horizontal scrolling category grid

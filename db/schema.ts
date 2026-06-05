@@ -38,6 +38,7 @@ const activities = new Table(
     // `COALESCE(a.icon, c.icon)` at every display site.
     icon: column.text,
     is_preset: column.integer,    // 0 or 1
+    is_favorite: column.integer,  // 0 or 1 (NULL treated as 0). Pins to top of pickers.
     sort_order: column.integer,
     is_archived: column.integer,  // 0 or 1
     created_at: column.text,

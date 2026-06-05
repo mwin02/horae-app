@@ -20,6 +20,7 @@ const CATEGORIES_BY_USAGE_QUERY = `
     a.name        AS activity_name,
     a.is_preset   AS activity_is_preset,
     a.icon        AS activity_icon,
+    COALESCE(a.is_favorite, 0) AS activity_is_favorite,
     COALESCE(act_counts.entry_count, 0) AS activity_entry_count
   FROM categories c
   LEFT JOIN activities a
@@ -41,7 +42,7 @@ const CATEGORIES_BY_USAGE_QUERY = `
   ) cat_counts ON cat_counts.category_id = c.id
   WHERE c.is_archived = 0
     AND c.deleted_at IS NULL
-  ORDER BY category_entry_count DESC, c.name, activity_entry_count DESC, a.name
+  ORDER BY category_entry_count DESC, c.name, activity_is_favorite DESC, activity_entry_count DESC, a.name
 `;
 
 interface FlatRow {
@@ -56,6 +57,7 @@ interface FlatRow {
   activity_name: string | null;
   activity_is_preset: number | null;
   activity_icon: string | null;
+  activity_is_favorite: number | null;
   activity_entry_count: number;
 }
 
@@ -94,6 +96,7 @@ export function useCategoriesByUsage(): UseCategoriesByUsageResult {
           categoryColor: row.category_color,
           name: row.activity_name,
           isPreset: row.activity_is_preset === 1,
+          isFavorite: row.activity_is_favorite === 1,
           icon: row.activity_icon ?? row.category_icon,
           iconOverride: row.activity_icon,
         });

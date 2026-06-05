@@ -13,6 +13,7 @@ export interface QuickStartActivity {
   categoryColor: string;
   icon: string | null;
   entryCount: number;
+  isFavorite: boolean;
 }
 
 const QUICK_START_QUERY = `
@@ -23,6 +24,7 @@ const QUICK_START_QUERY = `
     c.name          AS category_name,
     c.color         AS category_color,
     COALESCE(a.icon, c.icon) AS icon,
+    COALESCE(a.is_favorite, 0) AS is_favorite,
     COALESCE(counts.entry_count, 0) AS entry_count
   FROM activities a
   JOIN categories c ON c.id = a.category_id
@@ -36,7 +38,7 @@ const QUICK_START_QUERY = `
     AND a.deleted_at IS NULL
     AND c.is_archived = 0
     AND c.deleted_at IS NULL
-  ORDER BY entry_count DESC, a.name
+  ORDER BY is_favorite DESC, entry_count DESC, a.name
 `;
 
 interface FlatRow {
@@ -46,6 +48,7 @@ interface FlatRow {
   category_name: string;
   category_color: string;
   icon: string | null;
+  is_favorite: number;
   entry_count: number;
 }
 
@@ -72,6 +75,7 @@ export function useQuickStartActivities(): UseQuickStartActivitiesResult {
         categoryColor: row.category_color,
         icon: row.icon,
         entryCount: row.entry_count,
+        isFavorite: row.is_favorite === 1,
       })),
     [data],
   );

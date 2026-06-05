@@ -1,12 +1,17 @@
 import { CategoryIcon } from "@/components/common/category-icon";
 import { CategoryIconSwatch } from "@/components/insights/category-icon-swatch";
+import { FavoriteStar } from "@/components/common/favorite-star";
 import { GradientButton } from "@/components/common/gradient-button";
 import { TagChip } from "@/components/common/tag-chip";
 import { TagPicker } from "@/components/common/tag-picker";
 import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
 import { useTheme, useThemedStyles } from "@/hooks/useTheme";
-import type { ActivityItem, CategoryWithActivities } from "@/db/models";
+import type { CategoryWithActivities } from "@/db/models";
 import { useTags } from "@/hooks/useTags";
+import {
+  useQuickStartActivities,
+  type QuickStartActivity,
+} from "@/hooks/useQuickStartActivities";
 import { Feather } from "@expo/vector-icons";
 import React, { useCallback, useMemo, useState } from "react";
 import {
@@ -47,6 +52,7 @@ export function NewSessionModal({
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
   const { tags: allTags } = useTags();
+  const { activities: allActivities } = useQuickStartActivities();
 
   const selectedTags = useMemo(
     () => allTags.filter((t) => selectedTagIds.includes(t.id)),
@@ -77,25 +83,21 @@ export function NewSessionModal({
     setSelectedActivityId(null);
   }, []);
 
-  // Filter activities based on selected category and search query
-  const filteredActivities = useMemo((): ActivityItem[] => {
+  // Flat activity list ordered by favorites first, then all-time usage
+  // (from useQuickStartActivities), filtered by the selected category + search.
+  const filteredActivities = useMemo((): QuickStartActivity[] => {
     const query = searchQuery.toLowerCase().trim();
-    const allActivities: ActivityItem[] = [];
-
-    for (const category of categories) {
-      if (selectedCategoryId && category.id !== selectedCategoryId) continue;
-
-      for (const activity of category.activities) {
-        if (query && !activity.name.toLowerCase().includes(query)) continue;
-        allActivities.push(activity);
+    return allActivities.filter((activity) => {
+      if (selectedCategoryId && activity.categoryId !== selectedCategoryId) {
+        return false;
       }
-    }
-
-    return allActivities;
-  }, [categories, selectedCategoryId, searchQuery]);
+      if (query && !activity.name.toLowerCase().includes(query)) return false;
+      return true;
+    });
+  }, [allActivities, selectedCategoryId, searchQuery]);
 
   const renderActivityItem = useCallback(
-    ({ item }: { item: ActivityItem }): React.ReactElement => {
+    ({ item }: { item: QuickStartActivity }): React.ReactElement => {
       const isSelected = item.id === selectedActivityId;
       return (
         <Pressable
@@ -117,13 +119,18 @@ export function NewSessionModal({
           >
             {item.categoryName}
           </Text>
+          <FavoriteStar
+            activityId={item.id}
+            isFavorite={item.isFavorite}
+            size={18}
+          />
           {isSelected && (
             <Feather name="check-circle" size={18} color={colors.primary} />
           )}
         </Pressable>
       );
     },
-    [selectedActivityId],
+    [selectedActivityId, styles, colors],
   );
 
   return (

@@ -17,7 +17,8 @@ const CATEGORIES_WITH_ACTIVITIES_QUERY = `
     a.id          AS activity_id,
     a.name        AS activity_name,
     a.is_preset   AS activity_is_preset,
-    a.icon        AS activity_icon
+    a.icon        AS activity_icon,
+    COALESCE(a.is_favorite, 0) AS activity_is_favorite
   FROM categories c
   LEFT JOIN activities a
     ON a.category_id = c.id
@@ -25,7 +26,7 @@ const CATEGORIES_WITH_ACTIVITIES_QUERY = `
     AND a.deleted_at IS NULL
   WHERE c.is_archived = 0
     AND c.deleted_at IS NULL
-  ORDER BY c.sort_order, a.sort_order, a.name
+  ORDER BY c.sort_order, a.is_favorite DESC, a.sort_order, a.name
 `;
 
 interface FlatRow {
@@ -39,6 +40,7 @@ interface FlatRow {
   activity_name: string | null;
   activity_is_preset: number | null;
   activity_icon: string | null;
+  activity_is_favorite: number | null;
 }
 
 export interface UseCategoriesWithActivitiesResult {
@@ -82,6 +84,7 @@ export function useCategoriesWithActivities(): UseCategoriesWithActivitiesResult
           categoryColor: row.category_color,
           name: row.activity_name,
           isPreset: row.activity_is_preset === 1,
+          isFavorite: row.activity_is_favorite === 1,
           icon: row.activity_icon ?? row.category_icon,
           iconOverride: row.activity_icon,
         });

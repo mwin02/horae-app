@@ -1,5 +1,6 @@
 import { CategoryChip } from "@/components/common/category-chip";
 import { CategoryIconSwatch } from "@/components/insights/category-icon-swatch";
+import { FavoriteStar } from "@/components/common/favorite-star";
 import {
   RADIUS,
   SPACING,
@@ -8,6 +9,7 @@ import {
 } from "@/constants/theme";
 import { createRetroactiveEntry } from "@/db/queries";
 import { useCategoriesByUsage } from "@/hooks/useCategoriesByUsage";
+import { useQuickStartActivities } from "@/hooks/useQuickStartActivities";
 import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import {
   formatDuration,
@@ -46,6 +48,7 @@ export function GapFillModal({
   const { colors, isDark } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const { categories } = useCategoriesByUsage();
+  const { activities: allActivities } = useQuickStartActivities();
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
     null,
   );
@@ -66,13 +69,12 @@ export function GapFillModal({
     }
   }, [gap?.startedAt.getTime(), gap?.endedAt.getTime()]);
 
+  // Flat activity list ordered by favorites first, then all-time usage,
+  // filtered by the selected category.
   const filteredActivities = useMemo(() => {
-    if (!selectedCategoryId) {
-      return categories.flatMap((c) => c.activities);
-    }
-    const category = categories.find((c) => c.id === selectedCategoryId);
-    return category?.activities ?? [];
-  }, [categories, selectedCategoryId]);
+    if (!selectedCategoryId) return allActivities;
+    return allActivities.filter((a) => a.categoryId === selectedCategoryId);
+  }, [allActivities, selectedCategoryId]);
 
   const handleStartChange = useCallback(
     (_event: unknown, date?: Date): void => {
@@ -351,6 +353,11 @@ export function GapFillModal({
                   >
                     {item.categoryName}
                   </Text>
+                  <FavoriteStar
+                    activityId={item.id}
+                    isFavorite={item.isFavorite}
+                    size={18}
+                  />
                 </Pressable>
               )}
               ListEmptyComponent={
