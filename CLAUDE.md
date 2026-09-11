@@ -96,7 +96,7 @@ Colors come from `useTheme()` / `useThemedStyles()` so styles recompute on Light
 All user-facing text goes through i18next — `t("key")` from `useTranslation()` in components, `i18n.t` from `@/lib/i18n` in non-React code. Add keys to [`locales/en.ts`](./locales/en.ts); other locales are typed against it, so `tsc` fails on missing keys, and `npm run i18n:check` (CI) fails on hard-coded strings. Full guide: [`docs/LOCALIZATION.md`](./docs/LOCALIZATION.md).
 
 - **Preset names stay English in the DB** — translate at display time with `localizeCategoryName` / `localizeActivityName` from `@/lib/i18n/preset-names` (needs the row id). Edit forms must only write `name` when the user changed the displayed text.
-- **Display vs machine formatting:** display dates use `getIntlLocale()`; the pinned `en-CA` / `en-US` formatting in `lib/timezone.ts` and hooks is day-boundary logic — never localize it.
+- **Display vs machine formatting:** display dates use `getIntlLocale()`; clock times are never localized — use `formatClockTime` / `formatTimeInTimezone` / `formatHourLabel` and `locale={CLOCK_LOCALE}` on pickers (one English 12-hour format app-wide); the pinned `en-CA` / `en-US` formatting in `lib/timezone.ts` and hooks is day-boundary logic — never localize it.
 - Memoized display strings must depend on `t` or `i18n.language`.
 
 ### Local JSON backup & restore

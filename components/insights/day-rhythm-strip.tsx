@@ -5,17 +5,14 @@ import { useDayRhythm } from '@/hooks/useDayRhythm';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { formatHourLabel } from '@/lib/timezone';
 
 interface DayRhythmStripProps {
   date: string; // YYYY-MM-DD
 }
 
-const HOUR_LABELS = [
-  { hour: 0, labelKey: 'dayRhythm.hour0' },
-  { hour: 6, labelKey: 'dayRhythm.hour6' },
-  { hour: 12, labelKey: 'dayRhythm.hour12' },
-  { hour: 18, labelKey: 'dayRhythm.hour18' },
-] as const;
+/** Axis ticks: midnight, 6 AM, noon, 6 PM. */
+const AXIS_HOURS = [0, 6, 12, 18] as const;
 
 export function DayRhythmStrip({
   date,
@@ -53,7 +50,7 @@ export function DayRhythmStrip({
       </View>
 
       <View style={styles.axisRow}>
-        {HOUR_LABELS.map(({ hour, labelKey }) => (
+        {AXIS_HOURS.map((hour) => (
           <Text
             key={hour}
             style={[
@@ -61,7 +58,7 @@ export function DayRhythmStrip({
               { left: `${(hour / 24) * 100}%` },
             ]}
           >
-            {t(labelKey)}
+            {formatHourLabel(hour)}
           </Text>
         ))}
       </View>

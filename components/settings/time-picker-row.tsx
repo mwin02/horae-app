@@ -3,10 +3,9 @@ import DateTimePicker, {
   type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import React, { useCallback, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { getIntlLocale } from "@/lib/i18n";
+import { CLOCK_LOCALE, formatClockTime } from "@/lib/timezone";
 
 import {
   RADIUS,
@@ -39,10 +38,7 @@ function formatDisplay(value: string): string {
   const { hours, minutes } = parseHHMM(value);
   const date = new Date();
   date.setHours(hours, minutes, 0, 0);
-  return date.toLocaleTimeString(getIntlLocale(), {
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  return formatClockTime(date);
 }
 
 export function TimePickerRow({
@@ -52,7 +48,6 @@ export function TimePickerRow({
   disabled,
 }: TimePickerRowProps): React.ReactElement {
   const { colors, isDark } = useTheme();
-  const { i18n } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const [open, setOpen] = useState(false);
 
@@ -110,7 +105,7 @@ export function TimePickerRow({
             display={Platform.OS === "ios" ? "spinner" : "default"}
             onChange={handleChange}
             themeVariant={isDark ? "dark" : "light"}
-            locale={i18n.language}
+            locale={CLOCK_LOCALE}
           />
         </View>
       ) : null}

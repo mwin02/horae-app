@@ -273,8 +273,11 @@ func timerText(startedAt: Date, size: CGFloat, weight: Font.Weight) -> some View
 }
 
 private func formattedClock(_ date: Date) -> String {
+    // Same clock format as the app ("2:29 PM") in every UI language — see
+    // CLOCK_LOCALE in lib/timezone.ts.
     let formatter = DateFormatter()
-    formatter.dateFormat = "HH:mm"
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.dateFormat = "h:mm a"
     return formatter.string(from: date)
 }
 

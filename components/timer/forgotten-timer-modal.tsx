@@ -8,6 +8,7 @@ import {
 import type { RunningTimer } from "@/db/models";
 import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import {
+  CLOCK_LOCALE,
   formatDateInTimezone,
   formatDuration,
   formatTimeInTimezone,
@@ -55,7 +56,7 @@ export function ForgottenTimerModal({
 }: ForgottenTimerModalProps): React.ReactElement | null {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const [selectedTime, setSelectedTime] = useState<Date>(() =>
     entry
@@ -180,7 +181,7 @@ export function ForgottenTimerModal({
               minimumDate={entry.startedAt}
               maximumDate={new Date()}
               themeVariant={isDark ? "dark" : "light"}
-              locale={i18n.language}
+              locale={CLOCK_LOCALE}
             />
           </View>
 

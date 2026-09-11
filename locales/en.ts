@@ -510,11 +510,6 @@ const en = {
   dayRhythm: {
     title: "DAY RHYTHM",
     subtitle: "When each category happened across the day",
-    /** Compact axis labels for midnight / 6am / noon / 6pm. */
-    hour0: "12a",
-    hour6: "6a",
-    hour12: "12p",
-    hour18: "6p",
   },
   fourWeekTrend: {
     title: "WEEKLY TREND",

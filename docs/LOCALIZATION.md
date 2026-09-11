@@ -50,8 +50,15 @@ source language; every other locale is a typed TypeScript object.
 
 ## Dates, times, durations
 
-- Display formatting uses `getIntlLocale()` (the device locale for the active
+- Display **dates** use `getIntlLocale()` (the device locale for the active
   language, e.g. `en-GB`, `es-MX`, `zh-Hans-CN`; else a default region).
+- **Clock times are not localized.** Every time of day (entry/gap labels, the
+  timeline axis and now-pill, quiet hours, Day rhythm, the Live Activity
+  "since" time) uses one English 12-hour format ("2:29 PM") via
+  `formatClockTime()` / `formatTimeInTimezone()` / `formatHourLabel()` in
+  `lib/timezone.ts`, and every `DateTimePicker` gets `locale={CLOCK_LOCALE}`.
+  Never pass `getIntlLocale()` to a time format. Datetime-mode pickers
+  therefore show English month names too.
 - **Machine formatting stays pinned.** `toLocaleDateString('en-CA')`
   (YYYY-MM-DD keys) and the `en-US` `formatToParts` parsing in
   `lib/timezone.ts`, `useTimelineData`, `useDayRhythm`,

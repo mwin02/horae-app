@@ -12,6 +12,7 @@ import { useEntryTags } from "@/hooks/useEntryTags";
 import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import type { TimelineEntryData } from "@/hooks/useTimelineData";
 import {
+  CLOCK_LOCALE,
   formatDuration,
   formatTimeInTimezone,
   isNearMidnight,
@@ -47,7 +48,7 @@ export function EntryDetailModal({
 }: EntryDetailModalProps): React.ReactElement | null {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const [editedStart, setEditedStart] = useState<Date>(new Date());
   const [editedEnd, setEditedEnd] = useState<Date | null>(null);
@@ -335,7 +336,7 @@ export function EntryDetailModal({
                 minimumDate={pickerMin}
                 maximumDate={pickerMax}
                 themeVariant={isDark ? "dark" : "light"}
-                locale={i18n.language}
+                locale={CLOCK_LOCALE}
               />
             </View>
           )}

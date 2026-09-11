@@ -12,6 +12,7 @@ import { useCategoriesByUsage } from "@/hooks/useCategoriesByUsage";
 import { useQuickStartActivities } from "@/hooks/useQuickStartActivities";
 import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import {
+  CLOCK_LOCALE,
   formatDuration,
   formatTimeInTimezone,
   getCurrentTimezone,
@@ -48,7 +49,7 @@ export function GapFillModal({
 }: GapFillModalProps): React.ReactElement | null {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const { categories } = useCategoriesByUsage();
   const { activities: allActivities } = useQuickStartActivities();
@@ -270,7 +271,7 @@ export function GapFillModal({
                 minimumDate={pickerMin}
                 maximumDate={pickerMax}
                 themeVariant={isDark ? "dark" : "light"}
-                locale={i18n.language}
+                locale={CLOCK_LOCALE}
               />
             </View>
           )}
