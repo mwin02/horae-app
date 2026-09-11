@@ -9,6 +9,8 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { deltaPalette, deltaPolarity } from "./delta-polarity";
 import { PaginatedRows } from "./paginated-rows";
+import { useTranslation } from "react-i18next";
+import i18n from "@/lib/i18n";
 
 interface WeekOverWeekDeltaProps {
   weekDate: string;
@@ -30,12 +32,14 @@ const HOUR_ONLY_THRESHOLD_SECONDS = 10 * 3600;
 /** Compact duration: "47h" past 10h, otherwise "Hh Mm" / "Mm". Rounds to nearest. */
 function formatCompactDuration(totalSeconds: number): string {
   if (totalSeconds >= HOUR_ONLY_THRESHOLD_SECONDS) {
-    return `${Math.round(totalSeconds / 3600)}h`;
+    return i18n.t("duration.hours", { hours: Math.round(totalSeconds / 3600) });
   }
   const minutesTotal = Math.round(totalSeconds / 60);
   const hours = Math.floor(minutesTotal / 60);
   const minutes = minutesTotal % 60;
-  return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+  return hours > 0
+    ? i18n.t("duration.hoursMinutes", { hours, minutes })
+    : i18n.t("duration.minutes", { minutes });
 }
 
 export function WeekOverWeekDelta({
@@ -43,6 +47,7 @@ export function WeekOverWeekDelta({
 }: WeekOverWeekDeltaProps): React.ReactElement | null {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const { rows, isLoading } = useWeekOverWeekDelta(weekDate);
 
   if (isLoading) return null;
@@ -54,16 +59,19 @@ export function WeekOverWeekDelta({
   return (
     <View style={styles.container}>
       <View style={styles.eyebrow}>
-        <Text style={styles.eyebrowTitle}>WEEK OVER WEEK</Text>
+        <Text style={styles.eyebrowTitle}>{t("weekOverWeek.title")}</Text>
         {hasData ? (
           <View style={styles.legend}>
-            <LegendSwatch color={colors.outlineVariant} label="previous week" />
+            <LegendSwatch
+              color={colors.outlineVariant}
+              label={t("weekOverWeek.previousWeek")}
+            />
           </View>
         ) : null}
       </View>
 
       {!hasData ? (
-        <Text style={styles.emptyText}>No tracked time this week or last</Text>
+        <Text style={styles.emptyText}>{t("weekOverWeek.empty")}</Text>
       ) : (
         <PaginatedRows
           items={rows}
@@ -125,14 +133,14 @@ function resolveChip(row: WeekOverWeekRow, c: ThemeColors): ChipStyle {
   if (newWeek) {
     return {
       ...deltaPalette(deltaPolarity(row.goalDirection, true, aroundCtx), c),
-      text: "new",
+      text: i18n.t("insightsCommon.new"),
     };
   }
 
   if (dropped) {
     return {
       ...deltaPalette(deltaPolarity(row.goalDirection, false, aroundCtx), c),
-      text: "0m",
+      text: i18n.t("duration.minutes", { minutes: 0 }),
     };
   }
 
@@ -181,7 +189,7 @@ function DeltaRow({ row, showDivider }: DeltaRowProps): React.ReactElement {
           valueText={
             row.thisWeekSeconds >= NEAR_ZERO_SECONDS
               ? formatCompactDuration(row.thisWeekSeconds)
-              : "0m"
+              : formatCompactDuration(0)
           }
           valueStrong
         />
@@ -193,7 +201,7 @@ function DeltaRow({ row, showDivider }: DeltaRowProps): React.ReactElement {
           valueText={
             row.lastWeekSeconds >= NEAR_ZERO_SECONDS
               ? formatCompactDuration(row.lastWeekSeconds)
-              : "0m"
+              : formatCompactDuration(0)
           }
           valueStrong={false}
         />

@@ -5,6 +5,7 @@ import { Swipeable, RectButton } from "react-native-gesture-handler";
 import type { TagItem } from "@/db/models";
 import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
 import { useTheme, useThemedStyles } from "@/hooks/useTheme";
+import { useTranslation } from "react-i18next";
 
 interface ManageTagRowProps {
   tag: TagItem;
@@ -18,6 +19,7 @@ export function ManageTagRow({
   onArchive,
 }: ManageTagRowProps): React.ReactElement {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const swipeableRef = useRef<Swipeable>(null);
 
@@ -30,10 +32,10 @@ export function ManageTagRow({
     (): React.ReactElement => (
       <RectButton style={styles.archiveAction} onPress={handleArchivePress}>
         <Feather name="archive" size={20} color={colors.onPrimary} />
-        <Text style={styles.archiveLabel}>Archive</Text>
+        <Text style={styles.archiveLabel}>{t("common.archive")}</Text>
       </RectButton>
     ),
-    [handleArchivePress],
+    [handleArchivePress, t],
   );
 
   return (
@@ -56,7 +58,7 @@ export function ManageTagRow({
           style={styles.editButton}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel={`Edit ${tag.name}`}
+          accessibilityLabel={t("common.editItem", { name: tag.name })}
         >
           <Feather name="edit-2" size={16} color={colors.primary} />
         </Pressable>

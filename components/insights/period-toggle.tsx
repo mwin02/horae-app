@@ -4,31 +4,29 @@ import { LinearGradient } from 'expo-linear-gradient';
 import type { InsightsPeriod } from '@/hooks/useInsightsData';
 import { FONTS, RADIUS, SPACING, type ThemeColors } from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/hooks/useTheme';
+import { useTranslation } from 'react-i18next';
 
 interface PeriodToggleProps {
   period: InsightsPeriod;
   onPeriodChange: (period: InsightsPeriod) => void;
 }
 
-const PERIODS: { key: InsightsPeriod; label: string }[] = [
-  { key: 'daily', label: 'Daily' },
-  { key: 'weekly', label: 'Weekly' },
-  { key: 'monthly', label: 'Monthly' },
-];
+const PERIODS: InsightsPeriod[] = ['daily', 'weekly', 'monthly'];
 
 export function PeriodToggle({
   period,
   onPeriodChange,
 }: PeriodToggleProps): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
+  const { t } = useTranslation();
   return (
     <View style={styles.container}>
-      {PERIODS.map(({ key, label }) => {
+      {PERIODS.map((key) => {
         const isActive = period === key;
         return (
           <PeriodPill
             key={key}
-            label={label}
+            label={t(`common.period.${key}`)}
             isActive={isActive}
             onPress={() => onPeriodChange(key)}
           />

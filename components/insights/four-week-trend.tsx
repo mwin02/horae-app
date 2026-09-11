@@ -11,6 +11,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 import { deltaPalette, deltaPolarity } from "./delta-polarity";
 import { PaginatedRows } from "./paginated-rows";
+import { useTranslation } from "react-i18next";
 
 interface FourWeekTrendProps {
   monthDate: string;
@@ -33,6 +34,7 @@ export function FourWeekTrend({
   onWeekPress,
 }: FourWeekTrendProps): React.ReactElement | null {
   const styles = useThemedStyles(makeStyles);
+  const { t } = useTranslation();
   const { buckets, categories, isLoading } = useFourWeekTrend(monthDate);
 
   if (isLoading) return null;
@@ -44,16 +46,16 @@ export function FourWeekTrend({
   return (
     <View style={styles.container}>
       <View style={styles.eyebrow}>
-        <Text style={styles.eyebrowTitle}>WEEKLY TREND</Text>
+        <Text style={styles.eyebrowTitle}>{t("fourWeekTrend.title")}</Text>
         {hasData ? (
           <Text style={styles.eyebrowMeta}>
-            {weekCount} week{weekCount === 1 ? "" : "s"}
+            {t("fourWeekTrend.weekCount", { count: weekCount })}
           </Text>
         ) : null}
       </View>
 
       {!hasData ? (
-        <Text style={styles.emptyText}>No tracked time this month</Text>
+        <Text style={styles.emptyText}>{t("insightsCommon.noTrackedMonth")}</Text>
       ) : (
         <>
           <View style={styles.weekLabelsRow}>
@@ -65,7 +67,9 @@ export function FourWeekTrend({
                     onPress={() => onWeekPress(b.startDate)}
                     hitSlop={{ top: 8, bottom: 8, left: 10, right: 10 }}
                     accessibilityRole="button"
-                    accessibilityLabel={`Open ${b.label} weekly insights`}
+                    accessibilityLabel={t("fourWeekTrend.openWeek", {
+                      week: t("fourWeekTrend.weekBucket", { index: b.index }),
+                    })}
                   >
                     {({ pressed }) => (
                       <Text
@@ -75,13 +79,13 @@ export function FourWeekTrend({
                           pressed && styles.weekLabelPressed,
                         ]}
                       >
-                        {b.label}
+                        {t("fourWeekTrend.weekBucket", { index: b.index })}
                       </Text>
                     )}
                   </Pressable>
                 ) : (
                   <Text key={b.label} style={styles.weekLabel}>
-                    {b.label}
+                    {t("fourWeekTrend.weekBucket", { index: b.index })}
                   </Text>
                 ),
               )}
@@ -123,6 +127,7 @@ function TrendRow({
 }: TrendRowProps): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const { values, category, goalDirection, weeklyTargetSeconds } = trend;
 
   // Compare first non-zero *complete* week vs most-recent non-zero complete
@@ -197,7 +202,7 @@ function TrendRow({
           {haveDelta
             ? `${arrow} ${Math.min(Math.abs(pctChange), MAX_PCT_DISPLAY)}%`
             : isNew
-              ? "new"
+              ? t("insightsCommon.new")
               : "—"}
         </Text>
       </View>

@@ -8,20 +8,22 @@ import {
 import { getCurrentTimezone, getTodayDate } from "@/lib/timezone";
 import { useUIStore } from "@/store/uiStore";
 import { useRouter } from "expo-router";
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
+import { weekdayNames } from "@/lib/i18n/format";
 
 interface DayOfWeekBarsProps {
   weekDate: string; // YYYY-MM-DD — any day in the target week
 }
 
-const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const TIMELINE_HEIGHT = 140;
 
 export function DayOfWeekBars({
   weekDate,
 }: DayOfWeekBarsProps): React.ReactElement | null {
   const styles = useThemedStyles(makeStyles);
+  const { t } = useTranslation();
   const { days, legend, isLoading } = useDayOfWeekBreakdown(weekDate);
   const router = useRouter();
   const setSelectedDate = useUIStore((s) => s.setSelectedDate);
@@ -41,7 +43,7 @@ export function DayOfWeekBars({
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.titleBlock}>
-          <Text style={styles.sectionLabel}>DAY-OF-WEEK PATTERN</Text>
+          <Text style={styles.sectionLabel}>{t("dayOfWeek.title")}</Text>
         </View>
       </View>
 
@@ -94,6 +96,11 @@ function TimelineColumn({
   dimmed?: boolean;
 }): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
+  const { i18n } = useTranslation();
+  const dayLabels = useMemo(
+    () => weekdayNames("short"),
+    [i18n.language],
+  );
   return (
     <View style={[styles.barColumn, dimmed && styles.barColumnDimmed]}>
       <View style={styles.timelineTrack}>
@@ -111,7 +118,7 @@ function TimelineColumn({
           );
         })}
       </View>
-      <Text style={styles.dayLabel}>{DAY_LABELS[day.weekdayMonZero]}</Text>
+      <Text style={styles.dayLabel}>{dayLabels[day.weekdayMonZero]}</Text>
     </View>
   );
 }

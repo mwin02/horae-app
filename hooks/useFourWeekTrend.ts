@@ -9,8 +9,10 @@ import {
 import { getCurrentTimezone, getEndOfDay, getStartOfDay } from "@/lib/timezone";
 import { useQuery } from "@powersync/react";
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { getMonthRange, getWeekRange } from "./useInsightsData";
 import { useUserPreferences } from "./useUserPreferences";
+import { localizeCategoryName } from "@/lib/i18n/preset-names";
 
 export interface TrendCategory {
   id: string;
@@ -20,8 +22,10 @@ export interface TrendCategory {
 }
 
 export interface TrendBucket {
-  /** 1-indexed label e.g. "W1" */
+  /** Stable internal key e.g. "W1" — display via `fourWeekTrend.weekBucket`. */
   label: string;
+  /** 1-based week index within the month. */
+  index: number;
   /** YYYY-MM-DD of the bucket's local start date (full ISO week, may precede month start) */
   startDate: string;
   /** YYYY-MM-DD of the bucket's local end date (full ISO week, may extend past month end) */
@@ -102,7 +106,9 @@ export function useFourWeekTrend(
       if (bucketStartMs > nowMs) break;
       const bucketEndMs = getEndOfDay(bucketEnd, timezone).getTime();
       buckets.push({
+        // i18n-ignore-next-line: internal key; UI renders fourWeekTrend.weekBucket
         label: `W${idx}`,
+        index: idx,
         startDate: bucketStart,
         endDate: bucketEnd,
         complete: bucketEndMs <= nowMs,
@@ -151,6 +157,7 @@ export function useFourWeekTrend(
     [allocationRows],
   );
 
+  const { i18n } = useTranslation();
   const result = useMemo(() => {
     // Precompute bucket boundaries in ms for quick day→bucket lookup.
     // localDateStr comparison (YYYY-MM-DD) works correctly because buckets
@@ -186,7 +193,7 @@ export function useFourWeekTrend(
         entry = {
           meta: {
             id: catKey,
-            name: row.category_name,
+            name: localizeCategoryName(row.category_id, row.category_name),
             color: row.category_color,
             icon: row.category_icon,
           },
@@ -264,7 +271,7 @@ export function useFourWeekTrend(
       maxBucketSeconds,
       buckets: trimmedBuckets,
     };
-  }, [rows, buckets, timezone, rangeStart, rangeEnd, limit, goalDirectionByCategory, weeklyTargetByCategory]);
+  }, [rows, buckets, timezone, rangeStart, rangeEnd, limit, goalDirectionByCategory, weeklyTargetByCategory, i18n.language]);
 
   return {
     buckets: result.buckets,

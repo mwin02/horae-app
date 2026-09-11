@@ -17,6 +17,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 interface CreateTagModalProps {
   visible: boolean;
@@ -32,6 +33,7 @@ export function CreateTagModal({
 }: CreateTagModalProps): React.ReactElement {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const isEdit = !!initialTag;
   const [name, setName] = useState(initialTag?.name ?? "");
@@ -96,10 +98,10 @@ export function CreateTagModal({
           <View style={styles.header}>
             <View>
               <Text style={styles.headerTitle}>
-                {isEdit ? "Edit Tag" : "New Tag"}
+                {isEdit ? t("tagForm.editTitle") : t("tagForm.newTitle")}
               </Text>
               <Text style={styles.headerSubtitle}>
-                {isEdit ? "Rename or recolor" : "Add a custom tag"}
+                {isEdit ? t("tagForm.editSubtitle") : t("tagForm.newSubtitle")}
               </Text>
             </View>
             <Pressable onPress={handleClose} style={styles.closeButton}>
@@ -107,11 +109,11 @@ export function CreateTagModal({
             </Pressable>
           </View>
 
-          <Text style={styles.sectionLabel}>Tag Name</Text>
+          <Text style={styles.sectionLabel}>{t("tagForm.nameLabel")}</Text>
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
-              placeholder="e.g. Client Work"
+              placeholder={t("tagForm.namePlaceholder")}
               placeholderTextColor={colors.onSurfaceVariant}
               value={name}
               onChangeText={setName}
@@ -121,7 +123,7 @@ export function CreateTagModal({
             />
           </View>
 
-          <Text style={styles.sectionLabel}>Color</Text>
+          <Text style={styles.sectionLabel}>{t("tagForm.colorLabel")}</Text>
           <View style={styles.colorRow}>
             {TAG_COLOR_PALETTE.map((c) => {
               const selected = c === color;
@@ -134,7 +136,7 @@ export function CreateTagModal({
                     { backgroundColor: c },
                     selected && styles.swatchSelected,
                   ]}
-                  accessibilityLabel={`Color ${c}`}
+                  accessibilityLabel={t("tagForm.colorA11y", { color: c })}
                 >
                   {selected && (
                     <Feather name="check" size={16} color={colors.onPrimary} />
@@ -149,11 +151,11 @@ export function CreateTagModal({
             label={
               submitting
                 ? isEdit
-                  ? "Saving..."
-                  : "Creating..."
+                  ? t("common.saving")
+                  : t("common.creating")
                 : isEdit
-                  ? "Save Changes"
-                  : "Create Tag"
+                  ? t("common.saveChanges")
+                  : t("tagForm.create")
             }
             onPress={handleSubmit}
             disabled={!canSubmit}

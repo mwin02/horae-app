@@ -5,6 +5,7 @@ import { TagChip } from "@/components/common/tag-chip";
 import { useTags } from "@/hooks/useTags";
 import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
 import { useTheme, useThemedStyles } from "@/hooks/useTheme";
+import { useTranslation } from "react-i18next";
 
 interface TagFilterRowProps {
   selectedTagIds: string[];
@@ -22,6 +23,7 @@ export function TagFilterRow({
 }: TagFilterRowProps): React.ReactElement | null {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const { tags } = useTags();
 
   if (tags.length === 0) return null;
@@ -38,7 +40,7 @@ export function TagFilterRow({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>TAGS</Text>
+      <Text style={styles.label}>{t("tags.filterLabel")}</Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -56,7 +58,7 @@ export function TagFilterRow({
         {hasSelection && (
           <Pressable onPress={() => onChange([])} style={styles.clearChip}>
             <Feather name="x" size={12} color={colors.onSurfaceVariant} />
-            <Text style={styles.clearLabel}>Clear</Text>
+            <Text style={styles.clearLabel}>{t("common.clear")}</Text>
           </Pressable>
         )}
       </ScrollView>

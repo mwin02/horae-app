@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -21,6 +22,7 @@ import { useAuth } from "@/hooks/useAuth";
 export default function SignUpScreen(): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const router = useRouter();
   const { signUp } = useAuth();
   const [email, setEmail] = useState("");
@@ -32,15 +34,15 @@ export default function SignUpScreen(): React.ReactElement {
   const handleSubmit = useCallback(async () => {
     const trimmedEmail = email.trim();
     if (!trimmedEmail || !password) {
-      setError("Enter your email and password.");
+      setError(t("auth.missingEmailAndPassword"));
       return;
     }
     if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+      setError(t("auth.signUp.passwordTooShort"));
       return;
     }
     if (password !== confirm) {
-      setError("Passwords don't match.");
+      setError(t("auth.signUp.passwordMismatch"));
       return;
     }
     setSubmitting(true);
@@ -52,9 +54,7 @@ export default function SignUpScreen(): React.ReactElement {
       return;
     }
     if (result.alreadyExists) {
-      setError(
-        "An account with this email already exists. Try signing in instead.",
-      );
+      setError(t("auth.signUp.alreadyExists"));
       return;
     }
     if (result.needsConfirmation) {
@@ -69,7 +69,7 @@ export default function SignUpScreen(): React.ReactElement {
     } else {
       router.replace("/(tabs)/settings");
     }
-  }, [email, password, confirm, signUp, router]);
+  }, [email, password, confirm, signUp, router, t]);
 
   const goToSignIn = useCallback(() => {
     router.replace("/(auth)/sign-in");
@@ -87,20 +87,18 @@ export default function SignUpScreen(): React.ReactElement {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <Text style={styles.title}>Create your account</Text>
-            <Text style={styles.subtitle}>
-              Back up and sync your tracked time across devices.
-            </Text>
+            <Text style={styles.title}>{t("auth.signUp.title")}</Text>
+            <Text style={styles.subtitle}>{t("auth.signUp.subtitle")}</Text>
           </View>
 
           <View style={styles.form}>
             <View style={styles.field}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>{t("auth.emailLabel")}</Text>
               <TextInput
                 style={styles.input}
                 value={email}
                 onChangeText={setEmail}
-                placeholder="you@example.com"
+                placeholder={t("auth.emailPlaceholder")}
                 placeholderTextColor={colors.onSurfaceVariant}
                 autoCapitalize="none"
                 autoComplete="email"
@@ -112,12 +110,12 @@ export default function SignUpScreen(): React.ReactElement {
             </View>
 
             <View style={styles.field}>
-              <Text style={styles.label}>Password</Text>
+              <Text style={styles.label}>{t("auth.passwordLabel")}</Text>
               <TextInput
                 style={styles.input}
                 value={password}
                 onChangeText={setPassword}
-                placeholder="At least 6 characters"
+                placeholder={t("auth.signUp.passwordPlaceholder")}
                 placeholderTextColor={colors.onSurfaceVariant}
                 secureTextEntry
                 autoCapitalize="none"
@@ -128,12 +126,12 @@ export default function SignUpScreen(): React.ReactElement {
             </View>
 
             <View style={styles.field}>
-              <Text style={styles.label}>Confirm password</Text>
+              <Text style={styles.label}>{t("auth.signUp.confirmLabel")}</Text>
               <TextInput
                 style={styles.input}
                 value={confirm}
                 onChangeText={setConfirm}
-                placeholder="Re-enter password"
+                placeholder={t("auth.signUp.confirmPlaceholder")}
                 placeholderTextColor={colors.onSurfaceVariant}
                 secureTextEntry
                 autoCapitalize="none"
@@ -147,7 +145,9 @@ export default function SignUpScreen(): React.ReactElement {
 
             <GradientButton
               shape="pill"
-              label={submitting ? "Creating account…" : "Create account"}
+              label={
+                submitting ? t("auth.signUp.submitting") : t("auth.signUp.submit")
+              }
               onPress={handleSubmit}
               disabled={submitting}
             >
@@ -156,9 +156,9 @@ export default function SignUpScreen(): React.ReactElement {
           </View>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Already have an account?</Text>
+            <Text style={styles.footerText}>{t("auth.signUp.haveAccount")}</Text>
             <Pressable onPress={goToSignIn} hitSlop={8}>
-              <Text style={styles.footerLink}>Sign in</Text>
+              <Text style={styles.footerLink}>{t("auth.signUp.signInLink")}</Text>
             </Pressable>
           </View>
         </ScrollView>

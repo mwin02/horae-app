@@ -8,6 +8,7 @@ import type { InsightsPeriod } from '@/hooks/useInsightsData';
 import { formatDuration } from '@/lib/timezone';
 import { FONTS, RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/hooks/useTheme';
+import { useTranslation } from 'react-i18next';
 
 // ──────────────────────────────────────────────
 // Types
@@ -30,6 +31,7 @@ export function ActivityBreakdown({
 }: ActivityBreakdownProps): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   // Auto-select the category with the most tracked time
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
@@ -69,11 +71,11 @@ export function ActivityBreakdown({
     color: a.color,
   }));
 
-  const centerLabel = totalSeconds > 0 ? formatDuration(totalSeconds) : '0m';
+  const centerLabel = formatDuration(totalSeconds);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionLabel}>ACTIVITY BREAKDOWN</Text>
+      <Text style={styles.sectionLabel}>{t('activityBreakdown.title')}</Text>
 
       {/* Category selector */}
       <ScrollView
@@ -119,7 +121,7 @@ export function ActivityBreakdown({
               size={180}
               strokeWidth={28}
               centerLabel={centerLabel}
-              centerSubLabel="total"
+              centerSubLabel={t('activityBreakdown.total')}
             />
           </View>
 
@@ -149,7 +151,7 @@ export function ActivityBreakdown({
         </>
       ) : !isLoading ? (
         <Text style={styles.emptyText}>
-          No activities tracked for this category.
+          {t('activityBreakdown.empty')}
         </Text>
       ) : null}
     </View>

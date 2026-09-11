@@ -18,8 +18,10 @@ import {
   createCategory,
   updateCategory,
 } from "@/db/queries";
+import { MAX_CATEGORIES } from "@/constants/presets";
 import { Feather } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -51,6 +53,7 @@ export function EditCategoryModal({
 }: EditCategoryModalProps): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const isEdit = category !== null;
   const [name, setName] = useState<string>(category?.name ?? "");
@@ -81,7 +84,16 @@ export function EditCategoryModal({
     setSubmitting(true);
     try {
       if (category) {
-        await updateCategory(category.id, { name: trimmedName, color, icon });
+        // `category.name` is the display name (a translated preset name in
+        // non-English UIs). Only write the name if the user actually edited
+        // it, otherwise saving a color change in Spanish would persist
+        // "Trabajo" and detach the preset from translation for good.
+        const nameChanged = trimmedName !== category.name;
+        await updateCategory(category.id, {
+          ...(nameChanged ? { name: trimmedName } : {}),
+          color,
+          icon,
+        });
       } else {
         await createCategory({
           name: trimmedName,
@@ -94,12 +106,15 @@ export function EditCategoryModal({
     } catch (err) {
       setSubmitting(false);
       if (err instanceof CategoryLimitExceededError) {
-        Alert.alert("Category limit reached", err.message);
+        Alert.alert(
+          t("categoryForm.limitTitle"),
+          t("categoryForm.limitBody", { max: MAX_CATEGORIES }),
+        );
         return;
       }
       console.error("Failed to save category", err);
     }
-  }, [canSubmit, category, trimmedName, color, icon, nextSortOrder, onClose]);
+  }, [canSubmit, category, trimmedName, color, icon, nextSortOrder, onClose, t]);
 
   return (
     <Modal
@@ -122,10 +137,12 @@ export function EditCategoryModal({
           <View style={styles.header}>
             <View style={styles.headerTextWrap}>
               <Text style={styles.headerTitle} numberOfLines={1}>
-                {isEdit ? category?.name : "New Category"}
+                {isEdit ? category?.name : t("categoryForm.newTitle")}
               </Text>
               <Text style={styles.headerSubtitle}>
-                {isEdit ? "Rename, recolor, or pick an icon" : "Add a category"}
+                {isEdit
+                  ? t("categoryForm.editSubtitle")
+                  : t("categoryForm.newSubtitle")}
               </Text>
             </View>
             <Pressable onPress={handleClose} style={styles.closeButton}>
@@ -133,11 +150,11 @@ export function EditCategoryModal({
             </Pressable>
           </View>
 
-          <Text style={styles.sectionLabel}>Name</Text>
+          <Text style={styles.sectionLabel}>{t("categoryForm.nameLabel")}</Text>
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
-              placeholder="e.g. Side Project"
+              placeholder={t("categoryForm.namePlaceholder")}
               placeholderTextColor={colors.onSurfaceVariant}
               value={name}
               onChangeText={setName}
@@ -147,7 +164,9 @@ export function EditCategoryModal({
             />
           </View>
 
-          <Text style={styles.sectionLabel}>Appearance</Text>
+          <Text style={styles.sectionLabel}>
+            {t("categoryForm.appearanceLabel")}
+          </Text>
 
           <View style={styles.previewRow}>
             <View
@@ -220,11 +239,11 @@ export function EditCategoryModal({
             label={
               submitting
                 ? isEdit
-                  ? "Saving..."
-                  : "Creating..."
+                  ? t("common.saving")
+                  : t("common.creating")
                 : isEdit
-                  ? "Save Changes"
-                  : "Create Category"
+                  ? t("common.saveChanges")
+                  : t("categoryForm.create")
             }
             onPress={handleSubmit}
             disabled={!canSubmit}

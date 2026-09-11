@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import { useQuery } from "@powersync/react";
 import type { CategoryWithActivities } from "@/db/models";
+import { useTranslation } from "react-i18next";
+import { localizeActivityName, localizeCategoryName } from "@/lib/i18n/preset-names";
 
 /**
  * Same shape as useCategoriesWithActivities, but ordered by all-time
@@ -68,6 +70,7 @@ export interface UseCategoriesByUsageResult {
 
 export function useCategoriesByUsage(): UseCategoriesByUsageResult {
   const { data, isLoading } = useQuery<FlatRow>(CATEGORIES_BY_USAGE_QUERY);
+  const { i18n } = useTranslation();
 
   const categories = useMemo((): CategoryWithActivities[] => {
     const map = new Map<string, CategoryWithActivities>();
@@ -78,7 +81,7 @@ export function useCategoriesByUsage(): UseCategoriesByUsageResult {
       if (!category) {
         category = {
           id: row.category_id,
-          name: row.category_name,
+          name: localizeCategoryName(row.category_id, row.category_name),
           color: row.category_color,
           icon: row.category_icon,
           isPreset: row.category_is_preset === 1,
@@ -92,9 +95,9 @@ export function useCategoriesByUsage(): UseCategoriesByUsageResult {
         category.activities.push({
           id: row.activity_id,
           categoryId: row.category_id,
-          categoryName: row.category_name,
+          categoryName: category.name,
           categoryColor: row.category_color,
-          name: row.activity_name,
+          name: localizeActivityName(row.activity_id, row.activity_name),
           isPreset: row.activity_is_preset === 1,
           isFavorite: row.activity_is_favorite === 1,
           icon: row.activity_icon ?? row.category_icon,
@@ -104,7 +107,8 @@ export function useCategoriesByUsage(): UseCategoriesByUsageResult {
     }
 
     return Array.from(map.values());
-  }, [data]);
+    // Display names follow the UI language; see docs/LOCALIZATION.md.
+  }, [data, i18n.language]);
 
   return { categories, isLoading };
 }

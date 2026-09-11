@@ -2,6 +2,7 @@ import React from "react";
 import { Platform, Pressable, StyleSheet } from "react-native";
 import { BlurView } from "expo-blur";
 import { useTheme } from "@/hooks/useTheme";
+import { useTranslation } from "react-i18next";
 
 interface ModalBackdropProps {
   /** Called when the user taps outside the sheet to dismiss. */
@@ -20,6 +21,7 @@ export function ModalBackdrop({
   onPress,
 }: ModalBackdropProps): React.ReactElement {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
 
   if (Platform.OS === "ios") {
     return (
@@ -27,7 +29,7 @@ export function ModalBackdrop({
         style={StyleSheet.absoluteFill}
         onPress={onPress}
         accessibilityRole="button"
-        accessibilityLabel="Close"
+        accessibilityLabel={t("common.close")}
       >
         <BlurView
           intensity={24}
@@ -43,7 +45,7 @@ export function ModalBackdrop({
       style={[StyleSheet.absoluteFill, styles.androidScrim]}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel="Close"
+      accessibilityLabel={t("common.close")}
     />
   );
 }

@@ -11,6 +11,8 @@ import { useQuery } from "@powersync/react";
 import { useMemo } from "react";
 import { getWeekRange } from "./useInsightsData";
 import { useUserPreferences } from "./useUserPreferences";
+import { useTranslation } from "react-i18next";
+import { localizeCategoryName } from "@/lib/i18n/preset-names";
 
 export interface WeekOverWeekRow {
   categoryId: string;
@@ -109,6 +111,7 @@ export function useWeekOverWeekDelta(
     [allocationRows],
   );
 
+  const { i18n } = useTranslation();
   const rows = useMemo<WeekOverWeekRow[]>(() => {
     const byId = new Map<
       string,
@@ -149,7 +152,7 @@ export function useWeekOverWeekDelta(
     const result: WeekOverWeekRow[] = Array.from(byId.entries()).map(
       ([categoryId, v]) => ({
         categoryId,
-        categoryName: v.name,
+        categoryName: localizeCategoryName(categoryId, v.name),
         categoryColor: v.color,
         categoryIcon: v.icon,
         thisWeekSeconds: v.thisSeconds,
@@ -163,7 +166,7 @@ export function useWeekOverWeekDelta(
     // Sort by this-week time desc; categories only in last week sink below.
     result.sort((a, b) => b.thisWeekSeconds - a.thisWeekSeconds);
     return result;
-  }, [thisRows, lastRows, goalDirectionByCategory, weeklyTargetByCategory]);
+  }, [thisRows, lastRows, goalDirectionByCategory, weeklyTargetByCategory, i18n.language]);
 
   return { rows, isLoading: thisLoading || lastLoading };
 }

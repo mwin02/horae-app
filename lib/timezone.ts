@@ -4,7 +4,14 @@
  * All times are stored in UTC (ISO 8601 strings). Each time_entry also stores
  * the IANA timezone that was active when it was created, so we can display
  * times in their original local timezone regardless of the user's current tz.
+ *
+ * Display helpers (`formatTimeInTimezone`, `formatDateInTimezone`,
+ * `formatDuration`) follow the UI language. Everything else here is machine
+ * logic and deliberately pins `en-CA` (YYYY-MM-DD) / `en-US` (formatToParts)
+ * — never localize those, day boundaries depend on the exact output.
  */
+
+import i18n, { getIntlLocale } from '@/lib/i18n';
 
 /** Get the device's current IANA timezone (e.g., 'America/New_York') */
 export function getCurrentTimezone(): string {
@@ -13,25 +20,24 @@ export function getCurrentTimezone(): string {
 
 /**
  * Format an ISO 8601 UTC string into a human-readable time in the given timezone.
- * Returns e.g. "9:30 AM", "2:15 PM".
+ * Returns e.g. "9:30 AM" (en-US), "9:30" (es), "上午9:30" (zh).
  */
 export function formatTimeInTimezone(isoString: string, timezone: string): string {
   const date = new Date(isoString);
-  return date.toLocaleTimeString('en-US', {
+  return date.toLocaleTimeString(getIntlLocale(), {
     hour: 'numeric',
     minute: '2-digit',
-    hour12: true,
     timeZone: timezone,
   });
 }
 
 /**
  * Format an ISO 8601 UTC string into a short date string in the given timezone.
- * Returns e.g. "Mar 24, 2026".
+ * Returns e.g. "Mar 24, 2026" (en-US).
  */
 export function formatDateInTimezone(isoString: string, timezone: string): string {
   const date = new Date(isoString);
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString(getIntlLocale(), {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -193,16 +199,16 @@ export function getEndOfDay(dateStr: string, timezone: string): Date {
 
 /**
  * Format elapsed seconds into a human-readable duration string.
- * Returns e.g. "1h 30m", "45m", "2h 0m".
+ * Returns e.g. "1h 30m", "45m", "2h 0m" in English.
  */
 export function formatDuration(totalSeconds: number): string {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
 
   if (hours > 0) {
-    return `${hours}h ${minutes}m`;
+    return i18n.t('duration.hoursMinutes', { hours, minutes });
   }
-  return `${minutes}m`;
+  return i18n.t('duration.minutes', { minutes });
 }
 
 /**

@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { Stack } from "expo-router";
 import React, { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Alert,
@@ -23,18 +24,19 @@ import { useTags } from "@/hooks/useTags";
 export default function ManageTagsScreen(): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const { tags, isLoading } = useTags();
   const [createVisible, setCreateVisible] = useState(false);
   const [editing, setEditing] = useState<TagItem | null>(null);
 
   const handleArchive = useCallback((tag: TagItem): void => {
     Alert.alert(
-      `Archive "${tag.name}"?`,
-      "Past entries will keep this tag in their history.",
+      t("manageTags.archiveTitle", { name: tag.name }),
+      t("manageTags.archiveBody"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Archive",
+          text: t("common.archive"),
           style: "destructive",
           onPress: async () => {
             try {
@@ -46,7 +48,7 @@ export default function ManageTagsScreen(): React.ReactElement {
         },
       ],
     );
-  }, []);
+  }, [t]);
 
   const handleEdit = useCallback((tag: TagItem): void => {
     setEditing(tag);
@@ -62,7 +64,7 @@ export default function ManageTagsScreen(): React.ReactElement {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container} edges={["bottom"]}>
-        <Stack.Screen options={{ title: "Manage Tags" }} />
+        <Stack.Screen options={{ title: t("manageTags.title") }} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -72,14 +74,11 @@ export default function ManageTagsScreen(): React.ReactElement {
 
   return (
     <SafeAreaView style={styles.container} edges={["bottom"]}>
-      <Stack.Screen options={{ title: "Manage Tags" }} />
+      <Stack.Screen options={{ title: t("manageTags.title") }} />
 
       <View style={styles.header}>
-        <Text style={styles.title}>Manage Tags</Text>
-        <Text style={styles.subtitle}>
-          Tags add a second axis — client, project, mood — orthogonal to
-          activities.
-        </Text>
+        <Text style={styles.title}>{t("manageTags.title")}</Text>
+        <Text style={styles.subtitle}>{t("manageTags.subtitle")}</Text>
       </View>
 
       <View style={styles.content}>
@@ -92,9 +91,9 @@ export default function ManageTagsScreen(): React.ReactElement {
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Text style={styles.emptyTitle}>No tags yet</Text>
+              <Text style={styles.emptyTitle}>{t("manageTags.emptyTitle")}</Text>
               <Text style={styles.emptySubtitle}>
-                Tap the + button to create your first tag.
+                {t("manageTags.emptyBody")}
               </Text>
             </View>
           }

@@ -11,6 +11,9 @@ import { useQuery } from "@powersync/react";
 import { useMemo } from "react";
 import { getWeekRange } from "./useInsightsData";
 import { useUserPreferences } from "./useUserPreferences";
+import { useTranslation } from "react-i18next";
+import { getIntlLocale } from "@/lib/i18n";
+import { localizeCategoryName } from "@/lib/i18n/preset-names";
 
 export const STREAK_WEEKS = 12;
 const AROUND_TOLERANCE = 0.2;
@@ -130,6 +133,7 @@ export function useWeeklyStreaks(weekDate: string): UseWeeklyStreaksResult {
   const { data: allocationRows, isLoading: allocationsLoading } =
     useQuery<IdealAllocationRow>(IDEAL_ALLOCATIONS_QUERY);
 
+  const { i18n } = useTranslation();
   const categories = useMemo<WeeklyStreakCategory[]>(() => {
     const weeklyTargets = resolveWeeklyTargetSeconds(allocationRows);
     if (weeklyTargets.size === 0) return [];
@@ -224,7 +228,7 @@ export function useWeeklyStreaks(weekDate: string): UseWeeklyStreaksResult {
 
       result.push({
         categoryId,
-        categoryName: m.name,
+        categoryName: localizeCategoryName(categoryId, m.name),
         categoryColor: m.color,
         categoryIcon: m.icon,
         goalSeconds,
@@ -245,10 +249,11 @@ export function useWeeklyStreaks(weekDate: string): UseWeeklyStreaksResult {
 
     result.sort(
       (a, b) =>
-        b.streak - a.streak || a.categoryName.localeCompare(b.categoryName),
+        b.streak - a.streak ||
+        a.categoryName.localeCompare(b.categoryName, getIntlLocale()),
     );
     return result;
-  }, [allocationRows, categoryRows, entryRows, ranges]);
+  }, [allocationRows, categoryRows, entryRows, ranges, i18n.language]);
 
   return {
     categories,

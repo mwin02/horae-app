@@ -3,6 +3,7 @@ import { SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
 import { useThemedStyles } from "@/hooks/useTheme";
 import type { RecommendedActivity } from "@/db/models";
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 interface SuggestedRowProps {
@@ -19,11 +20,12 @@ export function SuggestedRow({
   onSelect,
 }: SuggestedRowProps): React.ReactElement | null {
   const styles = useThemedStyles(makeStyles);
+  const { t } = useTranslation();
   if (recommendations.length === 0) return null;
 
   return (
     <View style={styles.wrap}>
-      <Text style={styles.heading}>Suggested for you</Text>
+      <Text style={styles.heading}>{t("home.suggestedForYou")}</Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}

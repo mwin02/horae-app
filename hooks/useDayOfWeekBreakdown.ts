@@ -8,6 +8,8 @@ import { useQuery } from "@powersync/react";
 import { useMemo } from "react";
 import { getWeekRange } from "./useInsightsData";
 import { useUserPreferences } from "./useUserPreferences";
+import { useTranslation } from "react-i18next";
+import { localizeCategoryName } from "@/lib/i18n/preset-names";
 
 export interface DayOfWeekCategory {
   id: string;
@@ -78,6 +80,7 @@ export function useDayOfWeekBreakdown(
     [weekEndIso, weekStartIso],
   );
 
+  const { i18n } = useTranslation();
   const result = useMemo(() => {
     // Map dayIndex → Map<categoryKey, seconds>
     const buckets: Map<string, number>[] = Array.from(
@@ -110,7 +113,7 @@ export function useDayOfWeekBreakdown(
       const catKey = `${row.category_name}|${row.category_color}`;
       categoryMeta.set(catKey, {
         id: catKey,
-        name: row.category_name,
+        name: localizeCategoryName(row.category_id, row.category_name),
         color: row.category_color,
         icon: row.category_icon,
       });
@@ -207,7 +210,7 @@ export function useDayOfWeekBreakdown(
     );
 
     return { days, legend };
-  }, [rows, weekStartIso, weekEndIso, weekStartDateStr, weekStartDay]);
+  }, [rows, weekStartIso, weekEndIso, weekStartDateStr, weekStartDay, i18n.language]);
 
   return {
     days: result.days,

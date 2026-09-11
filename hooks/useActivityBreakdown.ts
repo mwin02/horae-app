@@ -7,6 +7,8 @@ import {
 import { getCurrentTimezone, getEndOfDay, getStartOfDay } from '@/lib/timezone';
 import { getMonthRange, getWeekRange, type InsightsPeriod } from './useInsightsData';
 import { useUserPreferences } from './useUserPreferences';
+import { useTranslation } from 'react-i18next';
+import { localizeActivityName } from '@/lib/i18n/preset-names';
 
 // ──────────────────────────────────────────────
 // Types
@@ -112,6 +114,7 @@ export function useActivityBreakdown(
       : [],
   );
 
+  const { i18n } = useTranslation();
   const result = useMemo(() => {
     if (!categoryId || activityRows.length === 0) {
       return { activities: [], totalSeconds: 0 };
@@ -123,7 +126,7 @@ export function useActivityBreakdown(
       const opacityIndex = Math.min(index, OPACITY_STEPS.length - 1);
       return {
         activityId: row.activity_id,
-        activityName: row.activity_name,
+        activityName: localizeActivityName(row.activity_id, row.activity_name),
         activityIcon: row.activity_icon,
         totalSeconds: row.total_seconds,
         totalMinutes: Math.round(row.total_seconds / 60),
@@ -135,7 +138,7 @@ export function useActivityBreakdown(
     });
 
     return { activities, totalSeconds };
-  }, [activityRows, categoryId, categoryColor]);
+  }, [activityRows, categoryId, categoryColor, i18n.language]);
 
   return {
     activities: result.activities,

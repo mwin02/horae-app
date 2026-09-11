@@ -5,6 +5,7 @@ import type { QuickStartActivity } from "@/hooks/useQuickStartActivities";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 interface QuickStartGridProps {
@@ -27,6 +28,7 @@ export function QuickStartGrid({
 }: QuickStartGridProps): React.ReactElement | null {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const router = useRouter();
 
   // Pair activities into [top, bottom] columns. The most-used activities
@@ -45,14 +47,14 @@ export function QuickStartGrid({
   return (
     <View style={styles.wrap}>
       <View style={styles.headerRow}>
-        <Text style={styles.heading}>Quick Start</Text>
+        <Text style={styles.heading}>{t("home.quickStart")}</Text>
         <Pressable
           onPress={() => router.push("/manage-activities")}
           hitSlop={8}
           style={styles.manageBtn}
         >
           <Feather name="settings" size={12} color={colors.onSurfaceVariant} />
-          <Text style={styles.manageLabel}>Manage</Text>
+          <Text style={styles.manageLabel}>{t("home.manage")}</Text>
         </Pressable>
       </View>
 

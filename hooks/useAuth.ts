@@ -8,10 +8,14 @@ import React, {
   useState,
 } from "react";
 
+import i18n from "@/lib/i18n";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
-const UNCONFIGURED_ERROR =
-  "Sign-in is unavailable in this build of Horae.";
+// Supabase `error.message` strings pass through untranslated — they come from
+// the server. Only our own copy is localized.
+function unconfiguredError(): string {
+  return i18n.t("auth.unconfigured");
+}
 
 interface AuthContextValue {
   user: User | null;
@@ -76,7 +80,7 @@ export function AuthProvider({
 
   const signInWithPassword = useCallback<AuthContextValue["signInWithPassword"]>(
     async (email, password) => {
-      if (!isSupabaseConfigured) return { error: UNCONFIGURED_ERROR };
+      if (!isSupabaseConfigured) return { error: unconfiguredError() };
       const { error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
@@ -90,7 +94,7 @@ export function AuthProvider({
     async (email, password) => {
       if (!isSupabaseConfigured) {
         return {
-          error: UNCONFIGURED_ERROR,
+          error: unconfiguredError(),
           needsConfirmation: false,
           alreadyExists: false,
         };
@@ -129,7 +133,7 @@ export function AuthProvider({
   const sendPasswordReset = useCallback<
     AuthContextValue["sendPasswordReset"]
   >(async (email) => {
-    if (!isSupabaseConfigured) return { error: UNCONFIGURED_ERROR };
+    if (!isSupabaseConfigured) return { error: unconfiguredError() };
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
     return { error: error?.message ?? null };
   }, []);
@@ -137,7 +141,7 @@ export function AuthProvider({
   const resendSignUpConfirmation = useCallback<
     AuthContextValue["resendSignUpConfirmation"]
   >(async (email) => {
-    if (!isSupabaseConfigured) return { error: UNCONFIGURED_ERROR };
+    if (!isSupabaseConfigured) return { error: unconfiguredError() };
     const { error } = await supabase.auth.resend({
       type: "signup",
       email: email.trim(),

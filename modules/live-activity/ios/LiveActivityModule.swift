@@ -7,6 +7,7 @@ import WidgetKit
 // here, mirror it in the widget target's snapshot reader.
 private let WIDGET_APP_GROUP = "group.com.myozawwin.horae.shared"
 private let WIDGET_SNAPSHOT_KEY = "runningTimerSnapshot"
+private let WIDGET_STRINGS_KEY = "widgetStrings"
 
 /// JS-facing bridge to ActivityKit for the running-timer Live Activity.
 ///
@@ -73,6 +74,21 @@ public class LiveActivityModule: Module {
             } else {
                 defaults.removeObject(forKey: WIDGET_SNAPSHOT_KEY)
             }
+            if #available(iOS 14.0, *) {
+                WidgetCenter.shared.reloadAllTimelines()
+            }
+        }
+
+        // Localized labels for the widget + Live Activity, pushed from JS
+        // whenever the app's language changes. The extension can't see the
+        // app's i18n state (the in-app language may differ from the OS), so
+        // JS is the single source of truth. Missing keys fall back to English
+        // on the Swift side.
+        AsyncFunction("writeWidgetStrings") { (strings: [String: String]) in
+            guard let defaults = UserDefaults(suiteName: WIDGET_APP_GROUP) else {
+                return
+            }
+            defaults.set(strings, forKey: WIDGET_STRINGS_KEY)
             if #available(iOS 14.0, *) {
                 WidgetCenter.shared.reloadAllTimelines()
             }

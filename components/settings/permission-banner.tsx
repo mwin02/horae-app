@@ -1,5 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
@@ -13,6 +14,7 @@ export function PermissionBanner({
   onOpenSettings,
 }: PermissionBannerProps): React.ReactElement {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.container}>
@@ -20,9 +22,11 @@ export function PermissionBanner({
         <Feather name="bell-off" size={18} color={colors.error} />
       </View>
       <View style={styles.textBlock}>
-        <Text style={styles.title}>Notifications are off</Text>
+        <Text style={styles.title}>
+          {t("notificationsSettings.permissionOffTitle")}
+        </Text>
         <Text style={styles.body}>
-          Turn them on in iOS Settings so reminders can reach you.
+          {t("notificationsSettings.permissionOffBody")}
         </Text>
         <Pressable
           style={({ pressed }) => [
@@ -31,7 +35,9 @@ export function PermissionBanner({
           ]}
           onPress={onOpenSettings}
         >
-          <Text style={styles.buttonLabel}>Open Settings</Text>
+          <Text style={styles.buttonLabel}>
+            {t("notificationsSettings.openSettings")}
+          </Text>
           <Feather
             name="external-link"
             size={14}

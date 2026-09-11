@@ -16,6 +16,8 @@ import { getCurrentTimezone, getEndOfDay, getStartOfDay } from "@/lib/timezone";
 import { useQuery } from "@powersync/react";
 import { useMemo } from "react";
 import { useUserPreferences } from "./useUserPreferences";
+import { useTranslation } from "react-i18next";
+import { localizeCategoryName } from "@/lib/i18n/preset-names";
 
 // ──────────────────────────────────────────────
 // Types
@@ -240,6 +242,7 @@ export function useInsightsData(
     useQuery<IdealAllocationRow>(IDEAL_ALLOCATIONS_QUERY);
 
   // Combine into CategoryInsight[] and DayCoverage
+  const { i18n } = useTranslation();
   const result = useMemo(() => {
     // Build per-category lookup. Daily rows fill `default` + `perDay`;
     // weekly/monthly rows are singletons (one target across the period).
@@ -364,7 +367,7 @@ export function useInsightsData(
 
       return {
         categoryId: row.category_id,
-        categoryName: row.category_name,
+        categoryName: localizeCategoryName(row.category_id, row.category_name),
         categoryColor: row.category_color,
         categoryIcon: row.category_icon,
         actualMinutes,
@@ -396,6 +399,8 @@ export function useInsightsData(
     numDays,
     selectedDate,
     period,
+    // Display names follow the UI language.
+    i18n.language,
   ]);
 
   return {

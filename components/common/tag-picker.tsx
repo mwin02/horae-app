@@ -17,6 +17,7 @@ import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 import { createTag } from '@/db/queries';
 import { useTags } from '@/hooks/useTags';
 import { TagChip, TAG_COLOR_PALETTE } from './tag-chip';
+import { useTranslation } from 'react-i18next';
 
 interface TagPickerProps {
   visible: boolean;
@@ -38,6 +39,7 @@ export function TagPicker({
 }: TagPickerProps): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { tags } = useTags();
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -103,7 +105,7 @@ export function TagPicker({
         >
           <View style={styles.handleBar} />
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Tags</Text>
+            <Text style={styles.headerTitle}>{t('tags.pickerTitle')}</Text>
             <Pressable onPress={onClose} style={styles.closeButton} hitSlop={8}>
               <Feather name="x" size={20} color={colors.onSurfaceVariant} />
             </Pressable>
@@ -116,7 +118,7 @@ export function TagPicker({
               style={styles.createInput}
               value={newName}
               onChangeText={setNewName}
-              placeholder="Create new tag…"
+              placeholder={t('tags.createPlaceholder')}
               placeholderTextColor={colors.onSurfaceVariant}
               onSubmitEditing={handleCreate}
               returnKeyType="done"
@@ -136,7 +138,7 @@ export function TagPicker({
           >
             {tags.length === 0 ? (
               <Text style={styles.emptyText}>
-                No tags yet. Type above to create one.
+                {t('tags.empty')}
               </Text>
             ) : (
               tags.map((tag) => (
@@ -154,8 +156,8 @@ export function TagPicker({
           <Pressable style={styles.confirmBtn} onPress={handleConfirm}>
             <Text style={styles.confirmText}>
               {selected.size === 0
-                ? 'Apply (no tags)'
-                : `Apply ${selected.size} tag${selected.size === 1 ? '' : 's'}`}
+                ? t('tags.applyNone')
+                : t('tags.apply', { count: selected.size })}
             </Text>
           </Pressable>
         </View>

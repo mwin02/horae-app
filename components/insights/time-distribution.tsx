@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
+import i18n from "@/lib/i18n";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { CategoryIconSwatch } from "./category-icon-swatch";
 import type { CategoryInsight } from "@/db/models";
@@ -24,6 +26,7 @@ export function TimeDistribution({
 }: TimeDistributionProps): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [showPercent, setShowPercent] = useState(false);
   const periodTotalMinutes = getPeriodTotalMinutes(period, selectedDate);
   const tracked = Math.min(totalTrackedMinutes, periodTotalMinutes);
@@ -32,8 +35,12 @@ export function TimeDistribution({
     periodTotalMinutes > 0
       ? Math.min(100, Math.round((tracked / periodTotalMinutes) * 100))
       : 0;
-  const periodWord =
-    period === "daily" ? "day" : period === "weekly" ? "week" : "month";
+  const periodMeta =
+    period === "daily"
+      ? t("timeDistribution.pctOfDay", { pct: periodPct })
+      : period === "weekly"
+        ? t("timeDistribution.pctOfWeek", { pct: periodPct })
+        : t("timeDistribution.pctOfMonth", { pct: periodPct });
 
   const slices = categoryInsights
     .filter((c) => c.actualMinutes > 0)
@@ -42,10 +49,8 @@ export function TimeDistribution({
   return (
     <View style={styles.container}>
       <View style={styles.eyebrow}>
-        <Text style={styles.eyebrowTitle}>TIME DISTRIBUTION</Text>
-        <Text style={styles.eyebrowMeta}>
-          {periodPct}% of {periodWord}
-        </Text>
+        <Text style={styles.eyebrowTitle}>{t("timeDistribution.title")}</Text>
+        <Text style={styles.eyebrowMeta}>{periodMeta}</Text>
       </View>
 
       <View style={styles.heroRow}>
@@ -53,7 +58,9 @@ export function TimeDistribution({
           {formatSmartDuration(tracked, period)}
         </Text>
         <Text style={styles.heroSub}>
-          tracked · {formatSmartDuration(untracked, period)} untracked
+          {t("timeDistribution.trackedSub", {
+            untracked: formatSmartDuration(untracked, period),
+          })}
         </Text>
       </View>
 
@@ -105,18 +112,18 @@ export function TimeDistribution({
  * Monthly always rounds to whole hours.
  */
 function formatSmartDuration(minutes: number, period: Period): string {
-  if (minutes <= 0) return "0m";
+  if (minutes <= 0) return i18n.t("duration.minutes", { minutes: 0 });
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
   const dropMinutes =
     period === "monthly" || (period === "weekly" && hours >= 10);
   if (dropMinutes) {
     const rounded = Math.round(minutes / 60);
-    return `${rounded}h`;
+    return i18n.t("duration.hours", { hours: rounded });
   }
-  if (hours === 0) return `${mins}m`;
-  if (mins === 0) return `${hours}h`;
-  return `${hours}h ${mins}m`;
+  if (hours === 0) return i18n.t("duration.minutes", { minutes: mins });
+  if (mins === 0) return i18n.t("duration.hours", { hours });
+  return i18n.t("duration.hoursMinutes", { hours, minutes: mins });
 }
 
 function getPeriodTotalMinutes(period: Period, selectedDate: string): number {

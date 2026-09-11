@@ -5,6 +5,8 @@ import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from '@/constants/theme
 import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 import { getCurrentTimezone, getTodayDate } from '@/lib/timezone';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
+import { useTranslation } from 'react-i18next';
+import { getIntlLocale } from '@/lib/i18n';
 
 interface WeekNavHeaderProps {
   selectedDate: string; // YYYY-MM-DD — any day in the target week
@@ -30,7 +32,7 @@ function getWeekStart(dateStr: string, weekStartDay: number): string {
 
 function formatShortDate(dateStr: string): string {
   const [year, month, day] = dateStr.split('-').map(Number);
-  return new Date(year, month - 1, day, 12).toLocaleDateString('en-US', {
+  return new Date(year, month - 1, day, 12).toLocaleDateString(getIntlLocale(), {
     month: 'short',
     day: 'numeric',
   });
@@ -39,6 +41,7 @@ function formatShortDate(dateStr: string): string {
 export function WeekNavHeader({ selectedDate, onDateChange }: WeekNavHeaderProps): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const { preferences } = useUserPreferences();
   const weekStartDay = preferences.weekStartDay;
   const startOfSelected = getWeekStart(selectedDate, weekStartDay);
@@ -59,7 +62,7 @@ export function WeekNavHeader({ selectedDate, onDateChange }: WeekNavHeaderProps
   return (
     <View style={styles.container}>
       <View>
-        <Text style={styles.label}>Week</Text>
+        <Text style={styles.label}>{t('insightNav.week')}</Text>
         <Text style={styles.weekRange}>{label}</Text>
       </View>
       <View style={styles.arrowPill}>

@@ -1,6 +1,7 @@
 import { useQuery } from "@powersync/react";
 import { Stack } from "expo-router";
 import React, { useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -21,6 +22,7 @@ import { openSystemNotificationSettings } from "@/lib/notifications";
 export default function NotificationsSettingsScreen(): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const { data: prefsData } = useQuery<NotificationPreferencesRecord>(
     NOTIFICATION_PREFERENCES_QUERY,
   );
@@ -63,17 +65,16 @@ export default function NotificationsSettingsScreen(): React.ReactElement {
 
   return (
     <SafeAreaView style={styles.container} edges={["bottom"]}>
-      <Stack.Screen options={{ title: "Notifications" }} />
+      <Stack.Screen options={{ title: t("settings.notifications") }} />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Notifications</Text>
+          <Text style={styles.title}>{t("settings.notifications")}</Text>
           <Text style={styles.subtitle}>
-            Gentle nudges so a forgotten timer or a run-away session can&apos;t
-            quietly eat your day.
+            {t("notificationsSettings.subtitle")}
           </Text>
         </View>
 
@@ -83,11 +84,13 @@ export default function NotificationsSettingsScreen(): React.ReactElement {
           </View>
         ) : null}
 
-        <Text style={styles.sectionLabel}>Reminders</Text>
+        <Text style={styles.sectionLabel}>
+          {t("notificationsSettings.sectionReminders")}
+        </Text>
         <View style={styles.group}>
           <SettingRow
-            title="Still there?"
-            description="Nudge me 30 minutes after I stop a timer."
+            title={t("notificationsSettings.idleTitle")}
+            description={t("notificationsSettings.idleDescription")}
             disabled={permissionDenied}
             trailing={
               <Switch
@@ -100,8 +103,8 @@ export default function NotificationsSettingsScreen(): React.ReactElement {
             }
           />
           <SettingRow
-            title="Long-running session"
-            description="Nudge me when a timer runs longer than expected."
+            title={t("notificationsSettings.longRunningTitle")}
+            description={t("notificationsSettings.longRunningDescription")}
             disabled={permissionDenied}
             trailing={
               <Switch
@@ -114,8 +117,8 @@ export default function NotificationsSettingsScreen(): React.ReactElement {
             }
           />
           <SettingRow
-            title="Goal alerts"
-            description="Notify me when a running session approaches or hits a category time goal."
+            title={t("notificationsSettings.goalAlertsTitle")}
+            description={t("notificationsSettings.goalAlertsDescription")}
             disabled={permissionDenied}
             trailing={
               <Switch
@@ -129,7 +132,9 @@ export default function NotificationsSettingsScreen(): React.ReactElement {
           />
         </View>
 
-        <Text style={styles.sectionLabel}>Long-running threshold</Text>
+        <Text style={styles.sectionLabel}>
+          {t("notificationsSettings.sectionThreshold")}
+        </Text>
         <View style={styles.thresholdCard}>
           <ThresholdPicker
             value={thresholdOverride}
@@ -138,12 +143,14 @@ export default function NotificationsSettingsScreen(): React.ReactElement {
           />
           <Text style={styles.thresholdHelper}>
             {thresholdOverride === null
-              ? "Auto uses each activity's typical duration from the last 30 days."
-              : "A fixed threshold is applied to every activity."}
+              ? t("notificationsSettings.thresholdAutoHelper")
+              : t("notificationsSettings.thresholdFixedHelper")}
           </Text>
         </View>
 
-        <Text style={styles.sectionLabel}>Quiet hours</Text>
+        <Text style={styles.sectionLabel}>
+          {t("notificationsSettings.sectionQuietHours")}
+        </Text>
         <QuietHoursSection prefs={prefs} permissionDenied={permissionDenied} />
       </ScrollView>
     </SafeAreaView>

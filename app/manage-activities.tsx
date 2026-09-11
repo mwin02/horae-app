@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { Stack } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Alert,
@@ -26,6 +27,7 @@ import { useCategoriesWithActivities } from "@/hooks/useCategoriesWithActivities
 export default function ManageActivitiesScreen(): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const { categories, isLoading } = useCategoriesWithActivities();
   const [createVisible, setCreateVisible] = useState(false);
   const [editing, setEditing] = useState<ActivityItem | null>(null);
@@ -35,12 +37,12 @@ export default function ManageActivitiesScreen(): React.ReactElement {
 
   const handleDelete = useCallback((activity: ActivityItem): void => {
     Alert.alert(
-      `Archive "${activity.name}"?`,
-      "Past time entries will be preserved.",
+      t("manageActivities.archiveTitle", { name: activity.name }),
+      t("manageActivities.archiveBody"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Archive",
+          text: t("common.archive"),
           style: "destructive",
           onPress: async () => {
             try {
@@ -52,7 +54,7 @@ export default function ManageActivitiesScreen(): React.ReactElement {
         },
       ],
     );
-  }, []);
+  }, [t]);
 
   const handleRename = useCallback((activity: ActivityItem): void => {
     setEditing(activity);
@@ -102,7 +104,7 @@ export default function ManageActivitiesScreen(): React.ReactElement {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container} edges={["bottom"]}>
-        <Stack.Screen options={{ title: "Manage Activities" }} />
+        <Stack.Screen options={{ title: t("manageActivities.title") }} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -112,15 +114,17 @@ export default function ManageActivitiesScreen(): React.ReactElement {
 
   return (
     <SafeAreaView style={styles.container} edges={["bottom"]}>
-      <Stack.Screen options={{ title: "Manage Activities" }} />
+      <Stack.Screen options={{ title: t("manageActivities.title") }} />
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Manage Activities</Text>
+        <Text style={styles.title}>{t("manageActivities.title")}</Text>
       </View>
       <View style={styles.content}>
         {/* Category selector — horizontal scroll, 2 rows */}
-        <Text style={styles.sectionLabel}>Select Category</Text>
+        <Text style={styles.sectionLabel}>
+          {t("manageActivities.selectCategory")}
+        </Text>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -168,11 +172,15 @@ export default function ManageActivitiesScreen(): React.ReactElement {
         {/* Activities list */}
         <View style={styles.activitiesHeader}>
           <Text style={styles.sectionLabel}>
-            {selectedCategoryId ? "Activities" : "All Activities"}
+            {selectedCategoryId
+              ? t("manageActivities.activities")
+              : t("manageActivities.allActivities")}
           </Text>
           {selectedCategoryId && (
             <Pressable onPress={() => setSelectedCategoryId(null)}>
-              <Text style={styles.viewAllText}>View All</Text>
+              <Text style={styles.viewAllText}>
+                {t("manageActivities.viewAll")}
+              </Text>
             </Pressable>
           )}
         </View>
@@ -186,9 +194,11 @@ export default function ManageActivitiesScreen(): React.ReactElement {
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Text style={styles.emptyTitle}>No activities</Text>
+              <Text style={styles.emptyTitle}>
+                {t("manageActivities.emptyTitle")}
+              </Text>
               <Text style={styles.emptySubtitle}>
-                Tap the + button to add one.
+                {t("manageActivities.emptyBody")}
               </Text>
             </View>
           }

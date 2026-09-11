@@ -15,7 +15,10 @@ interface CurrentTimeIndicatorProps {
   timezone: string;
 }
 
-/** Format the current time as "HH:MM" (24h) for the indicator pill */
+/**
+ * Format the current time as "HH:MM" (24h) for the indicator pill. Pinned to
+ * en-GB on purpose: a compact 24h clock reads the same in every UI language.
+ */
 function formatNowTime(timezone: string): string {
   return new Date().toLocaleTimeString('en-GB', {
     hour: '2-digit',

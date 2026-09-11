@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -21,6 +22,7 @@ import { useAuth } from "@/hooks/useAuth";
 export default function SignInScreen(): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const router = useRouter();
   const { signInWithPassword } = useAuth();
   const [email, setEmail] = useState("");
@@ -30,7 +32,7 @@ export default function SignInScreen(): React.ReactElement {
 
   const handleSubmit = useCallback(async () => {
     if (!email.trim() || !password) {
-      setError("Enter your email and password.");
+      setError(t("auth.missingEmailAndPassword"));
       return;
     }
     setSubmitting(true);
@@ -46,7 +48,7 @@ export default function SignInScreen(): React.ReactElement {
     } else {
       router.replace("/(tabs)/settings");
     }
-  }, [email, password, signInWithPassword, router]);
+  }, [email, password, signInWithPassword, router, t]);
 
   const goToSignUp = useCallback(() => {
     router.replace("/(auth)/sign-up");
@@ -68,20 +70,18 @@ export default function SignInScreen(): React.ReactElement {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <Text style={styles.title}>Welcome back</Text>
-            <Text style={styles.subtitle}>
-              Sign in to sync your time across devices.
-            </Text>
+            <Text style={styles.title}>{t("auth.signIn.title")}</Text>
+            <Text style={styles.subtitle}>{t("auth.signIn.subtitle")}</Text>
           </View>
 
           <View style={styles.form}>
             <View style={styles.field}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>{t("auth.emailLabel")}</Text>
               <TextInput
                 style={styles.input}
                 value={email}
                 onChangeText={setEmail}
-                placeholder="you@example.com"
+                placeholder={t("auth.emailPlaceholder")}
                 placeholderTextColor={colors.onSurfaceVariant}
                 autoCapitalize="none"
                 autoComplete="email"
@@ -93,7 +93,7 @@ export default function SignInScreen(): React.ReactElement {
             </View>
 
             <View style={styles.field}>
-              <Text style={styles.label}>Password</Text>
+              <Text style={styles.label}>{t("auth.passwordLabel")}</Text>
               <TextInput
                 style={styles.input}
                 value={password}
@@ -110,7 +110,9 @@ export default function SignInScreen(): React.ReactElement {
 
             <GradientButton
               shape="pill"
-              label={submitting ? "Signing in…" : "Sign in"}
+              label={
+                submitting ? t("auth.signIn.submitting") : t("auth.signIn.submit")
+              }
               onPress={handleSubmit}
               disabled={submitting}
             >
@@ -118,14 +120,16 @@ export default function SignInScreen(): React.ReactElement {
             </GradientButton>
 
             <Pressable onPress={goToForgot} style={styles.linkRow}>
-              <Text style={styles.linkText}>Forgot password?</Text>
+              <Text style={styles.linkText}>
+                {t("auth.signIn.forgotPassword")}
+              </Text>
             </Pressable>
           </View>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Don&apos;t have an account?</Text>
+            <Text style={styles.footerText}>{t("auth.signIn.noAccount")}</Text>
             <Pressable onPress={goToSignUp} hitSlop={8}>
-              <Text style={styles.footerLink}>Sign up</Text>
+              <Text style={styles.footerLink}>{t("auth.signIn.signUpLink")}</Text>
             </Pressable>
           </View>
         </ScrollView>

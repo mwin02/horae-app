@@ -14,6 +14,7 @@ export const RECOMMENDATION_QUERY = `
     te.timezone     AS timezone,
     a.id            AS activity_id,
     a.name          AS activity_name,
+    c.id            AS category_id,
     c.name          AS category_name,
     c.color         AS category_color,
     COALESCE(a.icon, c.icon) AS category_icon
@@ -40,6 +41,7 @@ export const ACTIVITY_LOOKUP_QUERY = `
   SELECT
     a.id            AS activity_id,
     a.name          AS activity_name,
+    c.id            AS category_id,
     c.name          AS category_name,
     c.color         AS category_color,
     COALESCE(a.icon, c.icon) AS category_icon

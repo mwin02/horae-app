@@ -3,6 +3,7 @@ import { FONTS, RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constant
 import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 interface SuggestedCardProps {
@@ -27,6 +28,7 @@ export function SuggestedCard({
 }: SuggestedCardProps): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   return (
     <View style={styles.card}>
       <View style={styles.headerRow}>
@@ -63,7 +65,7 @@ export function SuggestedCard({
         ]}
       >
         <Feather name="play" size={12} color={colors.onSurface} />
-        <Text style={styles.startLabel}>Start</Text>
+        <Text style={styles.startLabel}>{t("home.start")}</Text>
       </Pressable>
     </View>
   );

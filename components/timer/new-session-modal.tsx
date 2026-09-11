@@ -25,6 +25,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 interface NewSessionModalProps {
   visible: boolean;
@@ -41,6 +42,7 @@ export function NewSessionModal({
 }: NewSessionModalProps): React.ReactElement {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
     null,
@@ -55,7 +57,7 @@ export function NewSessionModal({
   const { activities: allActivities } = useQuickStartActivities();
 
   const selectedTags = useMemo(
-    () => allTags.filter((t) => selectedTagIds.includes(t.id)),
+    () => allTags.filter((tag) => selectedTagIds.includes(tag.id)),
     [allTags, selectedTagIds],
   );
 
@@ -161,7 +163,7 @@ export function NewSessionModal({
             <Feather name="search" size={18} color={colors.onSurfaceVariant} />
             <TextInput
               style={styles.searchInput}
-              placeholder="What are you working on?"
+              placeholder={t("newSession.searchPlaceholder")}
               placeholderTextColor={colors.onSurfaceVariant}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -213,11 +215,13 @@ export function NewSessionModal({
           {/* Activities list */}
           <View style={styles.activitiesHeader}>
             <Text style={styles.sectionLabel}>
-              {selectedCategoryId ? "Activities" : "Top Activities"}
+              {selectedCategoryId
+                ? t("manageActivities.activities")
+                : t("newSession.topActivities")}
             </Text>
             {selectedCategoryId && (
               <Pressable onPress={() => setSelectedCategoryId(null)}>
-                <Text style={styles.viewAllText}>View All</Text>
+                <Text style={styles.viewAllText}>{t("manageActivities.viewAll")}</Text>
               </Pressable>
             )}
           </View>
@@ -239,11 +243,13 @@ export function NewSessionModal({
           >
             <Feather name="tag" size={14} color={colors.onSurfaceVariant} />
             {selectedTags.length === 0 ? (
-              <Text style={styles.tagsPlaceholder}>Add tags (optional)</Text>
+              <Text style={styles.tagsPlaceholder}>
+                {t("newSession.addTagsOptional")}
+              </Text>
             ) : (
               <View style={styles.tagChipsRow}>
-                {selectedTags.map((t) => (
-                  <TagChip key={t.id} name={t.name} color={t.color} />
+                {selectedTags.map((tag) => (
+                  <TagChip key={tag.id} name={tag.name} color={tag.color} />
                 ))}
               </View>
             )}
@@ -257,7 +263,7 @@ export function NewSessionModal({
           {/* Start button */}
           <GradientButton
             shape="pill"
-            label="Start Activity"
+            label={t("newSession.start")}
             onPress={handleStart}
             disabled={!selectedActivityId}
           >

@@ -43,6 +43,8 @@ import {
   scheduleIdleReminder,
   scheduleLongRunningReminder,
 } from "@/lib/notifications";
+import { useTranslation } from "react-i18next";
+import { localizeActivityName, localizeCategoryName } from "@/lib/i18n/preset-names";
 
 // Aggregate fingerprint over time_entries — `MAX(updated_at)` shifts on
 // every insert/update (including soft deletes, which set updated_at), and
@@ -130,6 +132,8 @@ export function useNotificationScheduler(): void {
   );
 
   const running = runningData.length > 0 ? runningData[0] : null;
+  const { i18n } = useTranslation();
+  const languageRef = useRef(i18n.language);
   const prefs = prefsData.length > 0 ? prefsData[0] : null;
   const userPrefs = userPrefsData.length > 0 ? userPrefsData[0] : null;
   const weekStartDay = userPrefs?.week_start_day ?? DEFAULT_WEEK_START_DAY;
@@ -436,6 +440,27 @@ export function useNotificationScheduler(): void {
     running,
   ]);
 
+  // Notification copy is baked in at schedule time. When the UI language
+  // changes, re-queue the running entry's pending reminders so they fire in
+  // the new language. The idle reminder is anchored to the stop time and
+  // fires within 30 minutes, so it's left as-is.
+  useEffect(() => {
+    if (languageRef.current === i18n.language) return;
+    languageRef.current = i18n.language;
+    if (!prefs || running === null) return;
+    void (async () => {
+      const granted = await hasNotificationPermission();
+      if (!granted) return;
+      if (longRunningEnabled) {
+        await scheduleLongRunningForEntry(running, prefs);
+      }
+      if (goalAlertsEnabled) {
+        await reconcileGoalAlertForEntry(running, prefs, weekStartDay);
+      }
+    })();
+    // Only a language change should trigger this; other effects own the rest.
+  }, [i18n.language]);
+
   // Foreground reconciliation: drop orphaned schedules and recheck permission.
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextState) => {
@@ -491,7 +516,7 @@ async function scheduleLongRunningForEntry(
   // truthful about elapsed work, not elapsed wait.
   await scheduleLongRunningReminder({
     entryId: row.entry_id,
-    activityName: row.activity_name,
+    activityName: localizeActivityName(row.activity_id, row.activity_name),
     fireAt,
     firesAfterSeconds: threshold,
   });
@@ -596,7 +621,7 @@ async function reconcileGoalAlertForEntry(
 
   await scheduleGoalAlert({
     categoryId: row.category_id,
-    categoryName: row.category_name,
+    categoryName: localizeCategoryName(row.category_id, row.category_name),
     goalType,
     periodKind,
     fireAt,

@@ -6,6 +6,7 @@ import { CategoryIcon } from "@/components/common/category-icon";
 import type { CategoryWithActivities } from "@/db/models";
 import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
 import { useTheme, useThemedStyles } from "@/hooks/useTheme";
+import { useTranslation } from "react-i18next";
 
 interface ManageCategoryRowProps {
   category: CategoryWithActivities;
@@ -19,6 +20,7 @@ export function ManageCategoryRow({
   onDelete,
 }: ManageCategoryRowProps): React.ReactElement {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const swipeableRef = useRef<Swipeable>(null);
   const activityCount = category.activities.length;
@@ -32,10 +34,10 @@ export function ManageCategoryRow({
     (): React.ReactElement => (
       <RectButton style={styles.removeAction} onPress={handleRemovePress}>
         <Feather name="archive" size={20} color={colors.onPrimary} />
-        <Text style={styles.removeLabel}>Remove</Text>
+        <Text style={styles.removeLabel}>{t("common.remove")}</Text>
       </RectButton>
     ),
-    [handleRemovePress, styles, colors],
+    [handleRemovePress, styles, colors, t],
   );
 
   return (
@@ -61,7 +63,7 @@ export function ManageCategoryRow({
             {category.name}
           </Text>
           <Text style={styles.subtitle} numberOfLines={1}>
-            {activityCount} {activityCount === 1 ? "activity" : "activities"}
+            {t("manageCategories.activityCount", { count: activityCount })}
           </Text>
         </View>
         <Pressable
@@ -69,7 +71,7 @@ export function ManageCategoryRow({
           style={styles.editButton}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel={`Edit ${category.name}`}
+          accessibilityLabel={t("common.editItem", { name: category.name })}
         >
           <Feather name="edit-2" size={16} color={colors.primary} />
         </Pressable>

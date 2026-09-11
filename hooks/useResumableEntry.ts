@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AppState } from 'react-native';
 import { useQuery } from '@powersync/react';
+import { useTranslation } from 'react-i18next';
+import { localizeActivityName, localizeCategoryName } from '@/lib/i18n/preset-names';
 
 /** How recent (ms) a stopped entry must be to be considered resumable. */
 const RESUMABLE_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
@@ -24,6 +26,7 @@ const RESUMABLE_QUERY = `
     te.activity_id AS activity_id,
     te.ended_at    AS ended_at,
     a.name         AS activity_name,
+    c.id           AS category_id,
     c.name         AS category_name,
     c.color        AS category_color
   FROM time_entries te
@@ -41,6 +44,7 @@ interface ResumableRow {
   activity_id: string;
   ended_at: string;
   activity_name: string;
+  category_id: string;
   category_name: string;
   category_color: string;
 }
@@ -58,6 +62,7 @@ export function useResumableEntry(): ResumableEntry | null {
   const { data } = useQuery<ResumableRow>(RESUMABLE_QUERY);
   const row = data.length > 0 ? data[0] : null;
   const [, forceTick] = useState(0);
+  const { i18n } = useTranslation();
 
   // Schedule a re-render when the window expires so the banner disappears
   // even if the user sits idle and nothing else triggers a render.
@@ -86,10 +91,10 @@ export function useResumableEntry(): ResumableEntry | null {
     return {
       entryId: row.entry_id,
       activityId: row.activity_id,
-      activityName: row.activity_name,
-      categoryName: row.category_name,
+      activityName: localizeActivityName(row.activity_id, row.activity_name),
+      categoryName: localizeCategoryName(row.category_id, row.category_name),
       categoryColor: row.category_color,
       endedAt,
     };
-  }, [row]);
+  }, [row, i18n.language]);
 }

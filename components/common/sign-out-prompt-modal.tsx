@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
 import { useTheme, useThemedStyles } from "@/hooks/useTheme";
+import { useTranslation } from "react-i18next";
 
 interface SignOutPromptModalProps {
   visible: boolean;
@@ -19,6 +20,7 @@ export function SignOutPromptModal({
 }: SignOutPromptModalProps): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [submitting, setSubmitting] = useState<"keep" | "wipe" | null>(null);
 
@@ -52,10 +54,8 @@ export function SignOutPromptModal({
 
           <View style={styles.header}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.title}>Sign out</Text>
-              <Text style={styles.subtitle}>
-                Keep this device&apos;s data, or wipe it after signing out?
-              </Text>
+              <Text style={styles.title}>{t("signOut.title")}</Text>
+              <Text style={styles.subtitle}>{t("signOut.subtitle")}</Text>
             </View>
             <Pressable
               style={styles.closeButton}
@@ -86,10 +86,10 @@ export function SignOutPromptModal({
               </View>
               <View style={styles.optionText}>
                 <Text style={styles.optionTitle}>
-                  {submitting === "keep" ? "Signing out…" : "Keep on device"}
+                  {submitting === "keep" ? t("signOut.signingOut") : t("signOut.keep")}
                 </Text>
                 <Text style={styles.optionDescription}>
-                  Your local entries stay. Sign in again to merge them.
+                  {t("signOut.keepDescription")}
                 </Text>
               </View>
               <Feather
@@ -117,10 +117,10 @@ export function SignOutPromptModal({
               </View>
               <View style={styles.optionText}>
                 <Text style={styles.optionTitle}>
-                  {submitting === "wipe" ? "Signing out…" : "Wipe this device"}
+                  {submitting === "wipe" ? t("signOut.signingOut") : t("signOut.wipe")}
                 </Text>
                 <Text style={styles.optionDescription}>
-                  Removes all local entries. Cloud copies stay safe.
+                  {t("signOut.wipeDescription")}
                 </Text>
               </View>
               <Feather

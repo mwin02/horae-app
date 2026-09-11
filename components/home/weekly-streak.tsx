@@ -7,7 +7,9 @@ import {
   type WeeklyStreakCategory,
 } from "@/hooks/useWeeklyStreaks";
 import { Feather } from "@expo/vector-icons";
+import i18n from "@/lib/i18n";
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
@@ -99,9 +101,10 @@ function Header({
   onSelect,
 }: HeaderProps): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
+  const { t } = useTranslation();
   return (
     <View style={styles.header}>
-      <Text style={styles.eyebrowTitle}>WEEKLY STREAK</Text>
+      <Text style={styles.eyebrowTitle}>{t("weeklyStreak.title")}</Text>
       <View style={styles.dotsRow}>
         {Array.from({ length: total }).map((_, i) => (
           <Pressable key={i} onPress={() => onSelect(i)} hitSlop={6}>
@@ -132,6 +135,7 @@ interface NavProps {
 function CategoryRow({ cat, onPrev, onNext }: NavProps): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   return (
     <View style={styles.categoryBlock}>
       <View style={styles.categoryNavRow}>
@@ -139,7 +143,7 @@ function CategoryRow({ cat, onPrev, onNext }: NavProps): React.ReactElement {
           onPress={onPrev}
           hitSlop={10}
           style={({ pressed }) => [styles.chevron, pressed && styles.chevronPressed]}
-          accessibilityLabel="Previous category"
+          accessibilityLabel={t("weeklyStreak.previousCategory")}
         >
           <Feather name="chevron-left" size={16} color={colors.onSurfaceVariant} />
         </Pressable>
@@ -157,7 +161,7 @@ function CategoryRow({ cat, onPrev, onNext }: NavProps): React.ReactElement {
           onPress={onNext}
           hitSlop={10}
           style={({ pressed }) => [styles.chevron, pressed && styles.chevronPressed]}
-          accessibilityLabel="Next category"
+          accessibilityLabel={t("weeklyStreak.nextCategory")}
         >
           <Feather name="chevron-right" size={16} color={colors.onSurfaceVariant} />
         </Pressable>
@@ -178,6 +182,7 @@ function HeroRow({
 }): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const { streak, best } = cat;
   const flameColor = streak > 0 ? cat.categoryColor : colors.outline;
   const ringColor = cat.thisWeek.onTrack
@@ -191,11 +196,15 @@ function HeroRow({
         <View style={styles.heroNumbers}>
           <Text style={styles.streakNumber}>{streak}</Text>
           <Text style={styles.streakSub} numberOfLines={1}>
-            {streak === 1 ? "week streak" : "weeks in a row"}
+            {t("weeklyStreak.streak", { count: streak })}
             {best > streak ? (
-              <Text style={styles.streakSubMuted}> · best {best}</Text>
+              <Text style={styles.streakSubMuted}>
+                {t("weeklyStreak.best", { best })}
+              </Text>
             ) : streak > 0 && best === streak ? (
-              <Text style={styles.personalBest}> · personal best!</Text>
+              <Text style={styles.personalBest}>
+                {t("weeklyStreak.personalBest")}
+              </Text>
             ) : null}
           </Text>
         </View>
@@ -215,6 +224,7 @@ function ProgressRing({
 }): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const dash = RING_CIRC * Math.max(0, Math.min(1, pct));
   const center = RING_SIZE / 2;
   return (
@@ -242,7 +252,7 @@ function ProgressRing({
       </Svg>
       <View style={styles.ringLabelWrap} pointerEvents="none">
         <Text style={styles.ringPct}>{Math.round(pct * 100)}%</Text>
-        <Text style={styles.ringSub}>THIS WK</Text>
+        <Text style={styles.ringSub}>{t("weeklyStreak.thisWeekShort")}</Text>
       </View>
     </View>
   );
@@ -257,6 +267,7 @@ function HistorySection({
 }): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const { history } = cat;
   const tracked = history.filter((h) => h !== null).length;
   const hits = history.filter((h) => h === 1).length;
@@ -267,9 +278,11 @@ function HistorySection({
   return (
     <View style={styles.historyBox}>
       <View style={styles.historyHeader}>
-        <Text style={styles.historyTitle}>LAST 12 WEEKS</Text>
+        <Text style={styles.historyTitle}>
+          {t("weeklyStreak.lastWeeks", { count: STREAK_WEEKS })}
+        </Text>
         <Text style={styles.historyMeta}>
-          {hits}/{tracked} hit
+          {t("weeklyStreak.hits", { hits, tracked })}
         </Text>
       </View>
       <View style={styles.barsRow}>
@@ -309,7 +322,7 @@ function HistorySection({
                   isCurrent && styles.barLabelCurrent,
                 ]}
               >
-                {isCurrent ? "n" : `${STREAK_WEEKS - 1 - i}`}
+                {isCurrent ? t("weeklyStreak.nowShort") : `${STREAK_WEEKS - 1 - i}`}
               </Text>
             </View>
           );
@@ -328,6 +341,7 @@ function FooterRow({
 }): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const { actualSeconds, goalSeconds, daysLeft, isLimit, onTrack } = cat.thisWeek;
   const chipFg = onTrack ? colors.secondary : colors.tertiary;
   const chipBg = onTrack ? colors.secondaryContainer : colors.tertiaryContainer;
@@ -335,22 +349,24 @@ function FooterRow({
   let chipText: string;
   if (isLimit) {
     chipText = onTrack
-      ? `${formatHm(goalSeconds - actualSeconds)} buffer`
-      : `over by ${formatHm(actualSeconds - goalSeconds)}`;
+      ? t("weeklyStreak.buffer", { duration: formatHm(goalSeconds - actualSeconds) })
+      : t("weeklyStreak.overBy", { duration: formatHm(actualSeconds - goalSeconds) });
   } else {
     const remaining = Math.max(0, goalSeconds - actualSeconds);
     chipText = remaining <= 0
-      ? "complete"
+      ? t("weeklyStreak.complete")
       : daysLeft > 0
-        ? `${daysLeft}d to finish`
-        : `need ${formatHm(remaining)}`;
+        ? t("weeklyStreak.daysToFinish", { count: daysLeft })
+        : t("weeklyStreak.need", { duration: formatHm(remaining) });
   }
 
   return (
     <View style={styles.footerRow}>
       <Text style={styles.footerText} numberOfLines={1}>
         <Text style={styles.footerStrong}>{formatHm(actualSeconds)}</Text>
-        <Text style={styles.footerMuted}> / {formatHm(goalSeconds)} this week</Text>
+        <Text style={styles.footerMuted}>
+          {t("weeklyStreak.ofGoalThisWeek", { goal: formatHm(goalSeconds) })}
+        </Text>
       </Text>
       <View style={[styles.chip, { backgroundColor: chipBg }]}>
         <Text style={[styles.chipText, { color: chipFg }]} numberOfLines={1}>
@@ -366,20 +382,26 @@ function FooterRow({
 function goalLabel(cat: WeeklyStreakCategory): string {
   const hours = cat.goalSeconds / 3600;
   const rounded = Number.isInteger(hours) ? hours.toString() : hours.toFixed(1);
-  if (cat.goalDirection === "at_most") return `under ${rounded}h / week`;
-  if (cat.goalDirection === "around") return `~${rounded}h / week`;
-  return `${rounded}h / week`;
+  if (cat.goalDirection === "at_most") {
+    return i18n.t("weeklyStreak.goalAtMost", { hours: rounded });
+  }
+  if (cat.goalDirection === "around") {
+    return i18n.t("weeklyStreak.goalAround", { hours: rounded });
+  }
+  return i18n.t("weeklyStreak.goalAtLeast", { hours: rounded });
 }
 
 function formatHm(totalSeconds: number): string {
   const safe = Math.max(0, Math.round(totalSeconds));
   const totalMinutes = Math.round(safe / 60);
-  if (totalMinutes >= 600) return `${Math.round(totalMinutes / 60)}h`;
+  if (totalMinutes >= 600) {
+    return i18n.t("duration.hours", { hours: Math.round(totalMinutes / 60) });
+  }
   const h = Math.floor(totalMinutes / 60);
   const m = totalMinutes % 60;
-  if (h === 0) return `${m}m`;
-  if (m === 0) return `${h}h`;
-  return `${h}h ${m}m`;
+  if (h === 0) return i18n.t("duration.minutes", { minutes: m });
+  if (m === 0) return i18n.t("duration.hours", { hours: h });
+  return i18n.t("duration.hoursMinutes", { hours: h, minutes: m });
 }
 
 // ──────────────────────────────────────────────

@@ -19,7 +19,10 @@
       "deploymentTarget": "16.1",
       "infoPlist": {
         "NSSupportsLiveActivities": true,
-        "LSApplicationQueriesSchemes": ["mailto", "mailto"],
+        "LSApplicationQueriesSchemes": [
+          "mailto",
+          "mailto"
+        ],
         "ITSAppUsesNonExemptEncryption": false
       },
       "entitlements": {
@@ -69,7 +72,20 @@
           "project": "horae-ios"
         }
       ],
-      "expo-mail-composer"
+      "expo-mail-composer",
+      [
+        "expo-localization",
+        {
+          "supportedLocales": {
+            "ios": [
+              "en"
+            ],
+            "android": [
+              "en"
+            ]
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

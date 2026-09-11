@@ -5,13 +5,13 @@ import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
+import { weekdayNames } from "@/lib/i18n/format";
 
 interface WeekStripProps {
   selectedDate: string; // YYYY-MM-DD
   onDateChange: (date: string) => void;
 }
-
-const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 interface DayInfo {
   dateStr: string; // YYYY-MM-DD
@@ -48,8 +48,10 @@ export function WeekStrip({
   const today = getTodayDate(timezone);
   const { preferences } = useUserPreferences();
   const weekStartDay = preferences.weekStartDay;
+  const { i18n } = useTranslation();
 
   const days: DayInfo[] = useMemo(() => {
+    const dayLabels = weekdayNames("short"); // 0=Mon … 6=Sun, localized
     const start = getWeekStartDate(selectedDate, weekStartDay);
     return Array.from({ length: 7 }, (_, i) => {
       const d = new Date(start);
@@ -59,13 +61,13 @@ export function WeekStrip({
       return {
         dateStr,
         dayOfMonth: d.getDate(),
-        dayLabel: DAY_LABELS[labelIdx],
+        dayLabel: dayLabels[labelIdx],
         isSelected: dateStr === selectedDate,
         isToday: dateStr === today,
         isFuture: dateStr > today,
       };
     });
-  }, [selectedDate, today, weekStartDay]);
+  }, [selectedDate, today, weekStartDay, i18n.language]);
 
   return (
     <View style={styles.container}>

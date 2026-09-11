@@ -1,6 +1,7 @@
 import * as DocumentPicker from "expo-document-picker";
 import { File } from "expo-file-system";
 import type { Transaction } from "@powersync/react-native";
+import i18n from "@/lib/i18n";
 
 import { db } from "@/lib/powersync";
 import { cancelAllAppNotifications } from "@/lib/notifications";
@@ -101,27 +102,25 @@ function parseAndValidate(text: string): ImportPayload {
   try {
     raw = JSON.parse(text);
   } catch {
-    throw new ImportError(
-      "That file isn't valid JSON. Pick a backup file exported from Horae.",
-    );
+    throw new ImportError(i18n.t("dataTransfer.importInvalidJson"));
   }
 
   if (!raw || typeof raw !== "object") {
-    throw new ImportError("That doesn't look like a Horae backup file.");
+    throw new ImportError(i18n.t("dataTransfer.importNotBackup"));
   }
 
   const obj = raw as Record<string, unknown>;
   if (obj.schema_version !== EXPORT_SCHEMA_VERSION) {
     throw new ImportError(
-      `This backup was made with a different version of Horae (format v${String(
-        obj.schema_version,
-      )}). Update the app and try again.`,
+      i18n.t("dataTransfer.importVersionMismatch", {
+        version: String(obj.schema_version),
+      }),
     );
   }
 
   const tables = obj.tables;
   if (!tables || typeof tables !== "object") {
-    throw new ImportError("That backup file is missing its data tables.");
+    throw new ImportError(i18n.t("dataTransfer.importMissingTables"));
   }
 
   const tablesRecord = tables as Record<string, unknown>;
@@ -131,7 +130,7 @@ function parseAndValidate(text: string): ImportPayload {
     if (value === undefined) continue;
     if (!Array.isArray(value)) {
       throw new ImportError(
-        `That backup file is malformed (table "${name}" should be a list).`,
+        i18n.t("dataTransfer.importMalformedTable", { table: name }),
       );
     }
     cleaned[name] = value as Row[];
@@ -307,14 +306,14 @@ export async function pickAndImportJson(
   if (picked.canceled) return null;
   const asset = picked.assets?.[0];
   if (!asset?.uri) {
-    throw new ImportError("Couldn't read the selected file.");
+    throw new ImportError(i18n.t("dataTransfer.importCantRead"));
   }
 
   let text: string;
   try {
     text = await new File(asset.uri).text();
   } catch {
-    throw new ImportError("Couldn't open the selected file.");
+    throw new ImportError(i18n.t("dataTransfer.importCantOpen"));
   }
 
   const payload = parseAndValidate(text);

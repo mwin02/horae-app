@@ -2,6 +2,8 @@ import * as Application from "expo-application";
 import * as MailComposer from "expo-mail-composer";
 import { Alert, Linking, Platform } from "react-native";
 
+import i18n from "@/lib/i18n";
+
 /**
  * Opens the system mail composer prefilled with app + device context so
  * a user can report a bug or request a feature without us collecting any
@@ -17,18 +19,21 @@ const SUPPORT_EMAIL =
 
 type FeedbackKind = "bug" | "feature";
 
+// The prompts the user fills in are localized; the subject line and the
+// "App info" block stay English so reports are easy to triage.
 function buildBody(kind: FeedbackKind): string {
   const heading =
     kind === "bug"
-      ? "Describe what happened and what you expected:"
-      : "Describe the feature or improvement you'd like to see:";
+      ? i18n.t("feedback.bugPrompt")
+      : i18n.t("feedback.featurePrompt");
   const stepsBlock =
     kind === "bug"
-      ? `\n\nSteps to reproduce:\n1.\n2.\n3.\n`
+      ? `\n\n${i18n.t("feedback.stepsToReproduce")}\n1.\n2.\n3.\n`
       : "";
   return [
     `${heading}\n\n\n`,
     stepsBlock,
+    // i18n-ignore-next-line: developer-facing diagnostics
     "\n— App info —",
     `App version: ${Application.nativeApplicationVersion ?? "unknown"} (build ${Application.nativeBuildVersion ?? "?"})`,
     `Platform: ${Platform.OS} ${Platform.Version}`,
@@ -59,6 +64,9 @@ export async function sendFeedback(kind: FeedbackKind): Promise<void> {
   try {
     await Linking.openURL(url);
   } catch {
-    Alert.alert("No mail app", `Email us directly at ${SUPPORT_EMAIL}.`);
+    Alert.alert(
+      i18n.t("feedback.noMailTitle"),
+      i18n.t("feedback.noMailBody", { email: SUPPORT_EMAIL }),
+    );
   }
 }

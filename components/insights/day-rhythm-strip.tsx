@@ -4,33 +4,33 @@ import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 import { useDayRhythm } from '@/hooks/useDayRhythm';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 interface DayRhythmStripProps {
   date: string; // YYYY-MM-DD
 }
 
-const HOUR_LABELS: { hour: number; label: string }[] = [
-  { hour: 0, label: '12a' },
-  { hour: 6, label: '6a' },
-  { hour: 12, label: '12p' },
-  { hour: 18, label: '6p' },
-];
+const HOUR_LABELS = [
+  { hour: 0, labelKey: 'dayRhythm.hour0' },
+  { hour: 6, labelKey: 'dayRhythm.hour6' },
+  { hour: 12, labelKey: 'dayRhythm.hour12' },
+  { hour: 18, labelKey: 'dayRhythm.hour18' },
+] as const;
 
 export function DayRhythmStrip({
   date,
 }: DayRhythmStripProps): React.ReactElement | null {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const { hours, legend, isLoading } = useDayRhythm(date);
 
   if (isLoading) return null;
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionLabel}>DAY RHYTHM</Text>
-      <Text style={styles.subtitle}>
-        When each category happened across the day
-      </Text>
+      <Text style={styles.sectionLabel}>{t('dayRhythm.title')}</Text>
+      <Text style={styles.subtitle}>{t('dayRhythm.subtitle')}</Text>
 
       <View style={styles.strip}>
         {hours.map((h) => {
@@ -53,7 +53,7 @@ export function DayRhythmStrip({
       </View>
 
       <View style={styles.axisRow}>
-        {HOUR_LABELS.map(({ hour, label }) => (
+        {HOUR_LABELS.map(({ hour, labelKey }) => (
           <Text
             key={hour}
             style={[
@@ -61,7 +61,7 @@ export function DayRhythmStrip({
               { left: `${(hour / 24) * 100}%` },
             ]}
           >
-            {label}
+            {t(labelKey)}
           </Text>
         ))}
       </View>

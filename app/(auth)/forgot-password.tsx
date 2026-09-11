@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -21,6 +22,7 @@ import { useAuth } from "@/hooks/useAuth";
 export default function ForgotPasswordScreen(): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const router = useRouter();
   const { sendPasswordReset } = useAuth();
   const [email, setEmail] = useState("");
@@ -30,7 +32,7 @@ export default function ForgotPasswordScreen(): React.ReactElement {
 
   const handleSubmit = useCallback(async () => {
     if (!email.trim()) {
-      setError("Enter your email.");
+      setError(t("auth.forgot.missingEmail"));
       return;
     }
     setSubmitting(true);
@@ -42,8 +44,8 @@ export default function ForgotPasswordScreen(): React.ReactElement {
       setError(result.error);
       return;
     }
-    setInfo("If an account exists for that email, a reset link is on its way.");
-  }, [email, sendPasswordReset]);
+    setInfo(t("auth.forgot.sent"));
+  }, [email, sendPasswordReset, t]);
 
   const goBack = useCallback(() => {
     if (router.canGoBack()) {
@@ -65,20 +67,18 @@ export default function ForgotPasswordScreen(): React.ReactElement {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <Text style={styles.title}>Reset your password</Text>
-            <Text style={styles.subtitle}>
-              We&apos;ll send a link to set a new password.
-            </Text>
+            <Text style={styles.title}>{t("auth.forgot.title")}</Text>
+            <Text style={styles.subtitle}>{t("auth.forgot.subtitle")}</Text>
           </View>
 
           <View style={styles.form}>
             <View style={styles.field}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>{t("auth.emailLabel")}</Text>
               <TextInput
                 style={styles.input}
                 value={email}
                 onChangeText={setEmail}
-                placeholder="you@example.com"
+                placeholder={t("auth.emailPlaceholder")}
                 placeholderTextColor={colors.onSurfaceVariant}
                 autoCapitalize="none"
                 autoComplete="email"
@@ -94,7 +94,9 @@ export default function ForgotPasswordScreen(): React.ReactElement {
 
             <GradientButton
               shape="pill"
-              label={submitting ? "Sending…" : "Send reset link"}
+              label={
+                submitting ? t("auth.forgot.submitting") : t("auth.forgot.submit")
+              }
               onPress={handleSubmit}
               disabled={submitting}
             >
@@ -102,7 +104,7 @@ export default function ForgotPasswordScreen(): React.ReactElement {
             </GradientButton>
 
             <Pressable onPress={goBack} style={styles.linkRow}>
-              <Text style={styles.linkText}>Back to sign in</Text>
+              <Text style={styles.linkText}>{t("auth.forgot.backToSignIn")}</Text>
             </Pressable>
           </View>
         </ScrollView>

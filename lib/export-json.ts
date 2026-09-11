@@ -3,6 +3,7 @@ import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
 
 import { db } from "@/lib/powersync";
+import i18n from "@/lib/i18n";
 
 /**
  * Bump per schema-shape change so importers can branch on the version.
@@ -97,7 +98,7 @@ function buildFilename(now: Date): string {
 export async function exportDataAsJson(): Promise<void> {
   const available = await Sharing.isAvailableAsync();
   if (!available) {
-    throw new Error("Sharing is not available on this device");
+    throw new Error(i18n.t("dataTransfer.sharingUnavailable"));
   }
 
   const payload = await buildPayload();
@@ -113,6 +114,6 @@ export async function exportDataAsJson(): Promise<void> {
   await Sharing.shareAsync(file.uri, {
     mimeType: "application/json",
     UTI: "public.json",
-    dialogTitle: "Export Horae data",
+    dialogTitle: i18n.t("dataTransfer.exportJsonDialogTitle"),
   });
 }

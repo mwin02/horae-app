@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import {
   Pressable,
   ScrollView,
@@ -20,6 +21,7 @@ const RESEND_COOLDOWN_SECONDS = 60;
 export default function ConfirmEmailScreen(): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const router = useRouter();
   const { email } = useLocalSearchParams<{ email?: string }>();
   const { resendSignUpConfirmation } = useAuth();
@@ -63,9 +65,9 @@ export default function ConfirmEmailScreen(): React.ReactElement {
       setError(result.error);
       return;
     }
-    setInfo("Confirmation email sent. Check your inbox.");
+    setInfo(t("auth.confirm.sent"));
     startCooldown();
-  }, [email, resending, secondsLeft, resendSignUpConfirmation, startCooldown]);
+  }, [email, resending, secondsLeft, resendSignUpConfirmation, startCooldown, t]);
 
   const goToSignIn = useCallback(() => {
     router.replace("/(auth)/sign-in");
@@ -73,10 +75,10 @@ export default function ConfirmEmailScreen(): React.ReactElement {
 
   const cooldownActive = secondsLeft > 0;
   const resendLabel = resending
-    ? "Sending…"
+    ? t("auth.confirm.sending")
     : cooldownActive
-      ? `Resend in ${secondsLeft}s`
-      : "Resend confirmation email";
+      ? t("auth.confirm.resendIn", { seconds: secondsLeft })
+      : t("auth.confirm.resend");
 
   return (
     <SafeAreaView style={styles.container} edges={["bottom"]}>
@@ -90,12 +92,13 @@ export default function ConfirmEmailScreen(): React.ReactElement {
         </View>
 
         <View style={styles.header}>
-          <Text style={styles.title}>Check your inbox</Text>
+          <Text style={styles.title}>{t("auth.confirm.title")}</Text>
           <Text style={styles.subtitle}>
-            We sent a confirmation link to{" "}
-            <Text style={styles.emailHighlight}>{email ?? "your email"}</Text>.
-            Tap it to finish setting up your account, then come back and sign
-            in.
+            <Trans
+              i18nKey="auth.confirm.body"
+              values={{ email: email ?? t("auth.confirm.yourEmail") }}
+              components={{ email: <Text style={styles.emailHighlight} /> }}
+            />
           </Text>
         </View>
 
@@ -113,16 +116,15 @@ export default function ConfirmEmailScreen(): React.ReactElement {
           </GradientButton>
 
           <Pressable onPress={goToSignIn} style={styles.linkRow}>
-            <Text style={styles.linkText}>I&apos;ve confirmed — sign in</Text>
+            <Text style={styles.linkText}>
+              {t("auth.confirm.confirmedSignIn")}
+            </Text>
           </Pressable>
         </View>
 
         <View style={styles.helpCard}>
-          <Text style={styles.helpTitle}>Not seeing the email?</Text>
-          <Text style={styles.helpBody}>
-            Check your spam folder, or wait a minute and tap resend. If the
-            address is wrong, sign up again with the correct email.
-          </Text>
+          <Text style={styles.helpTitle}>{t("auth.confirm.helpTitle")}</Text>
+          <Text style={styles.helpBody}>{t("auth.confirm.helpBody")}</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

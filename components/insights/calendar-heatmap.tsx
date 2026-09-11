@@ -8,14 +8,13 @@ import { useUserPreferences } from '@/hooks/useUserPreferences';
 import { formatDuration } from '@/lib/timezone';
 import React, { useMemo } from 'react';
 import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { weekdayNames } from '@/lib/i18n/format';
 
 interface CalendarHeatmapProps {
   monthDate: string; // YYYY-MM-DD — any day in the target month
   onDayPress: (date: string) => void;
 }
-
-/** Mon=0 … Sun=6. */
-const DOW_LABELS_MON_ZERO = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
 export function CalendarHeatmap({
   monthDate,
@@ -24,13 +23,17 @@ export function CalendarHeatmap({
   const styles = useThemedStyles(makeStyles);
   const { days, leadingBlankCount, isLoading } = useMonthlyCoverage(monthDate);
   const { preferences } = useUserPreferences();
+  const { t, i18n } = useTranslation();
   const dowLabels = useMemo(
-    () =>
-      Array.from(
+    () => {
+      // Mon=0 … Sun=6, localized narrow names (M, T, W… / 一, 二, 三…).
+      const names = weekdayNames('narrow');
+      return Array.from(
         { length: 7 },
-        (_, i) => DOW_LABELS_MON_ZERO[(preferences.weekStartDay + i) % 7],
-      ),
-    [preferences.weekStartDay],
+        (_, i) => names[(preferences.weekStartDay + i) % 7],
+      );
+    },
+    [preferences.weekStartDay, i18n.language],
   );
 
   if (isLoading) return null;
@@ -43,11 +46,14 @@ export function CalendarHeatmap({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionLabel}>COVERAGE HEATMAP</Text>
+      <Text style={styles.sectionLabel}>{t('calendarHeatmap.title')}</Text>
       <Text style={styles.subtitle}>
         {daysTracked > 0
-          ? `${formatDuration(totalTrackedSeconds)} across ${daysTracked} day${daysTracked === 1 ? '' : 's'}`
-          : 'No tracked time this month'}
+          ? t('calendarHeatmap.summary', {
+              duration: formatDuration(totalTrackedSeconds),
+              count: daysTracked,
+            })
+          : t('insightsCommon.noTrackedMonth')}
       </Text>
 
       <View style={styles.dowRow}>
@@ -117,9 +123,10 @@ function IntensityLegend(): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   const intensityColors = getIntensityColors(colors);
+  const { t } = useTranslation();
   return (
     <View style={styles.legend}>
-      <Text style={styles.legendLabel}>Less</Text>
+      <Text style={styles.legendLabel}>{t('calendarHeatmap.less')}</Text>
       <View style={styles.legendCells}>
         <View
           style={[
@@ -134,7 +141,7 @@ function IntensityLegend(): React.ReactElement {
           />
         ))}
       </View>
-      <Text style={styles.legendLabel}>More</Text>
+      <Text style={styles.legendLabel}>{t('calendarHeatmap.more')}</Text>
     </View>
   );
 }

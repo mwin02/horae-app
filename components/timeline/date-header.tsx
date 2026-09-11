@@ -4,6 +4,9 @@ import { Feather } from '@expo/vector-icons';
 import { SPACING, TYPOGRAPHY, RADIUS, type ThemeColors } from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 import { getCurrentTimezone, getTodayDate } from '@/lib/timezone';
+import type { TFunction } from 'i18next';
+import { useTranslation } from 'react-i18next';
+import { getIntlLocale } from '@/lib/i18n';
 
 interface DateHeaderProps {
   selectedDate: string; // YYYY-MM-DD
@@ -15,18 +18,18 @@ function formatDisplayDate(dateStr: string): string {
   // Parse as local date (avoid timezone shift by using noon)
   const [year, month, day] = dateStr.split('-').map(Number);
   const date = new Date(year, month - 1, day, 12);
-  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+  return date.toLocaleDateString(getIntlLocale(), { month: 'long', day: 'numeric' });
 }
 
 /** Get the label above the date ("TODAY", or weekday name for past dates) */
-function getDateLabel(dateStr: string): string {
+function getDateLabel(dateStr: string, t: TFunction): string {
   const timezone = getCurrentTimezone();
   const today = getTodayDate(timezone);
-  if (dateStr === today) return 'Today';
+  if (dateStr === today) return t('timeline.today');
 
   const [year, month, day] = dateStr.split('-').map(Number);
   const date = new Date(year, month - 1, day, 12);
-  return date.toLocaleDateString('en-US', { weekday: 'long' });
+  return date.toLocaleDateString(getIntlLocale(), { weekday: 'long' });
 }
 
 /** Add days to a YYYY-MM-DD string */
@@ -39,6 +42,7 @@ function addDays(dateStr: string, days: number): string {
 
 export function DateHeader({ selectedDate, onDateChange }: DateHeaderProps): React.ReactElement {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const timezone = getCurrentTimezone();
   const today = getTodayDate(timezone);
@@ -57,7 +61,7 @@ export function DateHeader({ selectedDate, onDateChange }: DateHeaderProps): Rea
   return (
     <View style={styles.container}>
       <View>
-        <Text style={styles.label}>{getDateLabel(selectedDate)}</Text>
+        <Text style={styles.label}>{getDateLabel(selectedDate, t)}</Text>
         <Text style={styles.date}>{formatDisplayDate(selectedDate)}</Text>
       </View>
       <View style={styles.arrowPill}>

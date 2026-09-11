@@ -20,6 +20,7 @@ import {
 } from "@/db/queries/insight-preferences";
 import { useInsightPreferences } from "@/hooks/useInsightPreferences";
 import type { InsightsPeriod } from "@/db/queries/user-preferences";
+import { useTranslation } from "react-i18next";
 
 export interface CardEntry {
   id: InsightCardId;
@@ -57,6 +58,7 @@ export function CustomizableCardList({
 }: CustomizableCardListProps): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const { preferences } = useInsightPreferences();
   const order = preferences.orders[period];
   const hidden = preferences.hidden[period];
@@ -261,9 +263,9 @@ export function CustomizableCardList({
       {allHidden ? (
         <View style={styles.emptyState}>
           <Feather name="eye-off" size={28} color={colors.onSurfaceVariant} />
-          <Text style={styles.emptyTitle}>No cards visible</Text>
+          <Text style={styles.emptyTitle}>{t("customizeCards.noCardsTitle")}</Text>
           <Text style={styles.emptySubtitle}>
-            Show a card from the list below or restore defaults.
+            {t("customizeCards.noCardsBody")}
           </Text>
         </View>
       ) : null}
@@ -274,7 +276,7 @@ export function CustomizableCardList({
     <>
       {editMode && hiddenCards.length > 0 ? (
         <View style={styles.hiddenSection}>
-          <Text style={styles.hiddenHeader}>Hidden</Text>
+          <Text style={styles.hiddenHeader}>{t("customizeCards.hidden")}</Text>
           {hiddenCards.map((card) => (
             <Pressable
               key={card.id}
@@ -292,7 +294,7 @@ export function CustomizableCardList({
               <Text style={styles.hiddenRowLabel}>
                 {card.label ?? card.id}
               </Text>
-              <Text style={styles.hiddenRowAction}>Show</Text>
+              <Text style={styles.hiddenRowAction}>{t("customizeCards.show")}</Text>
             </Pressable>
           ))}
         </View>
@@ -312,7 +314,9 @@ export function CustomizableCardList({
               size={14}
               color={colors.onSurfaceVariant}
             />
-            <Text style={styles.restoreButtonText}>Restore defaults</Text>
+            <Text style={styles.restoreButtonText}>
+              {t("customizeCards.restoreDefaults")}
+            </Text>
           </Pressable>
         </View>
       ) : null}
@@ -323,7 +327,9 @@ export function CustomizableCardList({
     <View style={styles.root}>
       {editMode ? (
         <View style={styles.editToolbar}>
-          <Text style={styles.editToolbarLabel}>Edit cards</Text>
+          <Text style={styles.editToolbarLabel}>
+            {t("customizeCards.editCards")}
+          </Text>
           <Pressable
             onPress={() => onEditModeChange(false)}
             hitSlop={12}
@@ -332,7 +338,7 @@ export function CustomizableCardList({
               pressed && styles.doneButtonPressed,
             ]}
           >
-            <Text style={styles.doneButtonText}>Done</Text>
+            <Text style={styles.doneButtonText}>{t("common.done")}</Text>
           </Pressable>
         </View>
       ) : null}
@@ -387,6 +393,7 @@ function CardCell({
 }: CardCellProps): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const isFocused = focusedId === card.id;
   const isDimmed = focusedId !== null && !isFocused;
 
@@ -444,14 +451,14 @@ function CardCell({
                 styles.overlayButton,
                 pressed && styles.overlayButtonPressed,
               ]}
-              accessibilityLabel="Hide card"
+              accessibilityLabel={t("customizeCards.hideCard")}
             >
               <Feather name="eye-off" size={16} color={colors.onSurface} />
             </Pressable>
             <Pressable
               onPressIn={drag}
               hitSlop={8}
-              accessibilityLabel="Drag to reorder"
+              accessibilityLabel={t("customizeCards.dragToReorder")}
               style={styles.overlayButton}
             >
               <Feather name="menu" size={18} color={colors.onSurface} />

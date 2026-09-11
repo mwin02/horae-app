@@ -28,35 +28,42 @@ import {
 } from "@/db/queries";
 import { useIdealAllocationsForCategory } from "@/hooks/useIdealAllocationsForCategory";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
+import type { TFunction } from "i18next";
+import { useTranslation } from "react-i18next";
+import i18n from "@/lib/i18n";
+import { weekdayNames } from "@/lib/i18n/format";
 
 type Mode = "uniform" | "perDay";
 
-const DIRECTION_OPTIONS: {
+const DIRECTION_OPTIONS = [
+  {
+    value: "at_least",
+    labelKey: "goalEditor.directionAtLeast",
+    helperKey: "goalEditor.helperAtLeast",
+  },
+  {
+    value: "around",
+    labelKey: "goalEditor.directionAround",
+    helperKey: "goalEditor.helperAround",
+  },
+  {
+    value: "at_most",
+    labelKey: "goalEditor.directionAtMost",
+    helperKey: "goalEditor.helperAtMost",
+  },
+] as const satisfies readonly {
   value: GoalDirection;
-  label: string;
-  helper: string;
-}[] = [
-  { value: "at_least", label: "At least", helper: "Floor — more is fine." },
-  { value: "around", label: "Around", helper: "Hit the target either way." },
-  { value: "at_most", label: "At most", helper: "Cap — less is fine." },
-];
+  labelKey: string;
+  helperKey: string;
+}[];
 
-const PERIOD_OPTIONS: {
-  value: GoalPeriodKind;
-  label: string;
-}[] = [
-  { value: "daily", label: "Daily" },
-  { value: "weekly", label: "Weekly" },
-  { value: "monthly", label: "Monthly" },
-];
+const PERIOD_OPTIONS: readonly GoalPeriodKind[] = ["daily", "weekly", "monthly"];
 
 interface GoalEditorModalProps {
   visible: boolean;
   category: CategoryWithActivities | null;
   onClose: () => void;
 }
-
-const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
 export function GoalEditorModal({
   visible,
@@ -65,7 +72,13 @@ export function GoalEditorModal({
 }: GoalEditorModalProps): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
+  const dayLabels = useMemo(
+    () => weekdayNames("short"),
+    // Weekday names follow the UI language.
+    [i18n.language],
+  );
   const {
     periodKind: savedPeriodKind,
     defaultMinutes,
@@ -141,22 +154,20 @@ export function GoalEditorModal({
         setPeriodKind(next);
         return;
       }
-      const fromLabel = labelForKind(savedPeriodKind!);
-      const toLabel = labelForKind(next);
       Alert.alert(
-        `Switch to ${toLabel.toLowerCase()} goal?`,
-        `Your current ${fromLabel.toLowerCase()} configuration will be cleared when you save.`,
+        switchTitle(next, t),
+        switchBody(savedPeriodKind!, t),
         [
-          { text: "Cancel", style: "cancel" },
+          { text: t("common.cancel"), style: "cancel" },
           {
-            text: "Switch",
+            text: t("goalEditor.switch"),
             style: "destructive",
             onPress: () => setPeriodKind(next),
           },
         ],
       );
     },
-    [periodKind, savedPeriodKind],
+    [periodKind, savedPeriodKind, t],
   );
 
   const handleClose = useCallback(() => {
@@ -167,12 +178,12 @@ export function GoalEditorModal({
   const handleClear = useCallback(() => {
     if (!category) return;
     Alert.alert(
-      `Clear goal for ${category.name}?`,
-      "This removes every day's target for this category.",
+      t("goalEditor.clearTitle", { name: category.name }),
+      t("goalEditor.clearBody"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Clear",
+          text: t("common.clear"),
           style: "destructive",
           onPress: async () => {
             setSubmitting(true);
@@ -187,7 +198,7 @@ export function GoalEditorModal({
         },
       ],
     );
-  }, [category, onClose]);
+  }, [category, onClose, t]);
 
   const handleSave = useCallback(async () => {
     if (!category) return;
@@ -289,7 +300,7 @@ export function GoalEditorModal({
                     {category.name}
                   </Text>
                   <Text style={styles.headerSubtitle}>
-                    {labelForKind(periodKind)} goal
+                    {goalSubtitle(periodKind, t)}
                   </Text>
                 </View>
               </View>
@@ -299,14 +310,16 @@ export function GoalEditorModal({
             </View>
 
             {/* Period kind selector */}
-            <Text style={styles.sectionLabel}>GOAL CADENCE</Text>
+            <Text style={styles.sectionLabel}>
+              {t("goalEditor.cadenceLabel")}
+            </Text>
             <View style={styles.modeRow}>
-              {PERIOD_OPTIONS.map((opt) => (
+              {PERIOD_OPTIONS.map((kind) => (
                 <ModeButton
-                  key={opt.value}
-                  label={opt.label}
-                  active={periodKind === opt.value}
-                  onPress={() => handlePeriodChange(opt.value)}
+                  key={kind}
+                  label={t(`common.period.${kind}`)}
+                  active={periodKind === kind}
+                  onPress={() => handlePeriodChange(kind)}
                 />
               ))}
             </View>
@@ -315,12 +328,12 @@ export function GoalEditorModal({
             {periodKind === "daily" && (
               <View style={styles.modeRow}>
                 <ModeButton
-                  label="Same every day"
+                  label={t("goalEditor.sameEveryDay")}
                   active={mode === "uniform"}
                   onPress={() => setMode("uniform")}
                 />
                 <ModeButton
-                  label="Per day of week"
+                  label={t("goalEditor.perDayOfWeek")}
                   active={mode === "perDay"}
                   onPress={() => setMode("perDay")}
                 />
@@ -328,40 +341,47 @@ export function GoalEditorModal({
             )}
 
             {/* Direction selector */}
-            <Text style={styles.sectionLabel}>GOAL TYPE</Text>
+            <Text style={styles.sectionLabel}>{t("goalEditor.typeLabel")}</Text>
             <View style={styles.directionRow}>
               {DIRECTION_OPTIONS.map((opt) => (
                 <DirectionButton
                   key={opt.value}
-                  label={opt.label}
+                  label={t(opt.labelKey)}
                   active={direction === opt.value}
                   onPress={() => setDirection(opt.value)}
                 />
               ))}
             </View>
             <Text style={styles.directionHelper}>
-              {DIRECTION_OPTIONS.find((o) => o.value === direction)?.helper}
+              {t(
+                DIRECTION_OPTIONS.find((o) => o.value === direction)?.helperKey ??
+                  "goalEditor.helperAround",
+              )}
             </Text>
 
             <View style={styles.inputsBlock}>
               {periodKind === "weekly" || periodKind === "monthly" ? (
                 <HMInputRow
-                  label={periodKind === "weekly" ? "Per week" : "Per month"}
+                  label={
+                    periodKind === "weekly"
+                      ? t("goalEditor.perWeek")
+                      : t("goalEditor.perMonth")
+                  }
                   value={periodTarget}
                   onChange={setPeriodTarget}
                   maxHours={periodKind === "weekly" ? 168 : 999}
                 />
               ) : mode === "uniform" ? (
                 <HMInputRow
-                  label="Every day"
+                  label={t("goalEditor.everyDay")}
                   value={uniform}
                   onChange={setUniform}
                 />
               ) : (
                 orderedWeekdayIndices.map((idx) => (
                   <HMInputRow
-                    key={DAY_LABELS[idx]}
-                    label={DAY_LABELS[idx]}
+                    key={idx}
+                    label={dayLabels[idx]}
                     value={perDay[idx]}
                     onChange={(next) =>
                       setPerDay((prev) => {
@@ -376,7 +396,9 @@ export function GoalEditorModal({
 
               {periodKind === "daily" && (
                 <Text style={styles.totalLine}>
-                  Weekly total: {formatHM(totalWeekMinutes)}
+                  {t("goalEditor.weeklyTotal", {
+                    duration: formatHM(totalWeekMinutes),
+                  })}
                 </Text>
               )}
             </View>
@@ -388,13 +410,15 @@ export function GoalEditorModal({
                 disabled={submitting}
               >
                 <Feather name="trash-2" size={16} color={colors.error} />
-                <Text style={styles.clearButtonText}>Clear goal</Text>
+                <Text style={styles.clearButtonText}>
+                  {t("goalEditor.clearGoal")}
+                </Text>
               </Pressable>
             )}
 
             <GradientButton
               shape="pill"
-              label={submitting ? "Saving..." : "Save Goal"}
+              label={submitting ? t("common.saving") : t("goalEditor.save")}
               onPress={handleSave}
               disabled={submitting || isLoading}
             >
@@ -481,6 +505,7 @@ function HMInputRow({
   maxHours = 23,
 }: HMInputRowProps): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
+  const { t } = useTranslation();
   const hMaxLength = maxHours >= 100 ? 3 : 2;
   return (
     <View style={styles.hmRow}>
@@ -496,7 +521,7 @@ function HMInputRow({
           maxLength={hMaxLength}
           selectTextOnFocus
         />
-        <Text style={styles.hmUnit}>h</Text>
+        <Text style={styles.hmUnit}>{t("goalEditor.hoursUnit")}</Text>
         <TextInput
           style={styles.hmInput}
           value={value.m}
@@ -505,7 +530,7 @@ function HMInputRow({
           maxLength={2}
           selectTextOnFocus
         />
-        <Text style={styles.hmUnit}>m</Text>
+        <Text style={styles.hmUnit}>{t("goalEditor.minutesUnit")}</Text>
       </View>
     </View>
   );
@@ -532,10 +557,22 @@ function hmToMinutes(v: HM): number {
   return h * 60 + m;
 }
 
-function labelForKind(kind: GoalPeriodKind): string {
-  if (kind === "weekly") return "Weekly";
-  if (kind === "monthly") return "Monthly";
-  return "Daily";
+function switchTitle(to: GoalPeriodKind, t: TFunction): string {
+  if (to === "weekly") return t("goalEditor.switchTitleWeekly");
+  if (to === "monthly") return t("goalEditor.switchTitleMonthly");
+  return t("goalEditor.switchTitleDaily");
+}
+
+function switchBody(from: GoalPeriodKind, t: TFunction): string {
+  if (from === "weekly") return t("goalEditor.switchBodyWeekly");
+  if (from === "monthly") return t("goalEditor.switchBodyMonthly");
+  return t("goalEditor.switchBodyDaily");
+}
+
+function goalSubtitle(kind: GoalPeriodKind, t: TFunction): string {
+  if (kind === "weekly") return t("goalEditor.subtitleWeekly");
+  if (kind === "monthly") return t("goalEditor.subtitleMonthly");
+  return t("goalEditor.subtitleDaily");
 }
 
 function clampNumericText(text: string, max: number): string {
@@ -548,10 +585,9 @@ function clampNumericText(text: string, max: number): string {
 function formatHM(minutes: number): string {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  if (h === 0 && m === 0) return "0h";
-  if (m === 0) return `${h}h`;
-  if (h === 0) return `${m}m`;
-  return `${h}h ${m}m`;
+  if (m === 0) return i18n.t("duration.hours", { hours: h });
+  if (h === 0) return i18n.t("duration.minutes", { minutes: m });
+  return i18n.t("duration.hoursMinutes", { hours: h, minutes: m });
 }
 
 // ──────────────────────────────────────────────

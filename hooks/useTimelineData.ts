@@ -12,6 +12,8 @@ import {
 } from "@/lib/timezone";
 import { useQuery } from "@powersync/react";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { localizeActivityName, localizeCategoryName } from "@/lib/i18n/preset-names";
 
 // ──────────────────────────────────────────────
 // Types
@@ -229,6 +231,7 @@ export function useTimelineData(
     return () => clearTimeout(timeoutId);
   }, [isToday]);
 
+  const { i18n } = useTranslation();
   const result = useMemo(() => {
 
     // The effective end of the visible day: now (if today) or end of day
@@ -276,8 +279,8 @@ export function useTimelineData(
       return {
         id: row.entry_id,
         activityId: row.activity_id,
-        activityName: row.activity_name,
-        categoryName: row.category_name,
+        activityName: localizeActivityName(row.activity_id, row.activity_name),
+        categoryName: localizeCategoryName(row.category_id, row.category_name),
         categoryColor: row.category_color,
         categoryIcon: row.category_icon,
         startedAt: clampedStart,
@@ -401,6 +404,8 @@ export function useTimelineData(
     filterActive,
     selectedTagSet,
     tagsByEntry,
+    // Display names follow the UI language.
+    i18n.language,
   ]);
 
   return {

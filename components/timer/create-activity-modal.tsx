@@ -16,6 +16,7 @@ import type { ActivityItem, CategoryWithActivities } from "@/db/models";
 import { createActivity, updateActivity } from "@/db/queries";
 import { Feather } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Modal,
   Pressable,
@@ -46,6 +47,7 @@ export function CreateActivityModal({
 }: CreateActivityModalProps): React.ReactElement {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const isEdit = !!initialActivity;
   const [name, setName] = useState(initialActivity?.name ?? "");
@@ -89,8 +91,12 @@ export function CreateActivityModal({
     setSubmitting(true);
     try {
       if (isEdit && initialActivity) {
+        // `initialActivity.name` is the display name (translated for presets).
+        // Only persist the name when the user edited it — see
+        // docs/LOCALIZATION.md.
+        const nameChanged = trimmedName !== initialActivity.name;
         await updateActivity(initialActivity.id, {
-          name: trimmedName,
+          ...(nameChanged ? { name: trimmedName } : {}),
           categoryId: selectedCategoryId,
           icon: iconOverride,
         });
@@ -153,10 +159,14 @@ export function CreateActivityModal({
           <View style={styles.header}>
             <View>
               <Text style={styles.headerTitle}>
-                {isEdit ? "Edit Activity" : "New Activity"}
+                {isEdit
+                  ? t("activityForm.editTitle")
+                  : t("activityForm.newTitle")}
               </Text>
               <Text style={styles.headerSubtitle}>
-                {isEdit ? "Rename or reassign" : "Add a custom activity"}
+                {isEdit
+                  ? t("activityForm.editSubtitle")
+                  : t("activityForm.newSubtitle")}
               </Text>
             </View>
             <Pressable onPress={handleClose} style={styles.closeButton}>
@@ -164,11 +174,11 @@ export function CreateActivityModal({
             </Pressable>
           </View>
 
-          <Text style={styles.sectionLabel}>Activity Name</Text>
+          <Text style={styles.sectionLabel}>{t("activityForm.nameLabel")}</Text>
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
-              placeholder="e.g. Morning Run"
+              placeholder={t("activityForm.namePlaceholder")}
               placeholderTextColor={colors.onSurfaceVariant}
               value={name}
               onChangeText={setName}
@@ -178,7 +188,9 @@ export function CreateActivityModal({
             />
           </View>
 
-          <Text style={styles.sectionLabel}>Assign to Category</Text>
+          <Text style={styles.sectionLabel}>
+            {t("activityForm.categoryLabel")}
+          </Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -225,10 +237,12 @@ export function CreateActivityModal({
           </ScrollView>
 
           <View style={styles.appearanceHeader}>
-            <Text style={styles.sectionLabel}>Icon</Text>
+            <Text style={styles.sectionLabel}>{t("activityForm.iconLabel")}</Text>
             {iconOverride !== null && (
               <Pressable onPress={() => setIconOverride(null)} hitSlop={8}>
-                <Text style={styles.resetLabel}>Use category default</Text>
+                <Text style={styles.resetLabel}>
+                  {t("activityForm.useCategoryDefault")}
+                </Text>
               </Pressable>
             )}
           </View>
@@ -248,8 +262,8 @@ export function CreateActivityModal({
             </View>
             <Text style={styles.previewHint}>
               {iconOverride === null
-                ? "Inheriting from category"
-                : "Custom icon"}
+                ? t("activityForm.inheritingIcon")
+                : t("activityForm.customIcon")}
             </Text>
           </View>
 
@@ -291,11 +305,11 @@ export function CreateActivityModal({
             label={
               submitting
                 ? isEdit
-                  ? "Saving..."
-                  : "Creating..."
+                  ? t("common.saving")
+                  : t("common.creating")
                 : isEdit
-                  ? "Save Changes"
-                  : "Create Activity"
+                  ? t("common.saveChanges")
+                  : t("activityForm.create")
             }
             onPress={handleSubmit}
             disabled={!canSubmit}

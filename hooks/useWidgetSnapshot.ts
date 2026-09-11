@@ -1,7 +1,9 @@
 import { useQuery } from "@powersync/react";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
-import { writeWidgetSnapshot } from "@/modules/live-activity";
+import { writeWidgetSnapshot, writeWidgetStrings } from "@/modules/live-activity";
+import { useTranslation } from "react-i18next";
+import { localizeActivityName } from "@/lib/i18n/preset-names";
 
 /**
  * Reactive home-screen widget snapshot writer. Mounted once at the root
@@ -19,6 +21,7 @@ const RUNNING_ENTRY_FOR_WIDGET_QUERY = `
   SELECT
     te.id          AS entry_id,
     te.started_at  AS started_at,
+    a.id           AS activity_id,
     a.name         AS activity_name,
     c.color        AS category_color
   FROM time_entries te
@@ -33,6 +36,7 @@ const RUNNING_ENTRY_FOR_WIDGET_QUERY = `
 interface RunningRow {
   entry_id: string;
   started_at: string;
+  activity_id: string;
   activity_name: string;
   category_color: string | null;
 }
@@ -41,7 +45,17 @@ const FALLBACK_COLOR_HEX = "#6E8BFF";
 
 export function useWidgetSnapshot(): void {
   const { data } = useQuery<RunningRow>(RUNNING_ENTRY_FOR_WIDGET_QUERY);
-  const running = data.length > 0 ? data[0] : null;
+  const { i18n } = useTranslation();
+  const raw = data.length > 0 ? data[0] : null;
+  // Push the display name (translated for presets). Re-derived on language
+  // change so the existing activity_name dep re-pushes it.
+  const running = useMemo(
+    () =>
+      raw
+        ? { ...raw, activity_name: localizeActivityName(raw.activity_id, raw.activity_name) }
+        : null,
+    [raw, i18n.language],
+  );
 
   useEffect(() => {
     if (running) {
@@ -61,4 +75,22 @@ export function useWidgetSnapshot(): void {
     running?.category_color,
     running,
   ]);
+}
+
+/**
+ * Pushes the widget / Live Activity labels in the current UI language. The
+ * extension can't read the app's i18n state (the in-app language can differ
+ * from the OS), so JS writes the strings to the App Group on every change.
+ */
+export function useWidgetStrings(): void {
+  const { t, i18n } = useTranslation();
+  useEffect(() => {
+    void writeWidgetStrings({
+      tracking: t("home.tracking"),
+      tapToStart: t("widget.tapToStart"),
+      stopActivity: t("widget.stopActivity"),
+      now: t("widget.now"),
+      since: t("widget.since", { time: "{time}" }),
+    });
+  }, [t, i18n.language]);
 }

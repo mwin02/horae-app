@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { useQuery } from '@powersync/react';
+import { useTranslation } from 'react-i18next';
 import type { CategoryWithActivities } from '@/db/models';
+import { localizeActivityName, localizeCategoryName } from '@/lib/i18n/preset-names';
 
 /**
  * SQL query that fetches all active categories joined with their activities.
@@ -52,10 +54,16 @@ export interface UseCategoriesWithActivitiesResult {
  * Reactive hook that returns all active categories with their activities,
  * grouped and typed as CategoryWithActivities[].
  *
- * Auto-updates when the underlying categories or activities tables change.
+ * `name` / `categoryName` are display names (preset names translated to the
+ * current language). Edit forms must only write a name back when the user
+ * changed the displayed text — see docs/LOCALIZATION.md.
+ *
+ * Auto-updates when the underlying categories or activities tables change,
+ * and when the UI language changes.
  */
 export function useCategoriesWithActivities(): UseCategoriesWithActivitiesResult {
   const { data, isLoading } = useQuery<FlatRow>(CATEGORIES_WITH_ACTIVITIES_QUERY);
+  const { i18n } = useTranslation();
 
   const categories = useMemo((): CategoryWithActivities[] => {
     const map = new Map<string, CategoryWithActivities>();
@@ -66,7 +74,7 @@ export function useCategoriesWithActivities(): UseCategoriesWithActivitiesResult
       if (!category) {
         category = {
           id: row.category_id,
-          name: row.category_name,
+          name: localizeCategoryName(row.category_id, row.category_name),
           color: row.category_color,
           icon: row.category_icon,
           isPreset: row.category_is_preset === 1,
@@ -80,9 +88,9 @@ export function useCategoriesWithActivities(): UseCategoriesWithActivitiesResult
         category.activities.push({
           id: row.activity_id,
           categoryId: row.category_id,
-          categoryName: row.category_name,
+          categoryName: category.name,
           categoryColor: row.category_color,
-          name: row.activity_name,
+          name: localizeActivityName(row.activity_id, row.activity_name),
           isPreset: row.activity_is_preset === 1,
           isFavorite: row.activity_is_favorite === 1,
           icon: row.activity_icon ?? row.category_icon,
@@ -92,7 +100,8 @@ export function useCategoriesWithActivities(): UseCategoriesWithActivitiesResult
     }
 
     return Array.from(map.values());
-  }, [data]);
+    // i18n.language: display names depend on the UI language.
+  }, [data, i18n.language]);
 
   return { categories, isLoading };
 }

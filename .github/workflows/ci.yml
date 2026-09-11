@@ -21,6 +21,7 @@ jobs:
             landing/package-lock.json
       - run: npm ci
       - run: npx tsc --noEmit
+      - run: npm run i18n:check
       - run: npm ci
         working-directory: landing
       - run: npm run typecheck
