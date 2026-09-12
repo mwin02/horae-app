@@ -79,11 +79,13 @@
           "supportedLocales": {
             "ios": [
               "en",
-              "es"
+              "es",
+              "zh-Hans"
             ],
             "android": [
               "en",
-              "es"
+              "es",
+              "zh-Hans"
             ]
           }
         }
