@@ -13,8 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
 import { useTheme, useThemedStyles } from "@/hooks/useTheme";
-
-const CONFIRMATION_PHRASE = "DELETE";
+import { useTranslation } from "react-i18next";
 
 export interface DeleteDataModalProps {
   visible: boolean;
@@ -44,7 +43,11 @@ export function DeleteDataModal({
 }: DeleteDataModalProps): React.ReactElement {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
+  // The typed confirmation word is localized so it's typeable on the user's
+  // own keyboard (e.g. 删除 / हटाएं).
+  const confirmationPhrase = t("deleteData.confirmPhrase");
   const [phrase, setPhrase] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -55,7 +58,7 @@ export function DeleteDataModal({
     }
   }, [visible]);
 
-  const canConfirm = phrase.trim() === CONFIRMATION_PHRASE && !submitting;
+  const canConfirm = phrase.trim() === confirmationPhrase && !submitting;
 
   const handleConfirm = useCallback(async () => {
     if (!canConfirm) return;
@@ -92,7 +95,7 @@ export function DeleteDataModal({
           <View style={styles.header}>
             <View style={styles.headerText}>
               <Text style={styles.headerTitle}>{title}</Text>
-              <Text style={styles.headerSubtitle}>This cannot be undone.</Text>
+              <Text style={styles.headerSubtitle}>{t("deleteData.cannotUndo")}</Text>
             </View>
             <Pressable onPress={onClose} style={styles.closeButton}>
               <Feather name="x" size={22} color={colors.onSurface} />
@@ -121,17 +124,17 @@ export function DeleteDataModal({
           >
             <Feather name="download" size={18} color={colors.primary} />
             <Text style={styles.exportNudgeText}>
-              {exporting ? "Preparing export…" : "Export data first (JSON)"}
+              {exporting ? t("manageData.preparingExport") : t("deleteData.exportFirst")}
             </Text>
           </Pressable>
 
           <Text style={styles.sectionLabel}>
-            Type {CONFIRMATION_PHRASE} to confirm
+            {t("deleteData.typeToConfirm", { phrase: confirmationPhrase })}
           </Text>
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
-              placeholder={CONFIRMATION_PHRASE}
+              placeholder={confirmationPhrase}
               placeholderTextColor={colors.onSurfaceVariant}
               value={phrase}
               onChangeText={setPhrase}
@@ -153,7 +156,7 @@ export function DeleteDataModal({
           >
             <Feather name="trash-2" size={18} color={colors.onPrimary} />
             <Text style={styles.deleteButtonLabel}>
-              {submitting ? "Deleting…" : "Delete permanently"}
+              {submitting ? t("deleteData.deleting") : t("deleteData.deletePermanently")}
             </Text>
           </Pressable>
           </ScrollView>

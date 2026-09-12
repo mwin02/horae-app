@@ -4,6 +4,8 @@ import { resumeEntry, startEntry, stopEntry, switchEntry } from '@/db/queries';
 import type { RunningTimer } from '@/db/models';
 import { useElapsedTime } from './useElapsedTime';
 import { getCurrentTimezone } from '@/lib/timezone';
+import { useTranslation } from 'react-i18next';
+import { localizeActivityName, localizeCategoryName } from '@/lib/i18n/preset-names';
 
 /**
  * SQL query that fetches the currently running time entry joined with
@@ -16,6 +18,7 @@ const RUNNING_ENTRY_QUERY = `
     te.started_at  AS started_at,
     te.timezone    AS timezone,
     a.name         AS activity_name,
+    c.id           AS category_id,
     c.name         AS category_name,
     c.color        AS category_color
   FROM time_entries te
@@ -33,6 +36,7 @@ interface RunningEntryRow {
   started_at: string;
   timezone: string;
   activity_name: string;
+  category_id: string;
   category_name: string;
   category_color: string;
 }
@@ -65,6 +69,7 @@ export interface UseTimerResult {
  */
 export function useTimer(): UseTimerResult {
   const { data, isLoading } = useQuery<RunningEntryRow>(RUNNING_ENTRY_QUERY);
+  const { i18n } = useTranslation();
 
   const row = data.length > 0 ? data[0] : null;
 
@@ -76,14 +81,15 @@ export function useTimer(): UseTimerResult {
     return {
       entryId: row.entry_id,
       activityId: row.activity_id,
-      activityName: row.activity_name,
-      categoryName: row.category_name,
+      activityName: localizeActivityName(row.activity_id, row.activity_name),
+      categoryName: localizeCategoryName(row.category_id, row.category_name),
       categoryColor: row.category_color,
       startedAt: new Date(row.started_at),
       elapsedSeconds,
       timezone: row.timezone,
     };
-  }, [row, elapsedSeconds]);
+    // i18n.language: display names follow the UI language.
+  }, [row, elapsedSeconds, i18n.language]);
 
   const startActivity = useCallback(
     async (activityId: string, tagIds?: string[]): Promise<void> => {

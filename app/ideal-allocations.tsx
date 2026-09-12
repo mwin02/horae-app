@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { Stack } from "expo-router";
 import React, { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   FlatList,
@@ -22,6 +23,7 @@ import { useCategoriesWithActivities } from "@/hooks/useCategoriesWithActivities
 export default function IdealAllocationsScreen(): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const { categories, isLoading: categoriesLoading } =
     useCategoriesWithActivities();
   const { summariesByCategory, isLoading: summariesLoading } =
@@ -41,7 +43,10 @@ export default function IdealAllocationsScreen(): React.ReactElement {
   const renderCategory = useCallback(
     ({ item }: { item: CategoryWithActivities }): React.ReactElement => {
       const summary =
-        summariesByCategory.get(item.id) ?? { label: "Not set", hasGoal: false };
+        summariesByCategory.get(item.id) ?? {
+          label: t("idealAllocations.notSet"),
+          hasGoal: false,
+        };
       return (
         <Pressable
           style={({ pressed }) => [
@@ -81,13 +86,13 @@ export default function IdealAllocationsScreen(): React.ReactElement {
         </Pressable>
       );
     },
-    [summariesByCategory, handleCategoryPress, styles, colors.onSurfaceVariant],
+    [summariesByCategory, handleCategoryPress, styles, colors.onSurfaceVariant, t],
   );
 
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container} edges={["bottom"]}>
-        <Stack.Screen options={{ title: "Ideal Allocations" }} />
+        <Stack.Screen options={{ title: t("idealAllocations.title") }} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -97,14 +102,11 @@ export default function IdealAllocationsScreen(): React.ReactElement {
 
   return (
     <SafeAreaView style={styles.container} edges={["bottom"]}>
-      <Stack.Screen options={{ title: "Ideal Allocations" }} />
+      <Stack.Screen options={{ title: t("idealAllocations.title") }} />
 
       <View style={styles.header}>
-        <Text style={styles.title}>Ideal Allocations</Text>
-        <Text style={styles.subtitle}>
-          Set how many hours per day you want to spend on each category. Tap a
-          category to customise by day of the week.
-        </Text>
+        <Text style={styles.title}>{t("idealAllocations.title")}</Text>
+        <Text style={styles.subtitle}>{t("idealAllocations.subtitle")}</Text>
       </View>
 
       <FlatList
@@ -115,9 +117,9 @@ export default function IdealAllocationsScreen(): React.ReactElement {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>No categories</Text>
+            <Text style={styles.emptyTitle}>{t("manageCategories.empty")}</Text>
             <Text style={styles.emptySubtitle}>
-              Create a category first to set a goal.
+              {t("idealAllocations.emptyBody")}
             </Text>
           </View>
         }

@@ -12,6 +12,7 @@ import { useEntryTags } from "@/hooks/useEntryTags";
 import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import type { TimelineEntryData } from "@/hooks/useTimelineData";
 import {
+  CLOCK_LOCALE,
   formatDuration,
   formatTimeInTimezone,
   isNearMidnight,
@@ -31,6 +32,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
+import { getIntlLocale } from "@/lib/i18n";
 
 interface EntryDetailModalProps {
   entry: TimelineEntryData | null;
@@ -45,6 +48,7 @@ export function EntryDetailModal({
 }: EntryDetailModalProps): React.ReactElement | null {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
+  const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const [editedStart, setEditedStart] = useState<Date>(new Date());
   const [editedEnd, setEditedEnd] = useState<Date | null>(null);
@@ -106,12 +110,12 @@ export function EntryDetailModal({
   const handleDelete = useCallback((): void => {
     if (!entry) return;
     Alert.alert(
-      "Delete Entry",
-      "This entry will be removed from your timeline.",
+      t("timeline.deleteEntryTitle"),
+      t("timeline.deleteEntryBody"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("common.delete"),
           style: "destructive",
           onPress: async () => {
             await deleteEntry(entry.id);
@@ -120,7 +124,7 @@ export function EntryDetailModal({
         },
       ],
     );
-  }, [entry, onClose]);
+  }, [entry, onClose, t]);
 
   if (!entry) return null;
 
@@ -128,7 +132,7 @@ export function EntryDetailModal({
 
   // Compute duration from edited times for live feedback
   const durationLabel = (() => {
-    if (editedEnd === null) return "Running";
+    if (editedEnd === null) return t("timeline.running");
     const seconds = Math.round(
       (editedEnd.getTime() - editedStart.getTime()) / 1000,
     );
@@ -143,24 +147,24 @@ export function EntryDetailModal({
   const formatLabel = (d: Date): string => {
     const time = formatTimeInTimezone(d.toISOString(), tz);
     if (!spansDays) return time;
-    const dateShort = d.toLocaleDateString("en-US", {
+    const dateShort = d.toLocaleDateString(getIntlLocale(), {
       month: "short",
       day: "numeric",
       timeZone: tz,
     });
-    return `${dateShort}, ${time}`;
+    return t("timeline.dateTime", { date: dateShort, time });
   };
   const startTimeLabel = formatLabel(editedStart);
-  const endTimeLabel = editedEnd ? formatLabel(editedEnd) : "Now";
+  const endTimeLabel = editedEnd ? formatLabel(editedEnd) : t("timeline.now");
 
   const sourceLabel =
     entry.source === "timer"
-      ? "Timer"
+      ? t("timeline.sourceTimer")
       : entry.source === "retroactive"
-        ? "Retroactive"
+        ? t("timeline.sourceRetroactive")
         : entry.source === "manual"
-          ? "Manual"
-          : "Import";
+          ? t("timeline.sourceManual")
+          : t("timeline.sourceImport");
 
   // Determine picker value and handler based on active picker
   const pickerValue =
@@ -213,7 +217,7 @@ export function EntryDetailModal({
 
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Entry Details</Text>
+            <Text style={styles.headerTitle}>{t("timeline.entryDetails")}</Text>
             <Pressable style={styles.closeButton} onPress={onClose} hitSlop={8}>
               <Feather name="x" size={20} color={colors.onSurfaceVariant} />
             </Pressable>
@@ -245,11 +249,11 @@ export function EntryDetailModal({
           >
             <Feather name="tag" size={14} color={colors.onSurfaceVariant} />
             {entryTags.length === 0 ? (
-              <Text style={styles.tagsPlaceholder}>Add tags</Text>
+              <Text style={styles.tagsPlaceholder}>{t("timeline.addTags")}</Text>
             ) : (
               <View style={styles.tagsList}>
-                {entryTags.map((t) => (
-                  <TagChip key={t.id} name={t.name} color={t.color} />
+                {entryTags.map((tag) => (
+                  <TagChip key={tag.id} name={tag.name} color={tag.color} />
                 ))}
               </View>
             )}
@@ -270,7 +274,7 @@ export function EntryDetailModal({
               ]}
               onPress={() => handleTogglePicker("start")}
             >
-              <Text style={styles.timeLabel}>Start</Text>
+              <Text style={styles.timeLabel}>{t("timeline.start")}</Text>
               <Text
                 style={[
                   styles.timeValue,
@@ -299,7 +303,7 @@ export function EntryDetailModal({
                 ]}
                 onPress={() => handleTogglePicker("end")}
               >
-                <Text style={styles.timeLabel}>End</Text>
+                <Text style={styles.timeLabel}>{t("timeline.end")}</Text>
                 <Text
                   style={[
                     styles.timeValue,
@@ -332,6 +336,7 @@ export function EntryDetailModal({
                 minimumDate={pickerMin}
                 maximumDate={pickerMax}
                 themeVariant={isDark ? "dark" : "light"}
+                locale={CLOCK_LOCALE}
               />
             </View>
           )}
@@ -355,7 +360,7 @@ export function EntryDetailModal({
                   >
                     <Feather name="check" size={16} color={colors.onPrimary} />
                     <Text style={styles.saveButtonText}>
-                      {saving ? "Saving..." : "Save Changes"}
+                      {saving ? t("common.saving") : t("common.saveChanges")}
                     </Text>
                   </LinearGradient>
                 </Pressable>
@@ -371,8 +376,8 @@ export function EntryDetailModal({
               <>
                 <Text style={styles.validationError}>
                   {editedStart.getTime() > Date.now()
-                    ? "Start can't be in the future"
-                    : "Start must be before end"}
+                    ? t("timeline.startInFuture")
+                    : t("timeline.startBeforeEnd")}
                 </Text>
                 <Pressable
                   style={styles.deleteIconButton}
@@ -385,7 +390,7 @@ export function EntryDetailModal({
             ) : (
               <Pressable style={styles.deleteButton} onPress={handleDelete}>
                 <Feather name="trash-2" size={16} color={colors.error} />
-                <Text style={styles.deleteButtonText}>Delete entry</Text>
+                <Text style={styles.deleteButtonText}>{t("timeline.deleteEntry")}</Text>
               </Pressable>
             )}
           </View>
@@ -394,7 +399,7 @@ export function EntryDetailModal({
         {entry && (
           <TagPicker
             visible={tagPickerOpen}
-            initialSelectedIds={entryTags.map((t) => t.id)}
+            initialSelectedIds={entryTags.map((tag) => tag.id)}
             onClose={() => setTagPickerOpen(false)}
             onConfirm={(ids) => {
               void setEntryTags(entry.id, ids);

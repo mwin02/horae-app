@@ -2,7 +2,9 @@ import { FONTS, RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constant
 import { useThemedStyles } from "@/hooks/useTheme";
 import type { DayCoverage } from "@/db/models";
 import { formatDuration } from "@/lib/timezone";
+import type { TFunction } from "i18next";
 import React, { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Animated, StyleSheet, Text, View } from "react-native";
 
 interface TrackingCoverageProps {
@@ -15,6 +17,7 @@ export function TrackingCoverage({
   period,
 }: TrackingCoverageProps): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
+  const { t } = useTranslation();
   const { trackedMinutes, coveragePercent } = coverage;
 
   const trackedHours = formatDuration(trackedMinutes * 60);
@@ -31,11 +34,11 @@ export function TrackingCoverage({
   }, [coveragePercent, animatedWidth]);
 
   // Pick an encouraging message based on coverage level
-  const message = getCoverageMessage(coveragePercent, period);
+  const message = getCoverageMessage(coveragePercent, period, t);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionLabel}>TRACKING COVERAGE</Text>
+      <Text style={styles.sectionLabel}>{t("trackingCoverage.title")}</Text>
 
       {/* Big percentage */}
       <View style={styles.percentRow}>
@@ -45,7 +48,11 @@ export function TrackingCoverage({
 
       {/* Subtitle */}
       <Text style={styles.subtitle}>
-        {trackedHours} hours tracked {period === "daily" ? "today" : period === "weekly" ? "this week" : "this month"}
+        {period === "daily"
+          ? t("trackingCoverage.trackedToday", { duration: trackedHours })
+          : period === "weekly"
+            ? t("trackingCoverage.trackedThisWeek", { duration: trackedHours })
+            : t("trackingCoverage.trackedThisMonth", { duration: trackedHours })}
       </Text>
 
       {/* Progress bar */}
@@ -74,23 +81,40 @@ export function TrackingCoverage({
 function getCoverageMessage(
   percent: number,
   period: "daily" | "weekly" | "monthly",
+  t: TFunction,
 ): string {
-  const periodLabel =
-    period === "daily"
-      ? "today"
-      : period === "weekly"
-        ? "this week"
-        : "this month";
+  // Whole sentences per period — "today" / "this week" change the grammar
+  // around them in other languages.
+  const pick = (daily: string, weekly: string, monthly: string): string =>
+    period === "daily" ? daily : period === "weekly" ? weekly : monthly;
 
-  if (percent >= 90)
-    return `Amazing! You've tracked almost all of ${periodLabel}.`;
-  if (percent >= 70)
-    return `Great job! Most of ${periodLabel} is accounted for.`;
-  if (percent >= 40)
-    return `You're building the habit. Keep tracking ${periodLabel}!`;
-  if (percent > 0)
-    return `Fill in the gaps on the Timeline to improve coverage.`;
-  return `Start tracking to see your coverage ${periodLabel}.`;
+  if (percent >= 90) {
+    return pick(
+      t("trackingCoverage.amazingDaily"),
+      t("trackingCoverage.amazingWeekly"),
+      t("trackingCoverage.amazingMonthly"),
+    );
+  }
+  if (percent >= 70) {
+    return pick(
+      t("trackingCoverage.greatDaily"),
+      t("trackingCoverage.greatWeekly"),
+      t("trackingCoverage.greatMonthly"),
+    );
+  }
+  if (percent >= 40) {
+    return pick(
+      t("trackingCoverage.buildingDaily"),
+      t("trackingCoverage.buildingWeekly"),
+      t("trackingCoverage.buildingMonthly"),
+    );
+  }
+  if (percent > 0) return t("trackingCoverage.gaps");
+  return pick(
+    t("trackingCoverage.startDaily"),
+    t("trackingCoverage.startWeekly"),
+    t("trackingCoverage.startMonthly"),
+  );
 }
 
 // ──────────────────────────────────────────────

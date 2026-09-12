@@ -4,7 +4,11 @@ import {
   type TimelineItem,
   minutesSinceMidnight,
 } from "@/hooks/useTimelineData";
-import { getCurrentTimezone, getTodayDate } from "@/lib/timezone";
+import {
+  formatHourLabel,
+  getCurrentTimezone,
+  getTodayDate,
+} from "@/lib/timezone";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -77,14 +81,6 @@ function getColumnStyle(
   const colWidth = (availableWidth - totalGaps) / totalColumns;
   const left = BLOCK_LEFT + columnIndex * (colWidth + COLUMN_GAP);
   return { left, width: colWidth };
-}
-
-/** Format hour number to label: 0 → "12 AM", 8 → "8 AM", 13 → "1 PM" */
-function formatHourLabel(hour: number): string {
-  if (hour === 0 || hour === 24) return "12 AM";
-  if (hour === 12) return "12 PM";
-  if (hour < 12) return `${hour} AM`;
-  return `${hour - 12} PM`;
 }
 
 export function TimelineCanvas({

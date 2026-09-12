@@ -10,19 +10,15 @@ import Animated, {
 } from 'react-native-reanimated';
 import { RADIUS, type ThemeColors } from '@/constants/theme';
 import { useThemedStyles } from '@/hooks/useTheme';
+import { formatClockTime } from '@/lib/timezone';
 
 interface CurrentTimeIndicatorProps {
   timezone: string;
 }
 
-/** Format the current time as "HH:MM" (24h) for the indicator pill */
+/** Current time for the indicator pill, in the app-wide clock format. */
 function formatNowTime(timezone: string): string {
-  return new Date().toLocaleTimeString('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-    timeZone: timezone,
-  });
+  return formatClockTime(new Date(), timezone);
 }
 
 export function CurrentTimeIndicator({ timezone }: CurrentTimeIndicatorProps): React.ReactElement {

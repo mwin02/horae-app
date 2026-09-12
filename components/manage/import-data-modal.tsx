@@ -1,5 +1,7 @@
 import { Feather } from "@expo/vector-icons";
+import type { TFunction } from "i18next";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Modal,
@@ -36,38 +38,25 @@ interface ModeOption {
 
 function buildModeOptions(
   styles: ReturnType<typeof makeStyles>,
+  t: TFunction,
 ): ModeOption[] {
+  const components = {
+    em: <Text style={styles.descriptionEmphasis} />,
+    warn: <Text style={styles.descriptionWarning} />,
+  };
   return [
     {
       value: "merge",
-      title: "Add to what's already here",
+      title: t("importData.mergeTitle"),
       renderDescription: () => (
-        <>
-          Keep everything on this device and fill in anything new from your
-          backup. Pick this if you have{" "}
-          <Text style={styles.descriptionEmphasis}>
-            data on this device you don&apos;t want to lose
-          </Text>
-          .{" "}
-          <Text style={styles.descriptionWarning}>
-            Renamed or deleted preset activities won&apos;t be restored
-          </Text>{" "}
-          — use Replace for that.
-        </>
+        <Trans i18nKey="importData.mergeDescription" components={components} />
       ),
     },
     {
       value: "replace",
-      title: "Replace what's on this device",
+      title: t("importData.replaceTitle"),
       renderDescription: () => (
-        <>
-          Wipe everything currently on this device, then load the backup. Use
-          this if you want your data back{" "}
-          <Text style={styles.descriptionEmphasis}>
-            exactly as it was when you exported
-          </Text>
-          .
-        </>
+        <Trans i18nKey="importData.replaceDescription" components={components} />
       ),
     },
   ];
@@ -83,7 +72,8 @@ export function ImportDataModal({
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
-  const MODE_OPTIONS = useMemo(() => buildModeOptions(styles), [styles]);
+  const { t } = useTranslation();
+  const MODE_OPTIONS = useMemo(() => buildModeOptions(styles, t), [styles, t]);
   const [mode, setMode] = useState<ImportMode>("merge");
   const [importing, setImporting] = useState(false);
 
@@ -132,10 +122,9 @@ export function ImportDataModal({
           >
             <View style={styles.header}>
               <View style={styles.headerText}>
-                <Text style={styles.headerTitle}>Bring data back</Text>
+                <Text style={styles.headerTitle}>{t("importData.title")}</Text>
                 <Text style={styles.headerSubtitle}>
-                  Pick a Horae backup file (.json), then choose how to combine
-                  it with what&apos;s already on this device.
+                  {t("importData.subtitle")}
                 </Text>
               </View>
               <Pressable
@@ -189,7 +178,7 @@ export function ImportDataModal({
                   color={colors.error}
                 />
                 <Text style={styles.replaceWarningText}>
-                  This can&apos;t be undone. Consider exporting first.
+                  {t("importData.replaceWarning")}
                 </Text>
               </View>
             ) : null}
@@ -205,7 +194,9 @@ export function ImportDataModal({
             >
               <Feather name="download" size={18} color={colors.primary} />
               <Text style={styles.exportNudgeText}>
-                {exporting ? "Preparing export…" : "Export a backup first"}
+                {exporting
+                  ? t("manageData.preparingExport")
+                  : t("importData.exportFirst")}
               </Text>
             </Pressable>
 
@@ -228,7 +219,7 @@ export function ImportDataModal({
                 />
               )}
               <Text style={styles.primaryButtonLabel}>
-                {importing ? "Restoring…" : "Choose backup file"}
+                {importing ? t("importData.restoring") : t("importData.chooseFile")}
               </Text>
             </Pressable>
           </ScrollView>

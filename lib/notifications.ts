@@ -1,7 +1,13 @@
 import * as Notifications from "expo-notifications";
 import { Linking, Platform } from "react-native";
 
+import i18n from "@/lib/i18n";
+
 import { formatDuration } from "./timezone";
+
+// Notification copy is baked in at schedule time. `useNotificationScheduler`
+// lists the UI language in its deps so pending reminders are rescheduled in
+// the new language when it changes.
 
 /** Singleton identifier for the idle reminder. */
 const IDLE_REMINDER_ID = "idle-reminder";
@@ -105,8 +111,8 @@ export async function scheduleIdleReminder(fireAt: Date): Promise<void> {
   await cancelIdleReminder();
   await scheduleAt(
     IDLE_REMINDER_ID,
-    "Still there?",
-    "It's been 30 minutes since your last session. Want to start something?",
+    i18n.t("notifications.idleTitle"),
+    i18n.t("notifications.idleBody"),
     fireAt
   );
 }
@@ -134,8 +140,10 @@ export async function scheduleLongRunningReminder(
   await Notifications.cancelScheduledNotificationAsync(id);
   await scheduleAt(
     id,
-    `${params.activityName} has been running a while`,
-    `${formatDuration(params.firesAfterSeconds)} so far. Tap if you meant to stop earlier.`,
+    i18n.t("notifications.longRunningTitle", { activity: params.activityName }),
+    i18n.t("notifications.longRunningBody", {
+      duration: formatDuration(params.firesAfterSeconds),
+    }),
     params.fireAt
   );
 }
@@ -149,23 +157,29 @@ function goalAlertCopy(
   periodKind: GoalAlertPeriodKind,
   categoryName: string,
 ): { title: string; body: string } {
-  const period = periodKind === "weekly" ? "weekly" : "daily";
-  const window = periodKind === "weekly" ? "this week" : "today";
+  const weekly = periodKind === "weekly";
+  const vars = { category: categoryName };
   switch (goalType) {
     case "at_most":
       return {
-        title: `${categoryName}: 15 minutes left`,
-        body: `You're 15 minutes away from your ${period} ${categoryName} limit.`,
+        title: i18n.t("notifications.goalAtMostTitle", vars),
+        body: weekly
+          ? i18n.t("notifications.goalAtMostBodyWeekly", vars)
+          : i18n.t("notifications.goalAtMostBodyDaily", vars),
       };
     case "around":
       return {
-        title: `${categoryName} target reached`,
-        body: `You've hit your ${period} ${categoryName} target ${window}.`,
+        title: i18n.t("notifications.goalAroundTitle", vars),
+        body: weekly
+          ? i18n.t("notifications.goalAroundBodyWeekly", vars)
+          : i18n.t("notifications.goalAroundBodyDaily", vars),
       };
     case "at_least":
       return {
-        title: `${categoryName} goal reached`,
-        body: `Nice — you've hit your ${period} ${categoryName} goal ${window}.`,
+        title: i18n.t("notifications.goalAtLeastTitle", vars),
+        body: weekly
+          ? i18n.t("notifications.goalAtLeastBodyWeekly", vars)
+          : i18n.t("notifications.goalAtLeastBodyDaily", vars),
       };
   }
 }

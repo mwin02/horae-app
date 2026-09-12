@@ -1,7 +1,9 @@
 import { Feather } from "@expo/vector-icons";
 import { useQuery } from "@powersync/react";
 import { useRouter } from "expo-router";
+import type { TFunction } from "i18next";
 import React, { useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -15,53 +17,43 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { seedDemoDay } from "@/lib/dev-seed";
 import { sendFeedback } from "@/lib/feedback";
+import { formatWeekday } from "@/lib/i18n/format";
 
-const WEEK_START_LABELS: Record<number, string> = {
-  0: "Mon",
-  1: "Tue",
-  2: "Wed",
-  3: "Thu",
-  4: "Fri",
-  5: "Sat",
-  6: "Sun",
-};
-
-const PERIOD_LABELS: Record<string, string> = {
-  daily: "Daily",
-  weekly: "Weekly",
-  monthly: "Monthly",
-};
-
-function formatThresholdSummary(seconds: number | null): string {
-  if (seconds === null) return "Auto";
+function formatThresholdSummary(seconds: number | null, t: TFunction): string {
+  if (seconds === null) return t("settings.notificationSummary.auto");
   const minutes = Math.round(seconds / 60);
-  if (minutes % 60 === 0) return `${minutes / 60}h`;
-  return `${minutes}m`;
+  if (minutes % 60 === 0) return t("duration.hours", { hours: minutes / 60 });
+  return t("duration.minutes", { minutes });
 }
 
 function buildNotificationSummary(
   prefs: NotificationPreferencesRecord | null,
+  t: TFunction,
 ): string {
-  if (!prefs) return "Loading…";
+  if (!prefs) return t("settings.notificationSummary.loading");
   const idle = prefs.idle_reminder_enabled === 1;
   const longRunning = prefs.long_running_enabled === 1;
   const goalAlerts = prefs.goal_alerts_enabled === 1;
-  if (!idle && !longRunning && !goalAlerts) return "All reminders off";
+  if (!idle && !longRunning && !goalAlerts) {
+    return t("settings.notificationSummary.allOff");
+  }
   const parts: string[] = [];
-  if (idle) parts.push("Idle");
+  if (idle) parts.push(t("settings.notificationSummary.idle"));
   if (longRunning) {
     const threshold = formatThresholdSummary(
       prefs.threshold_override_seconds ?? null,
+      t,
     );
-    parts.push(`Long-running · ${threshold}`);
+    parts.push(t("settings.notificationSummary.longRunning", { threshold }));
   }
-  if (goalAlerts) parts.push("Goal alerts");
+  if (goalAlerts) parts.push(t("settings.notificationSummary.goalAlerts"));
   return parts.join(" · ");
 }
 
 export default function SettingsScreen(): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const router = useRouter();
   const { data: prefsData } = useQuery<NotificationPreferencesRecord>(
     NOTIFICATION_PREFERENCES_QUERY,
@@ -147,23 +139,25 @@ export default function SettingsScreen(): React.ReactElement {
           }`,
         );
       }
+      // i18n-ignore-next-line: debug-only tool
       Alert.alert("Demo day seeded", parts.join(" · "));
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       console.error("[dev-seed] failed:", error);
+      // i18n-ignore-next-line: debug-only tool
       Alert.alert("Seed failed", message);
     }
   }, []);
 
   const notificationSummary = useMemo(
-    () => buildNotificationSummary(prefs),
-    [prefs],
+    () => buildNotificationSummary(prefs, t),
+    [prefs, t],
   );
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.header}>
-        <Text style={styles.title}>Settings</Text>
+        <Text style={styles.title}>{t("settings.title")}</Text>
       </View>
 
       <ScrollView
@@ -195,9 +189,11 @@ export default function SettingsScreen(): React.ReactElement {
         )}
         */}
 
-        <Text style={styles.sectionLabel}>Preferences</Text>
+        <Text style={styles.sectionLabel}>
+          {t("settings.sectionPreferences")}
+        </Text>
         <SettingRow
-          title="Notifications"
+          title={t("settings.notifications")}
           description={notificationSummary}
           onPress={goToNotifications}
           iconBackground={colors.surfaceContainer}
@@ -206,8 +202,11 @@ export default function SettingsScreen(): React.ReactElement {
           }
         />
         <SettingRow
-          title="General"
-          description={`Week starts ${WEEK_START_LABELS[preferences.weekStartDay]} · Insights ${PERIOD_LABELS[preferences.defaultInsightsPeriod]}`}
+          title={t("settings.general")}
+          description={t("settings.generalSummary", {
+            day: formatWeekday(preferences.weekStartDay),
+            period: t(`common.period.${preferences.defaultInsightsPeriod}`),
+          })}
           onPress={goToGeneralPreferences}
           iconBackground={colors.surfaceContainer}
           iconChildren={
@@ -215,7 +214,7 @@ export default function SettingsScreen(): React.ReactElement {
           }
         />
         <SettingRow
-          title="Goals"
+          title={t("settings.goals")}
           onPress={goToIdealAllocations}
           iconBackground={colors.surfaceContainer}
           iconChildren={
@@ -224,7 +223,7 @@ export default function SettingsScreen(): React.ReactElement {
         />
 
         <SettingRow
-          title="Manage activities"
+          title={t("settings.manageActivities")}
           onPress={goToManageActivities}
           iconBackground={colors.surfaceContainer}
           iconChildren={
@@ -232,7 +231,7 @@ export default function SettingsScreen(): React.ReactElement {
           }
         />
         <SettingRow
-          title="Manage categories"
+          title={t("settings.manageCategories")}
           onPress={goToManageCategories}
           iconBackground={colors.surfaceContainer}
           iconChildren={
@@ -241,13 +240,13 @@ export default function SettingsScreen(): React.ReactElement {
         />
 
         <SettingRow
-          title="Manage tags"
+          title={t("settings.manageTags")}
           onPress={goToManageTags}
           iconBackground={colors.surfaceContainer}
           iconChildren={<Feather name="tag" size={20} color={colors.primary} />}
         />
         <SettingRow
-          title="Manage data"
+          title={t("settings.manageData")}
           onPress={goToManageData}
           iconBackground={colors.surfaceContainer}
           iconChildren={
@@ -255,9 +254,9 @@ export default function SettingsScreen(): React.ReactElement {
           }
         />
 
-        <Text style={styles.sectionLabel}>Help us improve</Text>
+        <Text style={styles.sectionLabel}>{t("settings.sectionHelp")}</Text>
         <SettingRow
-          title="Report a bug"
+          title={t("settings.reportBug")}
           onPress={handleReportBug}
           iconBackground={colors.surfaceContainer}
           iconChildren={
@@ -265,7 +264,7 @@ export default function SettingsScreen(): React.ReactElement {
           }
         />
         <SettingRow
-          title="Request a feature"
+          title={t("settings.requestFeature")}
           onPress={handleRequestFeature}
           iconBackground={colors.surfaceContainer}
           iconChildren={
@@ -273,6 +272,7 @@ export default function SettingsScreen(): React.ReactElement {
           }
         />
 
+        {/* i18n-ignore-start: debug-only tools, never shown in release builds */}
         {process.env.EXPO_PUBLIC_ENABLE_DEBUG === "1" ? (
           <>
             <Text style={styles.sectionLabel}>Debug</Text>
@@ -294,6 +294,7 @@ export default function SettingsScreen(): React.ReactElement {
             />
           </>
         ) : null}
+        {/* i18n-ignore-end */}
       </ScrollView>
 
       <SignOutPromptModal

@@ -4,7 +4,25 @@
  * All times are stored in UTC (ISO 8601 strings). Each time_entry also stores
  * the IANA timezone that was active when it was created, so we can display
  * times in their original local timezone regardless of the user's current tz.
+ *
+ * Display helpers:
+ *   - Dates (`formatDateInTimezone`) follow the UI language via getIntlLocale().
+ *   - Clock times (`formatClockTime`, `formatTimeInTimezone`,
+ *     `formatHourLabel`) use one English 12-hour format ("2:29 PM") in every
+ *     UI language, so labels, the timeline axis and pickers always agree.
+ *   - Durations (`formatDuration`) use the `duration.*` keys.
+ * Everything else here is machine logic and deliberately pins `en-CA`
+ * (YYYY-MM-DD) / `en-US` (formatToParts) — never localize those, day
+ * boundaries depend on the exact output.
  */
+
+import i18n, { getIntlLocale } from '@/lib/i18n';
+
+/**
+ * Locale for every time-of-day display, including DateTimePicker's `locale`
+ * prop. Clock times are not localized — see the header comment.
+ */
+export const CLOCK_LOCALE = 'en-US';
 
 /** Get the device's current IANA timezone (e.g., 'America/New_York') */
 export function getCurrentTimezone(): string {
@@ -12,12 +30,11 @@ export function getCurrentTimezone(): string {
 }
 
 /**
- * Format an ISO 8601 UTC string into a human-readable time in the given timezone.
- * Returns e.g. "9:30 AM", "2:15 PM".
+ * Format a Date as a clock time, e.g. "9:30 AM". Uses the device timezone
+ * unless one is given.
  */
-export function formatTimeInTimezone(isoString: string, timezone: string): string {
-  const date = new Date(isoString);
-  return date.toLocaleTimeString('en-US', {
+export function formatClockTime(date: Date, timezone?: string): string {
+  return date.toLocaleTimeString(CLOCK_LOCALE, {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
@@ -26,12 +43,28 @@ export function formatTimeInTimezone(isoString: string, timezone: string): strin
 }
 
 /**
+ * Format an ISO 8601 UTC string into a clock time in the given timezone.
+ * Returns e.g. "9:30 AM", "2:15 PM".
+ */
+export function formatTimeInTimezone(isoString: string, timezone: string): string {
+  return formatClockTime(new Date(isoString), timezone);
+}
+
+/** Axis label for an hour of the day (0–24): 0 → "12 AM", 13 → "1 PM". */
+export function formatHourLabel(hour: number): string {
+  return new Date(Date.UTC(2024, 0, 1, hour % 24)).toLocaleTimeString(
+    CLOCK_LOCALE,
+    { hour: 'numeric', hour12: true, timeZone: 'UTC' },
+  );
+}
+
+/**
  * Format an ISO 8601 UTC string into a short date string in the given timezone.
- * Returns e.g. "Mar 24, 2026".
+ * Returns e.g. "Mar 24, 2026" (en-US).
  */
 export function formatDateInTimezone(isoString: string, timezone: string): string {
   const date = new Date(isoString);
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString(getIntlLocale(), {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -193,16 +226,16 @@ export function getEndOfDay(dateStr: string, timezone: string): Date {
 
 /**
  * Format elapsed seconds into a human-readable duration string.
- * Returns e.g. "1h 30m", "45m", "2h 0m".
+ * Returns e.g. "1h 30m", "45m", "2h 0m" in English.
  */
 export function formatDuration(totalSeconds: number): string {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
 
   if (hours > 0) {
-    return `${hours}h ${minutes}m`;
+    return i18n.t('duration.hoursMinutes', { hours, minutes });
   }
-  return `${minutes}m`;
+  return i18n.t('duration.minutes', { minutes });
 }
 
 /**

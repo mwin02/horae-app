@@ -15,6 +15,20 @@ import WidgetKit
 
 private let WIDGET_APP_GROUP = "group.com.myozawwin.horae.shared"
 private let WIDGET_SNAPSHOT_KEY = "runningTimerSnapshot"
+private let WIDGET_STRINGS_KEY = "widgetStrings"
+
+/// Localized label pushed by the host app (`writeWidgetStrings` /
+/// `useWidgetStrings` on the JS side). Falls back to the English literal if
+/// the app hasn't written strings yet (fresh install, widget added first).
+func widgetString(_ key: String, fallback: String) -> String {
+    guard
+        let defaults = UserDefaults(suiteName: WIDGET_APP_GROUP),
+        let strings = defaults.dictionary(forKey: WIDGET_STRINGS_KEY) as? [String: String],
+        let value = strings[key],
+        !value.isEmpty
+    else { return fallback }
+    return value
+}
 
 struct RunningSnapshot: Codable {
     let entryId: String
@@ -148,7 +162,7 @@ private struct ActiveStateView: View {
                         Circle()
                             .fill(Color(hex: snapshot.categoryColor))
                             .frame(width: 6, height: 6)
-                        Text("TRACKING")
+                        Text(widgetString("tracking", fallback: "Tracking").uppercased())
                             .font(.system(size: 10, weight: .bold))
                             .kerning(1.2)
                             .foregroundColor(Color(hex: snapshot.categoryColor))
@@ -209,7 +223,7 @@ private struct IdleStateView: View {
         ZStack(alignment: .bottomTrailing) {
             VStack(spacing: 10) {
                 HoraeLogoMark(size: 36)
-                Text("Tap to start tracking")
+                Text(widgetString("tapToStart", fallback: "Tap to start tracking"))
                     .font(.system(size: 15, weight: .bold))
                     .foregroundColor(INK_COLOR)
             }

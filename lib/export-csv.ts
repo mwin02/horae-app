@@ -1,6 +1,8 @@
 import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
 
+import i18n from "@/lib/i18n";
+import { localizeActivityName, localizeCategoryName } from "@/lib/i18n/preset-names";
 import { db } from "@/lib/powersync";
 
 interface TimeEntryExportRow {
@@ -14,13 +16,20 @@ interface TimeEntryExportRow {
   note: string | null;
 }
 
+interface TimeEntryQueryRow extends TimeEntryExportRow {
+  category_id: string | null;
+  activity_id: string | null;
+}
+
 const QUERY = `
   SELECT
     te.started_at      AS started_at,
     te.ended_at        AS ended_at,
     te.duration_seconds AS duration_seconds,
     te.timezone        AS timezone,
+    c.id               AS category_id,
     c.name             AS category_name,
+    a.id               AS activity_id,
     a.name             AS activity_name,
     (
       SELECT GROUP_CONCAT(t.name, ', ')
@@ -36,6 +45,7 @@ const QUERY = `
   ORDER BY te.started_at ASC
 `;
 
+// Header names are machine-readable and stay English in every language.
 const COLUMNS: (keyof TimeEntryExportRow)[] = [
   "started_at",
   "ended_at",
@@ -54,6 +64,24 @@ function escapeCell(value: unknown): string {
     return `"${str.replace(/"/g, '""')}"`;
   }
   return str;
+}
+
+/**
+ * The CSV is for humans (spreadsheets), so preset names are exported in the
+ * current UI language — unlike the JSON backup, which must keep raw DB values.
+ */
+function localizeRow(row: TimeEntryQueryRow): TimeEntryExportRow {
+  return {
+    ...row,
+    category_name:
+      row.category_id && row.category_name
+        ? localizeCategoryName(row.category_id, row.category_name)
+        : row.category_name,
+    activity_name:
+      row.activity_id && row.activity_name
+        ? localizeActivityName(row.activity_id, row.activity_name)
+        : row.activity_name,
+  };
 }
 
 function buildCsv(rows: TimeEntryExportRow[]): string {
@@ -82,11 +110,11 @@ function buildFilename(now: Date): string {
 export async function exportTimeEntriesAsCsv(): Promise<void> {
   const available = await Sharing.isAvailableAsync();
   if (!available) {
-    throw new Error("Sharing is not available on this device");
+    throw new Error(i18n.t("dataTransfer.sharingUnavailable"));
   }
 
-  const rows = await db.getAll<TimeEntryExportRow>(QUERY);
-  const csv = buildCsv(rows);
+  const rows = await db.getAll<TimeEntryQueryRow>(QUERY);
+  const csv = buildCsv(rows.map(localizeRow));
 
   const file = new File(Paths.cache, buildFilename(new Date()));
   if (file.exists) {
@@ -98,6 +126,6 @@ export async function exportTimeEntriesAsCsv(): Promise<void> {
   await Sharing.shareAsync(file.uri, {
     mimeType: "text/csv",
     UTI: "public.comma-separated-values-text",
-    dialogTitle: "Export time entries",
+    dialogTitle: i18n.t("dataTransfer.exportCsvDialogTitle"),
   });
 }

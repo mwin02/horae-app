@@ -7,6 +7,7 @@ import { FavoriteStar } from "@/components/common/favorite-star";
 import type { ActivityItem } from "@/db/models";
 import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
 import { useTheme, useThemedStyles } from "@/hooks/useTheme";
+import { useTranslation } from "react-i18next";
 
 interface ManageActivityRowProps {
   activity: ActivityItem;
@@ -20,6 +21,7 @@ export function ManageActivityRow({
   onDelete,
 }: ManageActivityRowProps): React.ReactElement {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const swipeableRef = useRef<Swipeable>(null);
 
@@ -32,10 +34,10 @@ export function ManageActivityRow({
     (): React.ReactElement => (
       <RectButton style={styles.archiveAction} onPress={handleArchivePress}>
         <Feather name="archive" size={20} color={colors.onPrimary} />
-        <Text style={styles.archiveLabel}>Archive</Text>
+        <Text style={styles.archiveLabel}>{t("common.archive")}</Text>
       </RectButton>
     ),
-    [handleArchivePress],
+    [handleArchivePress, t],
   );
 
   return (
@@ -74,7 +76,7 @@ export function ManageActivityRow({
           style={styles.editButton}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel={`Edit ${activity.name}`}
+          accessibilityLabel={t("common.editItem", { name: activity.name })}
         >
           <Feather name="edit-2" size={16} color={colors.primary} />
         </Pressable>

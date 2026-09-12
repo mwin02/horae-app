@@ -1,12 +1,14 @@
 import { Stack } from "expo-router";
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 export default function AuthLayout(): React.ReactElement {
+  const { t } = useTranslation();
   return (
     <Stack
       screenOptions={{
         headerShown: true,
-        headerBackTitle: "Back",
+        headerBackTitle: t("common.back"),
         headerTitle: "",
         headerShadowVisible: false,
       }}

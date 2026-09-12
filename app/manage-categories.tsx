@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { Stack } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Alert,
@@ -24,6 +25,7 @@ import { useCategoriesWithActivities } from "@/hooks/useCategoriesWithActivities
 export default function ManageCategoriesScreen(): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const { categories, isLoading } = useCategoriesWithActivities();
   const [editing, setEditing] = useState<CategoryWithActivities | null>(null);
   const [creating, setCreating] = useState(false);
@@ -44,20 +46,21 @@ export default function ManageCategoriesScreen(): React.ReactElement {
     const activeCount = category.activities.length;
     if (activeCount > 0) {
       Alert.alert(
-        "Remove its activities first",
-        `"${category.name}" still has ${activeCount} ${
-          activeCount === 1 ? "activity" : "activities"
-        }. Archive them on the Manage Activities screen before removing the category.`,
+        t("manageCategories.hasActivitiesTitle"),
+        t("manageCategories.hasActivitiesBody", {
+          name: category.name,
+          count: activeCount,
+        }),
       );
       return;
     }
     Alert.alert(
-      `Remove "${category.name}"?`,
-      "Past time entries are preserved. The category is hidden everywhere and won't count toward your limit.",
+      t("manageCategories.removeTitle", { name: category.name }),
+      t("manageCategories.removeBody"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Remove",
+          text: t("common.remove"),
           style: "destructive",
           onPress: async () => {
             try {
@@ -69,7 +72,7 @@ export default function ManageCategoriesScreen(): React.ReactElement {
         },
       ],
     );
-  }, []);
+  }, [t]);
 
   const closeModal = useCallback((): void => {
     setEditing(null);
@@ -90,7 +93,7 @@ export default function ManageCategoriesScreen(): React.ReactElement {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container} edges={["bottom"]}>
-        <Stack.Screen options={{ title: "Manage Categories" }} />
+        <Stack.Screen options={{ title: t("manageCategories.title") }} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -100,12 +103,15 @@ export default function ManageCategoriesScreen(): React.ReactElement {
 
   return (
     <SafeAreaView style={styles.container} edges={["bottom"]}>
-      <Stack.Screen options={{ title: "Manage Categories" }} />
+      <Stack.Screen options={{ title: t("manageCategories.title") }} />
 
       <View style={styles.header}>
-        <Text style={styles.title}>Manage Categories</Text>
+        <Text style={styles.title}>{t("manageCategories.title")}</Text>
         <Text style={styles.headerSubtitle}>
-          {categories.length} of {MAX_CATEGORIES} categories
+          {t("manageCategories.count", {
+            count: categories.length,
+            max: MAX_CATEGORIES,
+          })}
         </Text>
       </View>
 
@@ -119,14 +125,13 @@ export default function ManageCategoriesScreen(): React.ReactElement {
         ListFooterComponent={
           atLimit ? (
             <Text style={styles.limitNote}>
-              You&apos;ve reached the {MAX_CATEGORIES}-category limit. Remove one
-              to add another.
+              {t("manageCategories.limitNote", { max: MAX_CATEGORIES })}
             </Text>
           ) : null
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>No categories</Text>
+            <Text style={styles.emptyTitle}>{t("manageCategories.empty")}</Text>
           </View>
         }
       />

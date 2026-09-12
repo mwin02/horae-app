@@ -1,5 +1,7 @@
 import { useQuery } from "@powersync/react";
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { localizeActivityName, localizeCategoryName } from "@/lib/i18n/preset-names";
 
 /**
  * One row in the flat Quick Start grid: an activity with the resolved
@@ -64,20 +66,21 @@ export interface UseQuickStartActivitiesResult {
  */
 export function useQuickStartActivities(): UseQuickStartActivitiesResult {
   const { data, isLoading } = useQuery<FlatRow>(QUICK_START_QUERY);
+  const { i18n } = useTranslation();
 
   const activities = useMemo<QuickStartActivity[]>(
     () =>
       data.map((row) => ({
         id: row.activity_id,
-        name: row.activity_name,
+        name: localizeActivityName(row.activity_id, row.activity_name),
         categoryId: row.category_id,
-        categoryName: row.category_name,
+        categoryName: localizeCategoryName(row.category_id, row.category_name),
         categoryColor: row.category_color,
         icon: row.icon,
         entryCount: row.entry_count,
         isFavorite: row.is_favorite === 1,
       })),
-    [data],
+    [data, i18n.language],
   );
 
   return { activities, isLoading };

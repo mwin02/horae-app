@@ -5,6 +5,7 @@ import { useTopActivities, type TopActivity } from "@/hooks/useTopActivities";
 import { formatDuration } from "@/lib/timezone";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
 
 interface TopActivitiesRankedProps {
   monthDate: string;
@@ -27,6 +28,7 @@ export function TopActivitiesRanked({
   monthDate,
 }: TopActivitiesRankedProps): React.ReactElement | null {
   const styles = useThemedStyles(makeStyles);
+  const { t } = useTranslation();
   const { activities, topSeconds, isLoading } = useTopActivities(
     monthDate,
     TOTAL_LIMIT,
@@ -40,16 +42,16 @@ export function TopActivitiesRanked({
   return (
     <View style={styles.container}>
       <View style={styles.eyebrow}>
-        <Text style={styles.eyebrowTitle}>TOP ACTIVITIES</Text>
+        <Text style={styles.eyebrowTitle}>{t("topActivities.title")}</Text>
         {activities.length > 0 ? (
           <Text style={styles.eyebrowMeta}>
-            this month · top {activities.length}
+            {t("topActivities.meta", { count: activities.length })}
           </Text>
         ) : null}
       </View>
 
       {activities.length === 0 ? (
-        <Text style={styles.emptyText}>No tracked time this month</Text>
+        <Text style={styles.emptyText}>{t("insightsCommon.noTrackedMonth")}</Text>
       ) : (
         <>
           <View style={styles.podiumRow}>

@@ -25,6 +25,7 @@ import { getCurrentTimezone, getTodayDate } from "@/lib/timezone";
 import { NewSessionModal } from "@/components/timer/new-session-modal";
 import { useUIStore } from "@/store/uiStore";
 import React, { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   ScrollView,
@@ -36,6 +37,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function HomeScreen(): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const {
     runningEntry,
     isLoading,
@@ -223,8 +225,12 @@ export default function HomeScreen(): React.ReactElement {
 
       {/* Undo toast for accidental stops */}
       <UndoToast
-        message={undoToast ? `Stopped ${undoToast.activityName}` : null}
-        actionLabel="Resume"
+        message={
+          undoToast
+            ? t("home.stoppedToast", { activity: undoToast.activityName })
+            : null
+        }
+        actionLabel={t("home.resume")}
         actionIcon="rotate-ccw"
         onAction={handleUndoStop}
         onDismiss={() => setUndoToast(null)}

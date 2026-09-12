@@ -3,6 +3,8 @@ import { getCurrentTimezone, getEndOfDay, getStartOfDay } from "@/lib/timezone";
 import { useQuery } from "@powersync/react";
 import { useMemo } from "react";
 import { getMonthRange } from "./useInsightsData";
+import { useTranslation } from "react-i18next";
+import { localizeActivityName, localizeCategoryName } from "@/lib/i18n/preset-names";
 
 export interface TopActivity {
   activityId: string;
@@ -33,6 +35,7 @@ export function useTopActivities(
   limit: number = DEFAULT_LIMIT,
 ): UseTopActivitiesResult {
   const timezone = getCurrentTimezone();
+  const { i18n } = useTranslation();
 
   const { startIso, endIso } = useMemo(() => {
     const { monthStart, monthEnd } = getMonthRange(monthDate);
@@ -50,16 +53,16 @@ export function useTopActivities(
   const result = useMemo(() => {
     const sliced = rows.slice(0, limit).map<TopActivity>((row) => ({
       activityId: row.activity_id,
-      activityName: row.activity_name,
+      activityName: localizeActivityName(row.activity_id, row.activity_name),
       activityIcon: row.activity_icon,
       categoryId: row.category_id,
-      categoryName: row.category_name,
+      categoryName: localizeCategoryName(row.category_id, row.category_name),
       categoryColor: row.category_color,
       totalSeconds: row.total_seconds,
     }));
     const topSeconds = sliced[0]?.totalSeconds ?? 0;
     return { activities: sliced, topSeconds };
-  }, [rows, limit]);
+  }, [rows, limit, i18n.language]);
 
   return { ...result, isLoading };
 }

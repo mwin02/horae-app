@@ -7,6 +7,7 @@ import type { ClockArc } from "@/hooks/useTodayClockArcs";
 import { formatTimerDisplay } from "@/lib/timezone";
 import { Feather } from "@expo/vector-icons";
 import React, { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 
@@ -39,6 +40,7 @@ export function RingTimerHero({
 }: RingTimerHeroProps): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const isActive = runningEntry !== null;
   const elapsed = useElapsedTime(
     runningEntry ? runningEntry.startedAt.toISOString() : null,
@@ -125,7 +127,7 @@ export function RingTimerHero({
                 color={colors.onPrimary}
                 style={styles.playIcon}
               />
-              <Text style={styles.startLabel}>Start</Text>
+              <Text style={styles.startLabel}>{t("home.start")}</Text>
             </GradientButton>
           )}
         </View>
@@ -146,6 +148,7 @@ function ActiveCenter({
   onStop,
 }: ActiveCenterProps): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
+  const { t } = useTranslation();
   return (
     <View style={styles.activeCenter}>
       <View style={styles.trackingRow}>
@@ -158,7 +161,7 @@ function ActiveCenter({
         <Text
           style={[styles.trackingLabel, { color: runningEntry.categoryColor }]}
         >
-          Tracking
+          {t("home.tracking")}
         </Text>
       </View>
       <Text style={styles.activeName} numberOfLines={1}>

@@ -3,6 +3,9 @@ import { useQuery } from '@powersync/react';
 import { ACTIVITY_LOOKUP_QUERY, RECOMMENDATION_QUERY } from '@/db/queries';
 import type { RecommendedActivity } from '@/db/models';
 import { getCurrentTimezone } from '@/lib/timezone';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/lib/i18n';
+import { localizeActivityName, localizeCategoryName } from '@/lib/i18n/preset-names';
 
 interface FlatRow {
   started_at: string;
@@ -10,6 +13,7 @@ interface FlatRow {
   timezone: string;
   activity_id: string;
   activity_name: string;
+  category_id: string;
   category_name: string;
   category_color: string;
   category_icon: string | null;
@@ -18,6 +22,7 @@ interface FlatRow {
 interface ActivityLookupRow {
   activity_id: string;
   activity_name: string;
+  category_id: string;
   category_name: string;
   category_color: string;
   category_icon: string | null;
@@ -35,8 +40,6 @@ const MAX_RECOMMENDATIONS = 6;
 const RECENT_EXCLUSION_COUNT = 3;
 const WEEKDAY_FALLBACK_WEIGHT = 0.5;
 const MS_PER_DAY = 86_400_000;
-
-const HISTORY_SUBTITLE = 'You usually start around now';
 
 // Follow-up recommendation tuning. Looks at the last N occurrences of the
 // "previous" activity (the running timer's activity, or the most-recent
@@ -56,8 +59,8 @@ interface RoutineSlot {
   startHour: number;
   /** Local hour (0-23, exclusive). End < start means the slot wraps midnight. */
   endHour: number;
-  /** Subtitle shown on the card when this slot fires. */
-  subtitle: string;
+  /** `recommendations.*` key for the card subtitle when this slot fires. */
+  subtitleKey: 'breakfast' | 'lunch' | 'dinner' | 'nightSleep' | 'nap';
   /** If set, only fire on weekend (Sat/Sun) or weekday (Mon-Fri). */
   weekdayClass?: 'weekday' | 'weekend';
 }
@@ -67,31 +70,31 @@ const ROUTINE_SLOTS: RoutineSlot[] = [
     name: 'breakfast',
     startHour: 6,
     endHour: 10,
-    subtitle: "It's around breakfast time",
+    subtitleKey: 'breakfast',
   },
   {
     name: 'lunch',
     startHour: 11,
     endHour: 14,
-    subtitle: "It's around lunchtime",
+    subtitleKey: 'lunch',
   },
   {
     name: 'dinner',
     startHour: 17,
     endHour: 21,
-    subtitle: "It's around dinnertime",
+    subtitleKey: 'dinner',
   },
   {
     name: 'night sleep',
     startHour: 22,
     endHour: 2,
-    subtitle: 'Winding down for the night',
+    subtitleKey: 'nightSleep',
   },
   {
     name: 'nap',
     startHour: 14,
     endHour: 17,
-    subtitle: 'Afternoon nap window',
+    subtitleKey: 'nap',
     weekdayClass: 'weekend',
   },
 ];
@@ -211,12 +214,14 @@ function computeFollowUpRecommendations(
 
   return ranked.map((c) => ({
     activityId: c.activityId,
-    activityName: c.row.activity_name,
-    categoryName: c.row.category_name,
+    activityName: localizeActivityName(c.activityId, c.row.activity_name),
+    categoryName: localizeCategoryName(c.row.category_id, c.row.category_name),
     categoryColor: c.row.category_color,
     categoryIcon: c.row.category_icon,
     reason: 'follow_up',
-    subtitle: `You often do this after ${prevActivityName}`,
+    subtitle: i18n.t('recommendations.followUp', {
+      activity: localizeActivityName(prevActivityId, prevActivityName),
+    }),
   }));
 }
 
@@ -258,6 +263,7 @@ export function useRecommendedActivity(
     ACTIVITY_LOOKUP_QUERY,
   );
 
+  const { i18n: i18nInstance } = useTranslation();
   const recommendations = useMemo((): RecommendedActivity[] => {
     const tz = getCurrentTimezone();
     const now = new Date();
@@ -306,8 +312,8 @@ export function useRecommendedActivity(
         } else {
           scores.set(row.activity_id, {
             activityId: row.activity_id,
-            activityName: row.activity_name,
-            categoryName: row.category_name,
+            activityName: localizeActivityName(row.activity_id, row.activity_name),
+            categoryName: localizeCategoryName(row.category_id, row.category_name),
             categoryColor: row.category_color,
             categoryIcon: row.category_icon,
             weight,
@@ -327,7 +333,7 @@ export function useRecommendedActivity(
         categoryColor: s.categoryColor,
         categoryIcon: s.categoryIcon,
         reason: 'history',
-        subtitle: HISTORY_SUBTITLE,
+        subtitle: i18n.t('recommendations.history'),
       }));
 
     // --- Follow-up: what usually comes after the most recent activity?
@@ -368,6 +374,8 @@ export function useRecommendedActivity(
     if (catalogData && catalogData.length > 0) {
       const byName = new Map<string, ActivityLookupRow>();
       for (const row of catalogData) {
+        // Match on the raw stored name: preset names stay English in the DB
+        // (see docs/LOCALIZATION.md), so routine slots work in every language.
         const key = row.activity_name.trim().toLowerCase();
         if (!byName.has(key)) byName.set(key, row);
       }
@@ -380,12 +388,12 @@ export function useRecommendedActivity(
         if (excluded.has(match.activity_id)) continue;
         routineRecs.push({
           activityId: match.activity_id,
-          activityName: match.activity_name,
-          categoryName: match.category_name,
+          activityName: localizeActivityName(match.activity_id, match.activity_name),
+          categoryName: localizeCategoryName(match.category_id, match.category_name),
           categoryColor: match.category_color,
           categoryIcon: match.category_icon,
           reason: 'routine',
-          subtitle: slot.subtitle,
+          subtitle: i18n.t(`recommendations.${slot.subtitleKey}`),
         });
       }
     }
@@ -423,7 +431,8 @@ export function useRecommendedActivity(
     }
 
     return merged;
-  }, [historyData, catalogData, currentActivityId]);
+    // Names and subtitles are localized strings.
+  }, [historyData, catalogData, currentActivityId, i18nInstance.language]);
 
   return { recommendations, isLoading: historyLoading || catalogLoading };
 }

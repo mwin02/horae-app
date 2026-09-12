@@ -1,5 +1,6 @@
 import { Stack } from "expo-router";
 import React, { useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -8,30 +9,31 @@ import {
   updateUserPreferences,
   type InsightsPeriod,
 } from "@/db/queries/user-preferences";
+import { useLanguage } from "@/hooks/useLanguage";
 import { useTheme, useThemedStyles, type ThemeMode } from "@/hooks/useTheme";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { APP_LANGUAGES, LANGUAGE_NATIVE_NAMES } from "@/lib/i18n";
+import { formatWeekday } from "@/lib/i18n/format";
 
-const WEEK_DAY_OPTIONS: { value: number; label: string }[] = [
-  { value: 0, label: "Monday" },
-  { value: 6, label: "Sunday" },
-  { value: 5, label: "Saturday" },
-];
+const WEEK_DAY_OPTIONS: number[] = [0, 6, 5];
 
-const PERIOD_OPTIONS: { value: InsightsPeriod; label: string }[] = [
-  { value: "daily", label: "Daily" },
-  { value: "weekly", label: "Weekly" },
-  { value: "monthly", label: "Monthly" },
-];
+const PERIOD_OPTIONS: InsightsPeriod[] = ["daily", "weekly", "monthly"];
 
-const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
-  { value: "system", label: "Match device" },
-  { value: "light", label: "Light" },
-  { value: "dark", label: "Dark" },
-];
+const THEME_OPTIONS = [
+  { value: "system", labelKey: "generalPreferences.themeSystem" },
+  { value: "light", labelKey: "generalPreferences.themeLight" },
+  { value: "dark", labelKey: "generalPreferences.themeDark" },
+] as const satisfies readonly { value: ThemeMode; labelKey: string }[];
 
 export default function GeneralPreferencesScreen(): React.ReactElement {
+  const { t } = useTranslation();
   const { preferences } = useUserPreferences();
   const { mode: themeMode, setMode: setThemeMode } = useTheme();
+  const {
+    preference: languagePreference,
+    systemLanguage,
+    setPreference: setLanguagePreference,
+  } = useLanguage();
   const styles = useThemedStyles(makeStyles);
 
   const handleWeekStartChange = useCallback((value: number) => {
@@ -44,63 +46,94 @@ export default function GeneralPreferencesScreen(): React.ReactElement {
 
   return (
     <SafeAreaView style={styles.container} edges={["bottom"]}>
-      <Stack.Screen options={{ title: "General" }} />
+      <Stack.Screen options={{ title: t("settings.general") }} />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>General</Text>
-          <Text style={styles.subtitle}>
-            Tweak how weeks line up and where insights land first.
-          </Text>
+          <Text style={styles.title}>{t("settings.general")}</Text>
+          <Text style={styles.subtitle}>{t("generalPreferences.subtitle")}</Text>
         </View>
 
-        <Text style={styles.sectionLabel}>Appearance</Text>
+        {/* Hidden until a second language ships — a one-option picker is noise. */}
+        {APP_LANGUAGES.length > 1 ? (
+          <>
+            <Text style={styles.sectionLabel}>
+              {t("generalPreferences.sectionLanguage")}
+            </Text>
+            <View style={styles.group}>
+              <ChoiceRow
+                label={t("generalPreferences.languageSystem", {
+                  language: LANGUAGE_NATIVE_NAMES[systemLanguage],
+                })}
+                selected={languagePreference === "system"}
+                onPress={() => setLanguagePreference("system")}
+                styles={styles}
+              />
+              {APP_LANGUAGES.map((lang) => (
+                <ChoiceRow
+                  key={lang}
+                  label={LANGUAGE_NATIVE_NAMES[lang]}
+                  selected={languagePreference === lang}
+                  onPress={() => setLanguagePreference(lang)}
+                  styles={styles}
+                />
+              ))}
+            </View>
+            <Text style={styles.helper}>
+              {t("generalPreferences.languageHelper")}
+            </Text>
+          </>
+        ) : null}
+
+        <Text style={styles.sectionLabel}>
+          {t("generalPreferences.sectionAppearance")}
+        </Text>
         <View style={styles.group}>
           {THEME_OPTIONS.map((opt) => (
             <ChoiceRow
               key={opt.value}
-              label={opt.label}
+              label={t(opt.labelKey)}
               selected={themeMode === opt.value}
               onPress={() => setThemeMode(opt.value)}
               styles={styles}
             />
           ))}
         </View>
-        <Text style={styles.helper}>
-          &ldquo;Match device&rdquo; follows your system Light/Dark setting.
-        </Text>
+        <Text style={styles.helper}>{t("generalPreferences.themeHelper")}</Text>
 
-        <Text style={styles.sectionLabel}>Week starts on</Text>
+        <Text style={styles.sectionLabel}>
+          {t("generalPreferences.sectionWeekStart")}
+        </Text>
         <View style={styles.group}>
-          {WEEK_DAY_OPTIONS.map((opt) => (
+          {WEEK_DAY_OPTIONS.map((day) => (
             <ChoiceRow
-              key={opt.value}
-              label={opt.label}
-              selected={preferences.weekStartDay === opt.value}
-              onPress={() => handleWeekStartChange(opt.value)}
+              key={day}
+              label={formatWeekday(day, "long")}
+              selected={preferences.weekStartDay === day}
+              onPress={() => handleWeekStartChange(day)}
               styles={styles}
             />
           ))}
         </View>
 
-        <Text style={styles.sectionLabel}>Default insights period</Text>
+        <Text style={styles.sectionLabel}>
+          {t("generalPreferences.sectionDefaultPeriod")}
+        </Text>
         <View style={styles.group}>
-          {PERIOD_OPTIONS.map((opt) => (
+          {PERIOD_OPTIONS.map((period) => (
             <ChoiceRow
-              key={opt.value}
-              label={opt.label}
-              selected={preferences.defaultInsightsPeriod === opt.value}
-              onPress={() => handlePeriodChange(opt.value)}
+              key={period}
+              label={t(`common.period.${period}`)}
+              selected={preferences.defaultInsightsPeriod === period}
+              onPress={() => handlePeriodChange(period)}
               styles={styles}
             />
           ))}
         </View>
-        <Text style={styles.helper}>
-          Applied the next time you open the Insights tab.
-        </Text>
+        <Text style={styles.helper}>{t("generalPreferences.periodHelper")}</Text>
       </ScrollView>
     </SafeAreaView>
   );

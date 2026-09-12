@@ -4,6 +4,7 @@ import { Pressable, StyleSheet } from "react-native";
 
 import { setActivityFavorite } from "@/db/queries";
 import { useTheme } from "@/hooks/useTheme";
+import { useTranslation } from "react-i18next";
 
 /** Amber used for the filled (favorited) star. Reads well on light and dark. */
 const FAVORITE_COLOR = "#F5B301";
@@ -25,6 +26,7 @@ export function FavoriteStar({
   size = 20,
 }: FavoriteStarProps): React.ReactElement {
   const { colors } = useTheme();
+  const { t } = useTranslation();
 
   const handlePress = useCallback((): void => {
     setActivityFavorite(activityId, !isFavorite).catch((err) => {
@@ -39,7 +41,7 @@ export function FavoriteStar({
       style={styles.button}
       accessibilityRole="button"
       accessibilityState={{ selected: isFavorite }}
-      accessibilityLabel={isFavorite ? "Remove from favorites" : "Add to favorites"}
+      accessibilityLabel={isFavorite ? t("favorites.remove") : t("favorites.add")}
     >
       <Ionicons
         name={isFavorite ? "star" : "star-outline"}

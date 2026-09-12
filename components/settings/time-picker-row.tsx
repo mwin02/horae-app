@@ -5,6 +5,8 @@ import DateTimePicker, {
 import React, { useCallback, useMemo, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { CLOCK_LOCALE, formatClockTime } from "@/lib/timezone";
+
 import {
   RADIUS,
   SPACING,
@@ -36,11 +38,7 @@ function formatDisplay(value: string): string {
   const { hours, minutes } = parseHHMM(value);
   const date = new Date();
   date.setHours(hours, minutes, 0, 0);
-  return date.toLocaleTimeString([], {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
+  return formatClockTime(date);
 }
 
 export function TimePickerRow({
@@ -107,6 +105,7 @@ export function TimePickerRow({
             display={Platform.OS === "ios" ? "spinner" : "default"}
             onChange={handleChange}
             themeVariant={isDark ? "dark" : "light"}
+            locale={CLOCK_LOCALE}
           />
         </View>
       ) : null}

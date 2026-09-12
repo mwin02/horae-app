@@ -97,7 +97,7 @@ private struct LockScreenView: View {
             Text("HORAE")
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundColor(.white.opacity(0.75))
-            Text("· now")
+            Text("· " + widgetString("now", fallback: "now"))
                 .font(.system(size: 12))
                 .foregroundColor(.white.opacity(0.45))
             Spacer()
@@ -111,7 +111,7 @@ private struct LockScreenView: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     LiveDot()
-                    Text("TRACKING")
+                    Text(widgetString("tracking", fallback: "Tracking").uppercased())
                         .font(.system(size: 10, weight: .bold))
                         .kerning(1.4)
                         .foregroundColor(Color(hex: state.categoryColorHex))
@@ -128,7 +128,12 @@ private struct LockScreenView: View {
             VStack(alignment: .trailing, spacing: 2) {
                 timerText(startedAt: state.startedAt, size: 22, weight: .heavy)
                     .foregroundColor(.white)
-                Text("since \(formattedClock(state.startedAt))")
+                // "{time}" is substituted here rather than with String(format:)
+                // so a stray "%" in a translation can't crash the extension.
+                Text(
+                    widgetString("since", fallback: "since {time}")
+                        .replacingOccurrences(of: "{time}", with: formattedClock(state.startedAt))
+                )
                     .font(.system(size: 10))
                     .foregroundColor(.white.opacity(0.5))
             }
@@ -228,7 +233,7 @@ private struct StopButton: View {
                 HStack(spacing: 6) {
                     Image(systemName: "stop.fill")
                         .font(.system(size: 12, weight: .bold))
-                    Text("Stop activity")
+                    Text(widgetString("stopActivity", fallback: "Stop activity"))
                         .font(.system(size: 13, weight: .bold))
                 }
                 .foregroundColor(Color(red: 0x0E/255, green: 0x0F/255, blue: 0x1A/255))
@@ -268,8 +273,11 @@ func timerText(startedAt: Date, size: CGFloat, weight: Font.Weight) -> some View
 }
 
 private func formattedClock(_ date: Date) -> String {
+    // Same clock format as the app ("2:29 PM") in every UI language — see
+    // CLOCK_LOCALE in lib/timezone.ts.
     let formatter = DateFormatter()
-    formatter.dateFormat = "HH:mm"
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.dateFormat = "h:mm a"
     return formatter.string(from: date)
 }
 

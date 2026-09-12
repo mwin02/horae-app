@@ -1,11 +1,13 @@
 import { useMemo } from "react";
 import { useQuery } from "@powersync/react";
+import { useTranslation } from "react-i18next";
 
 import type { GoalDirection, GoalPeriodKind } from "@/db/models";
 import {
   IDEAL_ALLOCATIONS_QUERY,
   type IdealAllocationRow,
 } from "@/db/queries";
+import i18n from "@/lib/i18n";
 import { formatDuration } from "@/lib/timezone";
 
 export interface CategoryGoalSummary {
@@ -20,8 +22,6 @@ export interface UseAllCategoryGoalSummariesResult {
   isLoading: boolean;
 }
 
-const NOT_SET: CategoryGoalSummary = { label: "Not set", hasGoal: false };
-
 /**
  * Summarise the ideal-allocations configuration for every category in a
  * form suitable for a list row. Detects common patterns (every day the
@@ -31,6 +31,7 @@ export function useAllCategoryGoalSummaries(): UseAllCategoryGoalSummariesResult
   const { data: rows, isLoading } = useQuery<IdealAllocationRow>(
     IDEAL_ALLOCATIONS_QUERY,
   );
+  const { i18n: i18nInstance } = useTranslation();
 
   const summariesByCategory = useMemo(() => {
     // Collect rows per category.
@@ -88,7 +89,8 @@ export function useAllCategoryGoalSummaries(): UseAllCategoryGoalSummariesResult
       }
     }
     return result;
-  }, [rows]);
+    // Labels are localized strings, so recompute when the language changes.
+  }, [rows, i18nInstance.language]);
 
   return { summariesByCategory, isLoading };
 }
@@ -101,10 +103,11 @@ function resolveDirection(directions: GoalDirection[]): GoalDirection {
   return directions.every((d) => d === first) ? first : "around";
 }
 
-function directionPrefix(d: GoalDirection): string {
-  if (d === "at_least") return "At least ";
-  if (d === "at_most") return "At most ";
-  return "";
+/** Wrap a cadence phrase with the goal direction ("At least …"). */
+function withDirection(target: string, d: GoalDirection): string {
+  if (d === "at_least") return i18n.t("goalSummary.atLeast", { target });
+  if (d === "at_most") return i18n.t("goalSummary.atMost", { target });
+  return target;
 }
 
 function summarise(
@@ -116,10 +119,11 @@ function summarise(
   const effective = perDay.map((v) => (v != null ? v : defaultVal));
   const anySet =
     defaultVal != null || perDay.some((v) => v != null);
-  if (!anySet) return NOT_SET;
+  if (!anySet) {
+    return { label: i18n.t("idealAllocations.notSet"), hasGoal: false };
+  }
 
   const allDefined = effective.every((v) => v != null);
-  const prefix = directionPrefix(direction);
 
   if (allDefined) {
     const first = effective[0]!;
@@ -128,7 +132,12 @@ function summarise(
       return {
         hasGoal: true,
         label:
-          first === 0 ? "Off daily" : `${prefix}${fmt(first)} daily`,
+          first === 0
+            ? i18n.t("goalSummary.offDaily")
+            : withDirection(
+                i18n.t("goalSummary.daily", { duration: fmt(first) }),
+                direction,
+              ),
       };
     }
 
@@ -139,18 +148,41 @@ function summarise(
     if (weekdaysSame && weekendsSame) {
       const wd = weekdayVals[0];
       const we = weekendVals[0];
-      if (wd > 0 && we === 0)
-        return { hasGoal: true, label: `${prefix}${fmt(wd)} weekdays` };
-      if (wd === 0 && we > 0)
-        return { hasGoal: true, label: `${prefix}${fmt(we)} weekends` };
+      if (wd > 0 && we === 0) {
+        return {
+          hasGoal: true,
+          label: withDirection(
+            i18n.t("goalSummary.weekdays", { duration: fmt(wd) }),
+            direction,
+          ),
+        };
+      }
+      if (wd === 0 && we > 0) {
+        return {
+          hasGoal: true,
+          label: withDirection(
+            i18n.t("goalSummary.weekends", { duration: fmt(we) }),
+            direction,
+          ),
+        };
+      }
       return {
         hasGoal: true,
-        label: `${prefix}${fmt(wd)} weekdays · ${fmt(we)} weekends`,
+        label: withDirection(
+          i18n.t("goalSummary.weekdaysAndWeekends", {
+            weekdays: fmt(wd),
+            weekends: fmt(we),
+          }),
+          direction,
+        ),
       };
     }
   }
 
-  return { hasGoal: true, label: `${prefix}Custom schedule` };
+  return {
+    hasGoal: true,
+    label: withDirection(i18n.t("goalSummary.custom"), direction),
+  };
 }
 
 function summarisePeriod(
@@ -158,15 +190,23 @@ function summarisePeriod(
   kind: "weekly" | "monthly",
   direction: GoalDirection,
 ): CategoryGoalSummary {
-  const prefix = directionPrefix(direction);
-  const cadence = kind === "weekly" ? "weekly" : "monthly";
   if (minutes === 0) {
-    return { hasGoal: true, label: `Off ${cadence}` };
+    return {
+      hasGoal: true,
+      label:
+        kind === "weekly"
+          ? i18n.t("goalSummary.offWeekly")
+          : i18n.t("goalSummary.offMonthly"),
+    };
   }
-  return { hasGoal: true, label: `${prefix}${fmt(minutes)} ${cadence}` };
+  const target =
+    kind === "weekly"
+      ? i18n.t("goalSummary.weekly", { duration: fmt(minutes) })
+      : i18n.t("goalSummary.monthly", { duration: fmt(minutes) });
+  return { hasGoal: true, label: withDirection(target, direction) };
 }
 
 function fmt(minutes: number): string {
-  if (minutes === 0) return "0h";
+  if (minutes === 0) return i18n.t("duration.hours", { hours: 0 });
   return formatDuration(minutes * 60);
 }

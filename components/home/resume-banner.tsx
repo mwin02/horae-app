@@ -2,6 +2,7 @@ import { FONTS, RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constant
 import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 interface ResumeBannerProps {
@@ -21,11 +22,12 @@ export function ResumeBanner({
 }: ResumeBannerProps): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   return (
     <View style={styles.row}>
       <View style={[styles.dot, { backgroundColor: categoryColor }]} />
       <View style={styles.textCol}>
-        <Text style={styles.label}>Resume</Text>
+        <Text style={styles.label}>{t("home.resume")}</Text>
         <Text style={styles.activity} numberOfLines={1}>
           {activityName}
         </Text>

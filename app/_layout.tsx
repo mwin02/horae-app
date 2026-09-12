@@ -22,10 +22,12 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 
+import { loadLanguagePreference } from "@/lib/i18n";
 import { SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
 import { ThemeProvider, useTheme } from "@/hooks/useTheme";
 import {
@@ -37,7 +39,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { useLiveActivity } from "@/hooks/useLiveActivity";
 import { useNotificationScheduler } from "@/hooks/useNotificationScheduler";
 import { useTimerDeepLinks } from "@/hooks/useTimerDeepLinks";
-import { useWidgetSnapshot } from "@/hooks/useWidgetSnapshot";
+import { useWidgetSnapshot, useWidgetStrings } from "@/hooks/useWidgetSnapshot";
 import { TutorialProvider } from "@/hooks/useTutorial";
 import { TutorialOverlay } from "@/components/tutorial/tutorial-overlay";
 import { db } from "@/lib/powersync";
@@ -84,6 +86,9 @@ export default wrap(function RootLayout() {
   useEffect(() => {
     async function initDB() {
       try {
+        // Apply the in-app language choice before the splash hides so the
+        // first frame is already in the right language.
+        await loadLanguagePreference();
         console.log("[Horae] Starting DB init...");
         await db.init();
         console.log("[Horae] DB init complete, seeding...");
@@ -121,15 +126,11 @@ export default wrap(function RootLayout() {
 function DBErrorScreen(): React.ReactElement {
   const { colors } = useTheme();
   const styles = useMemo(() => makeErrorStyles(colors), [colors]);
+  const { t } = useTranslation();
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Couldn&apos;t open your data</Text>
-      <Text style={styles.body}>
-        Horae ran into a problem reading from local storage. Your tracked
-        time is still saved on this device. Please force-quit the app and
-        reopen it. If this keeps happening, contact support from your last
-        working session or reinstall the app.
-      </Text>
+      <Text style={styles.title}>{t("errors.dbTitle")}</Text>
+      <Text style={styles.body}>{t("errors.dbBody")}</Text>
     </View>
   );
 }
@@ -176,10 +177,12 @@ function buildNavigationTheme(
 
 function RootLayoutNav() {
   const { colors, isDark } = useTheme();
+  const { t } = useTranslation();
   const navTheme = useMemo(
     () => buildNavigationTheme(colors, isDark),
     [colors, isDark],
   );
+  const back = t("common.back");
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -201,56 +204,56 @@ function RootLayoutNav() {
           <Stack.Screen
             name="manage-activities"
             options={{
-              title: "Manage Activities",
-              headerBackTitle: "Back",
+              title: t("manageActivities.title"),
+              headerBackTitle: back,
               headerTitle: "",
             }}
           />
           <Stack.Screen
             name="manage-categories"
             options={{
-              title: "Manage Categories",
-              headerBackTitle: "Back",
+              title: t("manageCategories.title"),
+              headerBackTitle: back,
               headerTitle: "",
             }}
           />
           <Stack.Screen
             name="manage-tags"
             options={{
-              title: "Manage Tags",
-              headerBackTitle: "Back",
+              title: t("manageTags.title"),
+              headerBackTitle: back,
               headerTitle: "",
             }}
           />
           <Stack.Screen
             name="ideal-allocations"
             options={{
-              title: "Ideal Allocations",
-              headerBackTitle: "Back",
+              title: t("idealAllocations.title"),
+              headerBackTitle: back,
               headerTitle: "",
             }}
           />
           <Stack.Screen
             name="notifications-settings"
             options={{
-              title: "Notifications",
-              headerBackTitle: "Back",
+              title: t("settings.notifications"),
+              headerBackTitle: back,
               headerTitle: "",
             }}
           />
           <Stack.Screen
             name="general-preferences"
             options={{
-              title: "General",
-              headerBackTitle: "Back",
+              title: t("settings.general"),
+              headerBackTitle: back,
               headerTitle: "",
             }}
           />
           <Stack.Screen
             name="manage-data"
             options={{
-              title: "Manage data",
-              headerBackTitle: "Back",
+              title: t("manageData.title"),
+              headerBackTitle: back,
               headerTitle: "",
             }}
           />
@@ -276,6 +279,7 @@ function LiveActivityMount(): null {
 
 function WidgetSnapshotMount(): null {
   useWidgetSnapshot();
+  useWidgetStrings();
   return null;
 }
 

@@ -7,6 +7,7 @@ import { Feather } from "@expo/vector-icons";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { TimelineBlock } from "./timeline-block";
+import { useTranslation } from "react-i18next";
 
 /** Per-tail strip height in the mixed-cluster render. */
 const TAIL_HEIGHT = 22;
@@ -31,6 +32,7 @@ export function ClusterBlock({
   onEntryPress,
 }: ClusterBlockProps): React.ReactElement {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   // Mixed cluster (long dominant + short tail[s]) — renders the dominant
   // entry as a normal block with thin tail strips above/below for the short
@@ -136,7 +138,7 @@ export function ClusterBlock({
       <View style={styles.expandedContainer}>
         <Pressable onPress={onToggle} style={styles.collapseHeader}>
           <Text style={styles.collapseLabel}>
-            {cluster.entries.length} activities
+            {t("timeline.activitiesCount", { count: cluster.entries.length })}
           </Text>
           <Feather
             name="chevron-up"
@@ -199,7 +201,7 @@ export function ClusterBlock({
         <Text style={styles.summaryText} numberOfLines={1}>
           {compact
             ? `${cluster.entries.length}`
-            : `${cluster.entries.length} activities`}
+            : t("timeline.activitiesCount", { count: cluster.entries.length })}
         </Text>
         {!compact && (
           <Text style={styles.summaryDuration}>

@@ -1,7 +1,9 @@
 import { FONTS, RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme";
 import { useThemedStyles } from "@/hooks/useTheme";
+import { getIntlLocale } from "@/lib/i18n";
 import { formatDuration, getCurrentTimezone } from "@/lib/timezone";
 import React, { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { StyleSheet, Text, View } from "react-native";
 
 interface HomeHeaderProps {
@@ -9,7 +11,7 @@ interface HomeHeaderProps {
 }
 
 function formatTodayDate(timezone: string): string {
-  return new Date().toLocaleDateString("en-US", {
+  return new Date().toLocaleDateString(getIntlLocale(), {
     timeZone: timezone,
     weekday: "long",
     month: "long",
@@ -21,13 +23,21 @@ export function HomeHeader({
   totalTrackedSeconds,
 }: HomeHeaderProps): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
-  const dateLabel = useMemo(() => formatTodayDate(getCurrentTimezone()), []);
-  const totalLabel = `${formatDuration(totalTrackedSeconds)} today`;
+  const { t, i18n } = useTranslation();
+  const dateLabel = useMemo(
+    () => formatTodayDate(getCurrentTimezone()),
+    // Re-format when the UI language changes.
+    [i18n.language],
+  );
+  const totalLabel = t("home.trackedToday", {
+    duration: formatDuration(totalTrackedSeconds),
+  });
 
   return (
     <View style={styles.row}>
       <View style={styles.left}>
         <Text style={styles.date}>{dateLabel}</Text>
+        {/* i18n-ignore-next-line: brand name */}
         <Text style={styles.title}>Horae</Text>
       </View>
       <View style={styles.pill}>

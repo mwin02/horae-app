@@ -1,5 +1,5 @@
 import { useQuery } from "@powersync/react";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import {
   endLiveActivity,
@@ -7,6 +7,8 @@ import {
   startLiveActivity,
   updateLiveActivity,
 } from "@/modules/live-activity";
+import { useTranslation } from "react-i18next";
+import { localizeActivityName } from "@/lib/i18n/preset-names";
 
 /**
  * Reactive Live Activity controller. Mounted once at the root inside the
@@ -29,6 +31,7 @@ const RUNNING_ENTRY_FOR_LIVE_ACTIVITY_QUERY = `
   SELECT
     te.id          AS entry_id,
     te.started_at  AS started_at,
+    a.id           AS activity_id,
     a.name         AS activity_name,
     c.color        AS category_color
   FROM time_entries te
@@ -43,6 +46,7 @@ const RUNNING_ENTRY_FOR_LIVE_ACTIVITY_QUERY = `
 interface RunningRow {
   entry_id: string;
   started_at: string;
+  activity_id: string;
   activity_name: string;
   category_color: string | null;
 }
@@ -51,7 +55,17 @@ const FALLBACK_COLOR_HEX = "#6E8BFF";
 
 export function useLiveActivity(): void {
   const { data } = useQuery<RunningRow>(RUNNING_ENTRY_FOR_LIVE_ACTIVITY_QUERY);
-  const running = data.length > 0 ? data[0] : null;
+  const { i18n } = useTranslation();
+  const raw = data.length > 0 ? data[0] : null;
+  // Push the display name (translated for presets). Re-derived on language
+  // change so the existing activity_name dep re-pushes it.
+  const running = useMemo(
+    () =>
+      raw
+        ? { ...raw, activity_name: localizeActivityName(raw.activity_id, raw.activity_name) }
+        : null,
+    [raw, i18n.language],
+  );
 
   // Tracks the last entry id we pushed to ActivityKit so we can detect
   // transitions. `undefined` is the pre-mount sentinel; `null` means "no
@@ -65,6 +79,8 @@ export function useLiveActivity(): void {
     startedAt: string;
     activityName: string;
     categoryColor: string | null;
+    /** UI language at push time — a change re-pushes so widget labels refresh. */
+    language: string;
   } | null>(null);
 
   // Defensive cleanup on first mount: if a prior app instance crashed mid-
@@ -99,6 +115,7 @@ export function useLiveActivity(): void {
             startedAt: running.started_at,
             activityName: running.activity_name,
             categoryColor: running.category_color,
+            language: i18n.language,
           };
         }
         prevEntryIdRef.current = currId;
@@ -116,6 +133,7 @@ export function useLiveActivity(): void {
           startedAt: running.started_at,
           activityName: running.activity_name,
           categoryColor: running.category_color,
+          language: i18n.language,
         };
       } else if (prev !== null && currId === null) {
         // entry → none
@@ -137,6 +155,7 @@ export function useLiveActivity(): void {
           startedAt: running.started_at,
           activityName: running.activity_name,
           categoryColor: running.category_color,
+          language: i18n.language,
         };
       } else if (
         prev !== null &&
@@ -146,7 +165,8 @@ export function useLiveActivity(): void {
         prevContentRef.current !== null &&
         (prevContentRef.current.startedAt !== running.started_at ||
           prevContentRef.current.activityName !== running.activity_name ||
-          prevContentRef.current.categoryColor !== running.category_color)
+          prevContentRef.current.categoryColor !== running.category_color ||
+          prevContentRef.current.language !== i18n.language)
       ) {
         // Same entry, content changed (e.g. user edited started_at). Re-push
         // ContentState so the lock-screen timer re-anchors to the new start.
@@ -159,6 +179,7 @@ export function useLiveActivity(): void {
           startedAt: running.started_at,
           activityName: running.activity_name,
           categoryColor: running.category_color,
+          language: i18n.language,
         };
       }
 
@@ -170,5 +191,6 @@ export function useLiveActivity(): void {
     running?.activity_name,
     running?.category_color,
     running,
+    i18n.language,
   ]);
 }

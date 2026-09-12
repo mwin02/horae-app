@@ -12,6 +12,7 @@ import { useCategoriesByUsage } from "@/hooks/useCategoriesByUsage";
 import { useQuickStartActivities } from "@/hooks/useQuickStartActivities";
 import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import {
+  CLOCK_LOCALE,
   formatDuration,
   formatTimeInTimezone,
   getCurrentTimezone,
@@ -32,6 +33,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
+import { getIntlLocale } from "@/lib/i18n";
 
 interface GapFillModalProps {
   gap: { startedAt: Date; endedAt: Date } | null;
@@ -46,6 +49,7 @@ export function GapFillModal({
 }: GapFillModalProps): React.ReactElement | null {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
+  const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const { categories } = useCategoriesByUsage();
   const { activities: allActivities } = useQuickStartActivities();
@@ -123,12 +127,12 @@ export function GapFillModal({
   const formatLabel = (d: Date): string => {
     const time = formatTimeInTimezone(d.toISOString(), timezone);
     if (sameDay) return time;
-    const dateShort = d.toLocaleDateString("en-US", {
+    const dateShort = d.toLocaleDateString(getIntlLocale(), {
       month: "short",
       day: "numeric",
       timeZone: timezone,
     });
-    return `${dateShort}, ${time}`;
+    return t("timeline.dateTime", { date: dateShort, time });
   };
   const startLabel = formatLabel(editedStart);
   const endLabel = formatLabel(editedEnd);
@@ -179,8 +183,10 @@ export function GapFillModal({
           {/* Header */}
           <View style={styles.header}>
             <View>
-              <Text style={styles.headerTitle}>Fill Gap</Text>
-              <Text style={styles.headerSubtitle}>What were you doing?</Text>
+              <Text style={styles.headerTitle}>{t("timeline.fillGapTitle")}</Text>
+              <Text style={styles.headerSubtitle}>
+                {t("timeline.fillGapSubtitle")}
+              </Text>
             </View>
             <Pressable style={styles.closeButton} onPress={onClose} hitSlop={8}>
               <Feather name="x" size={20} color={colors.onSurfaceVariant} />
@@ -197,7 +203,7 @@ export function GapFillModal({
               ]}
               onPress={() => handleTogglePicker("start")}
             >
-              <Text style={styles.timeLabel}>Start</Text>
+              <Text style={styles.timeLabel}>{t("timeline.start")}</Text>
               <Text
                 style={[
                   styles.timeValue,
@@ -225,7 +231,7 @@ export function GapFillModal({
               ]}
               onPress={() => handleTogglePicker("end")}
             >
-              <Text style={styles.timeLabel}>End</Text>
+              <Text style={styles.timeLabel}>{t("timeline.end")}</Text>
               <Text
                 style={[
                   styles.timeValue,
@@ -265,6 +271,7 @@ export function GapFillModal({
                 minimumDate={pickerMin}
                 maximumDate={pickerMax}
                 themeVariant={isDark ? "dark" : "light"}
+                locale={CLOCK_LOCALE}
               />
             </View>
           )}
@@ -272,7 +279,7 @@ export function GapFillModal({
           {/* Validation error */}
           {!isValid && (
             <Text style={styles.validationError}>
-              Start time must be before end time
+              {t("timeline.startBeforeEndTime")}
             </Text>
           )}
 
@@ -297,7 +304,7 @@ export function GapFillModal({
                     !selectedCategoryId && styles.filterChipTextActive,
                   ]}
                 >
-                  All
+                  {t("timeline.all")}
                 </Text>
               </Pressable>
               {categories.map((cat) => (
@@ -361,7 +368,7 @@ export function GapFillModal({
                 </Pressable>
               )}
               ListEmptyComponent={
-                <Text style={styles.emptyText}>No activities found</Text>
+                <Text style={styles.emptyText}>{t("timeline.noActivitiesFound")}</Text>
               }
             />
           )}

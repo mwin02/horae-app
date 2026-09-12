@@ -5,6 +5,7 @@ import { getCurrentTimezone, isToday } from "@/lib/timezone";
 import { useQuery } from "@powersync/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppState, type AppStateStatus } from "react-native";
+import { localizeActivityName, localizeCategoryName } from "@/lib/i18n/preset-names";
 
 /**
  * SQL query to get the running entry with enriched data (same as useTimer).
@@ -16,6 +17,7 @@ const RUNNING_ENTRY_QUERY = `
     te.started_at  AS started_at,
     te.timezone    AS timezone,
     a.name         AS activity_name,
+    c.id           AS category_id,
     c.name         AS category_name,
     c.color        AS category_color
   FROM time_entries te
@@ -33,6 +35,7 @@ interface RunningEntryRow {
   started_at: string;
   timezone: string;
   activity_name: string;
+  category_id: string;
   category_name: string;
   category_color: string;
 }
@@ -220,8 +223,9 @@ export function useForgottenTimer(): UseForgottenTimerResult {
     const entry: RunningTimer = {
       entryId: row.entry_id,
       activityId: row.activity_id,
-      activityName: row.activity_name,
-      categoryName: row.category_name,
+      // Computed every render (no memo), so it follows language changes.
+      activityName: localizeActivityName(row.activity_id, row.activity_name),
+      categoryName: localizeCategoryName(row.category_id, row.category_name),
       categoryColor: row.category_color,
       startedAt,
       elapsedSeconds,

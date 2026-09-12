@@ -1,4 +1,6 @@
+import type { TFunction } from "i18next";
 import React, { useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { StyleSheet, Switch, Text, View } from "react-native";
 
 import { SettingRow } from "@/components/settings/setting-row";
@@ -23,16 +25,16 @@ function parseMinutes(value: string | null): number | null {
   return Number(match[1]) * 60 + Number(match[2]);
 }
 
-function describeWindow(start: string, end: string): string {
+function describeWindow(start: string, end: string, t: TFunction): string {
   const startMin = parseMinutes(start);
   const endMin = parseMinutes(end);
   if (startMin === null || endMin === null) {
-    return "Mute reminders during this daily window.";
+    return t("notificationsSettings.quietWindowDefault");
   }
   const wraps = endMin <= startMin;
   return wraps
-    ? "Wraps past midnight. Anything that would fire inside the window is deferred to the end."
-    : "Same-day window. Anything that would fire inside it is deferred to the end.";
+    ? t("notificationsSettings.quietWindowWraps")
+    : t("notificationsSettings.quietWindowSameDay");
 }
 
 export function QuietHoursSection({
@@ -40,6 +42,7 @@ export function QuietHoursSection({
   permissionDenied,
 }: QuietHoursSectionProps): React.ReactElement {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const enabled = prefs?.quiet_hours_enabled === 1;
   const start = prefs?.quiet_hours_start ?? DEFAULT_START;
@@ -71,8 +74,8 @@ export function QuietHoursSection({
   return (
     <View style={styles.group}>
       <SettingRow
-        title="Quiet hours"
-        description="Mute reminders during a daily window."
+        title={t("notificationsSettings.quietHoursTitle")}
+        description={t("notificationsSettings.quietHoursDescription")}
         disabled={rowsDisabled}
         trailing={
           <Switch
@@ -85,18 +88,18 @@ export function QuietHoursSection({
         }
       />
       <TimePickerRow
-        label="Start"
+        label={t("notificationsSettings.quietStart")}
         value={start}
         onChange={handleStartChange}
         disabled={rowsDisabled || !enabled}
       />
       <TimePickerRow
-        label="End"
+        label={t("notificationsSettings.quietEnd")}
         value={end}
         onChange={handleEndChange}
         disabled={rowsDisabled || !enabled}
       />
-      <Text style={styles.helper}>{describeWindow(start, end)}</Text>
+      <Text style={styles.helper}>{describeWindow(start, end, t)}</Text>
     </View>
   );
 }

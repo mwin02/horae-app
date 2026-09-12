@@ -8,6 +8,7 @@ import {
 import type { RunningTimer } from "@/db/models";
 import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import {
+  CLOCK_LOCALE,
   formatDateInTimezone,
   formatDuration,
   formatTimeInTimezone,
@@ -25,6 +26,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 interface ForgottenTimerModalProps {
   entry: RunningTimer | null;
@@ -54,6 +56,7 @@ export function ForgottenTimerModal({
 }: ForgottenTimerModalProps): React.ReactElement | null {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
+  const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const [selectedTime, setSelectedTime] = useState<Date>(() =>
     entry
@@ -116,8 +119,10 @@ export function ForgottenTimerModal({
           {/* Header */}
           <View style={styles.header}>
             <View>
-              <Text style={styles.headerTitle}>Forgotten Timer</Text>
-              <Text style={styles.headerSubtitle}>When did you stop?</Text>
+              <Text style={styles.headerTitle}>{t("forgottenTimer.title")}</Text>
+              <Text style={styles.headerSubtitle}>
+                {t("forgottenTimer.subtitle")}
+              </Text>
             </View>
             <Pressable
               style={styles.closeButton}
@@ -143,8 +148,12 @@ export function ForgottenTimerModal({
             <View style={styles.infoDetails}>
               <Feather name="clock" size={14} color={colors.onSurfaceVariant} />
               <Text style={styles.infoDetailText}>
-                Started at {startTimeLabel}
-                {startDateLabel ? ` on ${startDateLabel}` : ""}
+                {startDateLabel
+                  ? t("forgottenTimer.startedAtOnDate", {
+                      time: startTimeLabel,
+                      date: startDateLabel,
+                    })
+                  : t("forgottenTimer.startedAt", { time: startTimeLabel })}
               </Text>
             </View>
             <View style={styles.infoDetails}>
@@ -154,14 +163,16 @@ export function ForgottenTimerModal({
                 color={colors.onSurfaceVariant}
               />
               <Text style={styles.infoDetailText}>
-                Running for {durationLabel}
+                {t("forgottenTimer.runningFor", { duration: durationLabel })}
               </Text>
             </View>
           </View>
 
           {/* Time picker */}
           <View style={styles.pickerSection}>
-            <Text style={styles.pickerLabel}>Stopped at</Text>
+            <Text style={styles.pickerLabel}>
+              {t("forgottenTimer.stoppedAtLabel")}
+            </Text>
             <DateTimePicker
               value={selectedTime}
               mode={pickerMode}
@@ -170,6 +181,7 @@ export function ForgottenTimerModal({
               minimumDate={entry.startedAt}
               maximumDate={new Date()}
               themeVariant={isDark ? "dark" : "light"}
+              locale={CLOCK_LOCALE}
             />
           </View>
 
@@ -177,19 +189,23 @@ export function ForgottenTimerModal({
           <View style={styles.actions}>
             <GradientButton
               shape="pill"
-              label={`Stopped at ${stopTimeLabel}`}
+              label={t("forgottenTimer.stoppedAtButton", { time: stopTimeLabel })}
               onPress={handleConfirm}
             >
               <Feather name="check" size={18} color={colors.onPrimary} />
             </GradientButton>
 
             <Pressable style={styles.secondaryButton} onPress={onDismiss}>
-              <Text style={styles.secondaryButtonText}>Still going</Text>
+              <Text style={styles.secondaryButtonText}>
+                {t("forgottenTimer.stillGoing")}
+              </Text>
             </Pressable>
 
             <Pressable style={styles.discardButton} onPress={onDiscard}>
               <Feather name="trash-2" size={16} color={colors.error} />
-              <Text style={styles.discardButtonText}>Discard entry</Text>
+              <Text style={styles.discardButtonText}>
+                {t("forgottenTimer.discard")}
+              </Text>
             </Pressable>
           </View>
         </View>

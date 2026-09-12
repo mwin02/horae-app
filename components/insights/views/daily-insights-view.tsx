@@ -12,6 +12,7 @@ import { SPACING } from "@/constants/theme";
 import type { CategoryInsight, DayCoverage } from "@/db/models";
 import React, { useCallback, useMemo, useRef } from "react";
 import { Animated, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
 
 const WEEK_STRIP_HEIGHT = 88;
 
@@ -56,16 +57,17 @@ export function DailyInsightsView({
     extrapolate: "clamp",
   });
 
+  const { t } = useTranslation();
   const cards = useMemo<CardEntry[]>(
     () => [
       {
         id: "day-rhythm-strip",
-        label: "Day rhythm",
+        label: t("insightsCards.dayRhythm"),
         node: <DayRhythmStrip date={selectedDate} />,
       },
       {
         id: "category-breakdown",
-        label: "Time distribution",
+        label: t("insightsCards.timeDistribution"),
         node: (
           <TimeDistribution
             categoryInsights={categoryInsights}
@@ -77,12 +79,12 @@ export function DailyInsightsView({
       },
       {
         id: "actual-vs-ideal",
-        label: "Actual vs ideal",
+        label: t("insightsCards.actualVsIdeal"),
         node: <ActualVsIdeal categoryInsights={categoryInsights} />,
       },
       {
         id: "activity-breakdown",
-        label: "Activity breakdown",
+        label: t("insightsCards.activityBreakdown"),
         node: (
           <ActivityBreakdown
             categoryInsights={categoryInsights}
@@ -93,11 +95,11 @@ export function DailyInsightsView({
       },
       {
         id: "tracking-coverage",
-        label: "Tracking coverage",
+        label: t("insightsCards.trackingCoverage"),
         node: <TrackingCoverage coverage={coverage} period="daily" />,
       },
     ],
-    [categoryInsights, coverage, selectedDate, totalTrackedMinutes],
+    [categoryInsights, coverage, selectedDate, totalTrackedMinutes, t],
   );
 
   const header = (

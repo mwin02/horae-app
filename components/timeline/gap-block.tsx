@@ -4,6 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { SPACING, TYPOGRAPHY, RADIUS, type ThemeColors } from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 import { formatDuration } from '@/lib/timezone';
+import { useTranslation } from 'react-i18next';
 
 interface GapBlockProps {
   durationSeconds: number;
@@ -17,6 +18,7 @@ export function GapBlock({
   onPress,
 }: GapBlockProps): React.ReactElement {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const isTiny = durationSeconds < 30 * 60;
   const isCompact = !isTiny && height < 48;
@@ -37,7 +39,7 @@ export function GapBlock({
         </View>
       ) : (
         <>
-          <Text style={styles.label}>Untracked</Text>
+          <Text style={styles.label}>{t('timeline.untracked')}</Text>
           <View style={styles.addRow}>
             <Feather name="plus-circle" size={14} color={colors.onSurfaceVariant + '4D'} />
             <Text style={styles.duration}>{formatDuration(durationSeconds)}</Text>

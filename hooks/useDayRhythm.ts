@@ -6,6 +6,8 @@ import {
 } from "@/lib/timezone";
 import { useQuery } from "@powersync/react";
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { localizeCategoryName } from "@/lib/i18n/preset-names";
 
 export interface RhythmCategory {
   id: string;
@@ -53,6 +55,7 @@ export function useDayRhythm(selectedDate: string): UseDayRhythmResult {
     [dayEnd.toISOString(), dayStart.toISOString()],
   );
 
+  const { i18n } = useTranslation();
   const result = useMemo(() => {
     // For each hour bucket, map category_id → seconds.
     const buckets: Map<string, number>[] = Array.from(
@@ -74,10 +77,10 @@ export function useDayRhythm(selectedDate: string): UseDayRhythmResult {
       const endMs = Math.min(rawEndMs, dayEndMs);
       if (endMs <= startMs) continue;
 
-      const catId = `${row.category_name}|${row.category_color}`; // stable key; id not in row
+      const catId = `${row.category_name}|${row.category_color}`; // stable grouping key
       categoryMeta.set(catId, {
         id: catId,
-        name: row.category_name,
+        name: localizeCategoryName(row.category_id, row.category_name),
         color: row.category_color,
         icon: row.category_icon,
       });
@@ -128,7 +131,7 @@ export function useDayRhythm(selectedDate: string): UseDayRhythmResult {
     );
 
     return { hours, legend };
-  }, [rows, dayStart, dayEnd]);
+  }, [rows, dayStart, dayEnd, i18n.language]);
 
   return { hours: result.hours, legend: result.legend, isLoading };
 }

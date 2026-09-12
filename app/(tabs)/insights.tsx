@@ -12,12 +12,14 @@ import { useInsightsData, type InsightsPeriod } from "@/hooks/useInsightsData";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { getCurrentTimezone, getTodayDate } from "@/lib/timezone";
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function InsightsScreen(): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const today = getTodayDate(getCurrentTimezone());
   const { preferences, isLoading: prefsLoading } = useUserPreferences();
   // `null` means "haven't applied the user's default yet". Once prefs finish
@@ -75,10 +77,8 @@ export default function InsightsScreen(): React.ReactElement {
             <WeekStrip selectedDate={dailyDate} onDateChange={setDailyDate} />
           )}
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyTitle}>No data yet</Text>
-            <Text style={styles.emptyBody}>
-              Start tracking activities to see your insights here.
-            </Text>
+            <Text style={styles.emptyTitle}>{t("insights.emptyTitle")}</Text>
+            <Text style={styles.emptyBody}>{t("insights.emptyBody")}</Text>
           </View>
         </>
       ) : effectivePeriod === "daily" ? (

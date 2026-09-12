@@ -4,6 +4,8 @@ import { Feather } from '@expo/vector-icons';
 import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 import { getCurrentTimezone, getTodayDate } from '@/lib/timezone';
+import { useTranslation } from 'react-i18next';
+import { getIntlLocale } from '@/lib/i18n';
 
 interface MonthNavHeaderProps {
   selectedDate: string; // YYYY-MM-DD — any day in the target month
@@ -26,7 +28,7 @@ function addMonths(dateStr: string, delta: number): string {
 
 function formatMonthLabel(dateStr: string): string {
   const [y, m] = dateStr.split('-').map(Number);
-  return new Date(y, m - 1, 1, 12).toLocaleDateString('en-US', {
+  return new Date(y, m - 1, 1, 12).toLocaleDateString(getIntlLocale(), {
     month: 'long',
     year: 'numeric',
   });
@@ -38,6 +40,7 @@ export function MonthNavHeader({
 }: MonthNavHeaderProps): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const firstOfSelected = getFirstOfMonth(selectedDate);
   const firstOfToday = getFirstOfMonth(getTodayDate(getCurrentTimezone()));
   const isCurrentMonth = firstOfSelected >= firstOfToday;
@@ -53,7 +56,7 @@ export function MonthNavHeader({
   return (
     <View style={styles.container}>
       <View>
-        <Text style={styles.label}>Month</Text>
+        <Text style={styles.label}>{t('insightNav.month')}</Text>
         <Text style={styles.monthLabel}>{formatMonthLabel(firstOfSelected)}</Text>
       </View>
       <View style={styles.arrowPill}>

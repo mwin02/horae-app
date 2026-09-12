@@ -19,6 +19,20 @@ interface LiveActivityNativeModule {
   update(payload: LiveActivityPayload): Promise<void>;
   end(): Promise<void>;
   writeWidgetSnapshot(payload: WidgetSnapshotPayload | null): Promise<void>;
+  writeWidgetStrings(strings: WidgetStrings): Promise<void>;
+}
+
+/**
+ * Localized labels the widget + Live Activity render. Written to the App
+ * Group on language change; Swift falls back to English per key.
+ */
+export interface WidgetStrings {
+  tracking: string;
+  tapToStart: string;
+  stopActivity: string;
+  now: string;
+  /** Contains a literal `{time}` token that Swift replaces with the clock. */
+  since: string;
 }
 
 export interface LiveActivityPayload {
@@ -81,5 +95,15 @@ export async function writeWidgetSnapshot(
     await native.writeWidgetSnapshot(payload);
   } catch {
     // Native module unavailable (e.g. Android, or pre-Block-1 build) — no-op.
+  }
+}
+
+/** Writes the localized widget / Live Activity labels. No-op on Android. */
+export async function writeWidgetStrings(strings: WidgetStrings): Promise<void> {
+  try {
+    await native.writeWidgetStrings(strings);
+  } catch {
+    // Native module unavailable or predates writeWidgetStrings — the widget
+    // keeps its English fallbacks.
   }
 }

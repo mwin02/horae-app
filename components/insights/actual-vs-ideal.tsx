@@ -10,6 +10,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Defs, Pattern, Path, Rect } from "react-native-svg";
 import { deltaPalette, type DeltaPolarity } from "./delta-polarity";
 import { PaginatedRows } from "./paginated-rows";
+import { useTranslation } from "react-i18next";
 
 interface ActualVsIdealProps {
   categoryInsights: CategoryInsight[];
@@ -20,6 +21,7 @@ export function ActualVsIdeal({
 }: ActualVsIdealProps): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const router = useRouter();
   const withTargets = categoryInsights.filter((c) => c.targetMinutes != null);
 
@@ -29,12 +31,12 @@ export function ActualVsIdeal({
 
   const Header = (
     <View style={styles.headerRow}>
-      <Text style={styles.sectionLabel}>ACTUAL VS IDEAL</Text>
+      <Text style={styles.sectionLabel}>{t("actualVsIdeal.title")}</Text>
       <Pressable
         onPress={openSettings}
         hitSlop={8}
         accessibilityRole="button"
-        accessibilityLabel="Set ideal allocations"
+        accessibilityLabel={t("actualVsIdeal.setGoalsA11y")}
         style={({ pressed }) => [
           styles.gearButton,
           pressed && styles.gearButtonPressed,
@@ -50,7 +52,7 @@ export function ActualVsIdeal({
       <View style={styles.container}>
         {Header}
         <Text style={styles.emptyText}>
-          Set goals for your categories to see how you compare.
+          {t("actualVsIdeal.empty")}
         </Text>
       </View>
     );
@@ -86,6 +88,7 @@ function ComparisonRow({
 }: ComparisonRowProps): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const actual = insight.actualMinutes;
   const target = insight.targetMinutes ?? 0;
   const delta = actual - target;
@@ -121,8 +124,8 @@ function ComparisonRow({
   const [showName, setShowName] = useState(false);
   useEffect(() => {
     if (!showName) return;
-    const t = setTimeout(() => setShowName(false), 1800);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setShowName(false), 1800);
+    return () => clearTimeout(timer);
   }, [showName]);
 
   const toggleName = useCallback(() => {
@@ -177,7 +180,7 @@ function ComparisonRow({
             style={[styles.goalLabelWrap, { left: `${goalPct}%` }]}
           >
             <Text style={styles.goalLabel} numberOfLines={1}>
-              {direction === "at_most" ? "LIMIT" : "GOAL"}
+              {direction === "at_most" ? t("actualVsIdeal.limit") : t("actualVsIdeal.goal")}
             </Text>
           </View>
         </View>
