@@ -55,9 +55,11 @@ export function MonthNavHeader({
 
   return (
     <View style={styles.container}>
-      <View>
+      <View style={styles.titleBlock}>
         <Text style={styles.label}>{t('insightNav.month')}</Text>
-        <Text style={styles.monthLabel}>{formatMonthLabel(firstOfSelected)}</Text>
+        <Text style={styles.monthLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+          {formatMonthLabel(firstOfSelected)}
+        </Text>
       </View>
       <View style={styles.arrowPill}>
         <Pressable
@@ -95,6 +97,12 @@ function makeStyles(c: ThemeColors) {
       paddingHorizontal: SPACING.lg,
       marginBottom: SPACING.lg,
     },
+    // Long month names (e.g. Spanish "septiembre de 2026") must shrink rather
+    // than run under the arrow pill.
+    titleBlock: {
+      flex: 1,
+      marginRight: SPACING.sm,
+    },
     label: {
       ...TYPOGRAPHY.labelUppercase,
       color: c.onSurfaceVariant,
@@ -105,6 +113,7 @@ function makeStyles(c: ThemeColors) {
       color: c.onSurface,
     },
     arrowPill: {
+      flexShrink: 0,
       flexDirection: 'row',
       gap: SPACING.sm,
       backgroundColor: c.surfaceContainerLow,

@@ -8,6 +8,7 @@ import { initReactI18next } from "react-i18next";
 import { AppState } from "react-native";
 
 import en from "@/locales/en";
+import es from "@/locales/es";
 import type { TranslationShape } from "@/locales/types";
 
 /**
@@ -25,7 +26,7 @@ import type { TranslationShape } from "@/locales/types";
 
 export type Translation = TranslationShape<typeof en>;
 
-const RESOURCES = { en } satisfies Record<string, Translation>;
+const RESOURCES = { en, es } satisfies Record<string, Translation>;
 
 export type AppLanguage = keyof typeof RESOURCES;
 export type LanguagePreference = "system" | AppLanguage;
@@ -35,11 +36,13 @@ export const APP_LANGUAGES = Object.keys(RESOURCES) as AppLanguage[];
 /** Endonyms — always shown in their own script, whatever the UI language. */
 export const LANGUAGE_NATIVE_NAMES: Record<AppLanguage, string> = {
   en: "English",
+  es: "Español",
 };
 
 /** Intl locale used when the device has no locale for the chosen language. */
 const DEFAULT_INTL_TAGS: Record<AppLanguage, string> = {
   en: "en-US",
+  es: "es-ES",
 };
 
 const STORAGE_KEY = "horae.language.v1";

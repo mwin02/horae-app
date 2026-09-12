@@ -78,10 +78,12 @@
         {
           "supportedLocales": {
             "ios": [
-              "en"
+              "en",
+              "es"
             ],
             "android": [
-              "en"
+              "en",
+              "es"
             ]
           }
         }
