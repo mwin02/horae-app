@@ -61,9 +61,11 @@ export function WeekNavHeader({ selectedDate, onDateChange }: WeekNavHeaderProps
 
   return (
     <View style={styles.container}>
-      <View>
+      <View style={styles.titleBlock}>
         <Text style={styles.label}>{t('insightNav.week')}</Text>
-        <Text style={styles.weekRange}>{label}</Text>
+        <Text style={styles.weekRange} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+          {label}
+        </Text>
       </View>
       <View style={styles.arrowPill}>
         <Pressable
@@ -97,6 +99,11 @@ function makeStyles(c: ThemeColors) {
       paddingHorizontal: SPACING.lg,
       marginBottom: SPACING.lg,
     },
+    // Long localized date ranges must shrink rather than run under the arrows.
+    titleBlock: {
+      flex: 1,
+      marginRight: SPACING.sm,
+    },
     label: {
       ...TYPOGRAPHY.labelUppercase,
       color: c.onSurfaceVariant,
@@ -107,6 +114,7 @@ function makeStyles(c: ThemeColors) {
       color: c.onSurface,
     },
     arrowPill: {
+      flexShrink: 0,
       flexDirection: 'row',
       gap: SPACING.sm,
       backgroundColor: c.surfaceContainerLow,
