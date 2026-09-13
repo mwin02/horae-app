@@ -10,6 +10,7 @@ import { AppState } from "react-native";
 import en from "@/locales/en";
 import es from "@/locales/es";
 import zhHans from "@/locales/zh-Hans";
+import zhHant from "@/locales/zh-Hant";
 import type { TranslationShape } from "@/locales/types";
 
 /**
@@ -27,7 +28,7 @@ import type { TranslationShape } from "@/locales/types";
 
 export type Translation = TranslationShape<typeof en>;
 
-const RESOURCES = { en, es, "zh-Hans": zhHans } satisfies Record<string, Translation>;
+const RESOURCES = { en, es, "zh-Hans": zhHans, "zh-Hant": zhHant } satisfies Record<string, Translation>;
 
 export type AppLanguage = keyof typeof RESOURCES;
 export type LanguagePreference = "system" | AppLanguage;
@@ -39,6 +40,7 @@ export const LANGUAGE_NATIVE_NAMES: Record<AppLanguage, string> = {
   en: "English",
   es: "Español",
   "zh-Hans": "简体中文",
+  "zh-Hant": "繁體中文",
 };
 
 /** Intl locale used when the device has no locale for the chosen language. */
@@ -46,6 +48,7 @@ const DEFAULT_INTL_TAGS: Record<AppLanguage, string> = {
   en: "en-US",
   es: "es-ES",
   "zh-Hans": "zh-Hans-CN",
+  "zh-Hant": "zh-Hant-TW",
 };
 
 const STORAGE_KEY = "horae.language.v1";
