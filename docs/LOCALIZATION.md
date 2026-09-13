@@ -148,3 +148,11 @@ New Session modal matches against display names, so a Chinese user finds
   Hindi PR with per-script overrides.
 - Custom fonts (Manrope, Plus Jakarta Sans) have no CJK/Devanagari glyphs; iOS
   falls back to system fonts (PingFang / Kohinoor) for those scripts.
+- **The CJK fallback face follows the OS language, not the in-app choice.**
+  CoreText picks PingFang SC/TC/HK from the process's preferred languages, and
+  React Native has no per-`Text` language attribute. So 繁體中文 picked in
+  Settings on a non-Chinese device renders with PingFang SC glyphs (bottom-left
+  `，。` instead of centred, mainland component shapes); picking it via the OS
+  or iOS per-app language gives PingFang TC. Same in reverse for 简体中文 on a
+  Traditional device.
+- Em dashes (`——`) render from the Latin font, so the pair shows a small gap.

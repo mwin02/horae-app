@@ -80,12 +80,14 @@
             "ios": [
               "en",
               "es",
-              "zh-Hans"
+              "zh-Hans",
+              "zh-Hant"
             ],
             "android": [
               "en",
               "es",
-              "zh-Hans"
+              "zh-Hans",
+              "zh-Hant"
             ]
           }
         }
