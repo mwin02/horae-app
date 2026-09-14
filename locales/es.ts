@@ -342,6 +342,7 @@ const es: Translation = {
     topActivities: "Actividades principales",
     addTagsOptional: "Añadir etiquetas (opcional)",
     start: "Empezar actividad",
+    noMatches: "Ninguna actividad coincide",
   },
   manageActivities: {
     title: "Gestionar actividades",

@@ -18,6 +18,14 @@ export function formatWeekday(
   }).format(date);
 }
 
+/**
+ * Fold a string for forgiving substring search: lowercase and strip
+ * combining diacritics, so "gestion" matches "Gestión". CJK is unaffected.
+ */
+export function foldForSearch(text: string): string {
+  return text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+}
+
 /** Weekday names in app order (Mon … Sun). */
 export function weekdayNames(width: "long" | "short" | "narrow" = "short"): string[] {
   return Array.from({ length: 7 }, (_, i) => formatWeekday(i, width));

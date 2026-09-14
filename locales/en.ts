@@ -354,6 +354,7 @@ const en = {
     topActivities: "Top Activities",
     addTagsOptional: "Add tags (optional)",
     start: "Start Activity",
+    noMatches: "No matching activities",
   },
   manageActivities: {
     title: "Manage Activities",
