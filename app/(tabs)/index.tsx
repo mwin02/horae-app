@@ -5,6 +5,7 @@ import { RingTimerHero } from "@/components/home/ring-timer-hero";
 import { QuickStartGrid } from "@/components/home/quick-start-grid";
 import { SuggestedRow } from "@/components/home/suggested-row";
 import { WeeklyStreak } from "@/components/home/weekly-streak";
+import { ReviewPromptModal } from "@/components/common/review-prompt-modal";
 import { UndoToast } from "@/components/common/undo-toast";
 import { SPACING, type ThemeColors } from "@/constants/theme";
 import { useTheme, useThemedStyles } from "@/hooks/useTheme";
@@ -21,10 +22,16 @@ import { useCategoriesByUsage } from "@/hooks/useCategoriesByUsage";
 import { useQuickStartActivities } from "@/hooks/useQuickStartActivities";
 import { useRecommendedActivity } from "@/hooks/useRecommendedActivity";
 import { useTodayClockArcs } from "@/hooks/useTodayClockArcs";
+import { sendFeedback } from "@/lib/feedback";
+import {
+  recordReviewPromptOutcome,
+  requestStoreReview,
+  shouldShowReviewPrompt,
+} from "@/lib/review-prompt";
 import { getCurrentTimezone, getTodayDate } from "@/lib/timezone";
 import { NewSessionModal } from "@/components/timer/new-session-modal";
 import { useUIStore } from "@/store/uiStore";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
@@ -33,6 +40,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+const MODAL_DISMISS_DELAY_MS = 450;
 
 export default function HomeScreen(): React.ReactElement {
   const styles = useThemedStyles(makeStyles);
@@ -61,6 +70,10 @@ export default function HomeScreen(): React.ReactElement {
     entryId: string;
     activityName: string;
   } | null>(null);
+  const [reviewPromptVisible, setReviewPromptVisible] = useState(false);
+  // Set after a stop when the user qualifies for the review prompt; the
+  // sheet opens once the undo toast is gone so it never covers "Resume".
+  const reviewPromptPending = useRef(false);
   const pendingHomeAction = useUIStore((s) => s.pendingHomeAction);
   const setPendingHomeAction = useUIStore((s) => s.setPendingHomeAction);
 
@@ -77,6 +90,7 @@ export default function HomeScreen(): React.ReactElement {
   // stop would silently no-op since a timer is already running.
   useEffect(() => {
     if (runningEntry && undoToast && runningEntry.entryId !== undoToast.entryId) {
+      reviewPromptPending.current = false;
       setUndoToast(null);
     }
   }, [runningEntry, undoToast]);
@@ -86,14 +100,45 @@ export default function HomeScreen(): React.ReactElement {
       ? { entryId: runningEntry.entryId, activityName: runningEntry.activityName }
       : null;
     await stopActivity();
-    if (stopping) setUndoToast(stopping);
+    if (stopping) {
+      setUndoToast(stopping);
+      reviewPromptPending.current = await shouldShowReviewPrompt();
+    }
   }, [runningEntry, stopActivity]);
 
   const handleUndoStop = useCallback((): void => {
+    reviewPromptPending.current = false;
     if (undoToast) {
       void resumeActivity(undoToast.entryId);
     }
   }, [undoToast, resumeActivity]);
+
+  const handleUndoToastDismiss = useCallback((): void => {
+    setUndoToast(null);
+    if (reviewPromptPending.current) {
+      reviewPromptPending.current = false;
+      if (!modalVisible && !forgottenEntry) setReviewPromptVisible(true);
+    }
+  }, [modalVisible, forgottenEntry]);
+
+  const handleReviewEnjoying = useCallback((): void => {
+    setReviewPromptVisible(false);
+    void recordReviewPromptOutcome("rated");
+    // Let the sheet finish sliding out — iOS won't present the native review
+    // sheet or mail composer over a Modal that is still dismissing.
+    setTimeout(() => void requestStoreReview(), MODAL_DISMISS_DELAY_MS);
+  }, []);
+
+  const handleReviewNotEnjoying = useCallback((): void => {
+    setReviewPromptVisible(false);
+    void recordReviewPromptOutcome("declined");
+    setTimeout(() => void sendFeedback("feature"), MODAL_DISMISS_DELAY_MS);
+  }, []);
+
+  const handleReviewDismiss = useCallback((): void => {
+    setReviewPromptVisible(false);
+    void recordReviewPromptOutcome("dismissed");
+  }, []);
 
   const handleResumeBanner = useCallback((): void => {
     if (resumableEntry) {
@@ -233,7 +278,14 @@ export default function HomeScreen(): React.ReactElement {
         actionLabel={t("home.resume")}
         actionIcon="rotate-ccw"
         onAction={handleUndoStop}
-        onDismiss={() => setUndoToast(null)}
+        onDismiss={handleUndoToastDismiss}
+      />
+
+      <ReviewPromptModal
+        visible={reviewPromptVisible}
+        onEnjoying={handleReviewEnjoying}
+        onNotEnjoying={handleReviewNotEnjoying}
+        onDismiss={handleReviewDismiss}
       />
     </SafeAreaView>
   );
