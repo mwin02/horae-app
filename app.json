@@ -2,7 +2,7 @@
   "expo": {
     "name": "Horae",
     "slug": "horae",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "horae",
@@ -23,7 +23,9 @@
           "mailto",
           "mailto"
         ],
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDevelopmentRegion": "en",
+        "CFBundleLocalizations": ["en", "es", "zh-Hans", "zh-Hant"]
       },
       "entitlements": {
         "com.apple.security.application-groups": [
