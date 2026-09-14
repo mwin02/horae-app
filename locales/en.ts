@@ -172,6 +172,14 @@ const en = {
     noMailTitle: "No mail app",
     noMailBody: "Email us directly at {{email}}.",
   },
+  reviewPrompt: {
+    title: "How's Horae working for you?",
+    subtitle: "Your feedback helps us make Horae better.",
+    yes: "Yes, I love it",
+    yesDescription: "Leave a quick rating on the App Store",
+    no: "Could be better",
+    noDescription: "Tell us what would make it better",
+  },
   insights: {
     emptyTitle: "No data yet",
     emptyBody: "Start tracking activities to see your insights here.",
@@ -189,6 +197,8 @@ const en = {
     manageData: "Manage data",
     reportBug: "Report a bug",
     requestFeature: "Request a feature",
+    rateApp: "Rate Horae on the App Store",
+    rateAppSummary: "Help others discover Horae",
     generalSummary: "Week starts {{day}} · Insights {{period}}",
     notificationSummary: {
       loading: "Loading…",

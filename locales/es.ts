@@ -161,6 +161,14 @@ const es: Translation = {
     noMailTitle: "Sin app de correo",
     noMailBody: "Escríbenos directamente a {{email}}.",
   },
+  reviewPrompt: {
+    title: "¿Qué tal te va con Horae?",
+    subtitle: "Tu opinión nos ayuda a mejorar Horae.",
+    yes: "¡Sí, me encanta!",
+    yesDescription: "Deja una calificación rápida en la App Store",
+    no: "Podría ser mejor",
+    noDescription: "Cuéntanos qué podríamos mejorar",
+  },
   insights: {
     emptyTitle: "Aún no hay datos",
     emptyBody: "Empieza a registrar actividades para ver tu análisis aquí.",
@@ -178,6 +186,8 @@ const es: Translation = {
     manageData: "Gestionar datos",
     reportBug: "Informar de un error",
     requestFeature: "Sugerir una función",
+    rateApp: "Califica Horae en la App Store",
+    rateAppSummary: "Ayuda a otros a descubrir Horae",
     generalSummary: "La semana empieza el {{day}} · Análisis {{period}}",
     notificationSummary: {
       loading: "Cargando…",

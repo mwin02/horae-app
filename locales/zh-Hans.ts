@@ -160,6 +160,14 @@ const zhHans: Translation = {
     noMailTitle: "没有邮件应用",
     noMailBody: "请直接发邮件到 {{email}}。",
   },
+  reviewPrompt: {
+    title: "Horae 用得怎么样？",
+    subtitle: "你的反馈能帮助我们把 Horae 做得更好。",
+    yes: "喜欢，很好用",
+    yesDescription: "在 App Store 快速评个分",
+    no: "还可以更好",
+    noDescription: "告诉我们哪里可以改进",
+  },
   insights: {
     emptyTitle: "暂无数据",
     emptyBody: "开始记录活动，这里就会显示你的洞察。",
@@ -177,6 +185,8 @@ const zhHans: Translation = {
     manageData: "管理数据",
     reportBug: "报告问题",
     requestFeature: "功能建议",
+    rateApp: "在 App Store 为 Horae 评分",
+    rateAppSummary: "帮助更多人发现 Horae",
     generalSummary: "每周从{{day}}开始 · 洞察默认{{period}}",
     notificationSummary: {
       loading: "加载中…",

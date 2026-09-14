@@ -17,6 +17,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { seedDemoDay } from "@/lib/dev-seed";
 import { sendFeedback } from "@/lib/feedback";
+import {
+  openAppStoreReviewPage,
+  resetReviewPromptState,
+} from "@/lib/review-prompt";
 import { formatWeekday } from "@/lib/i18n/format";
 
 function formatThresholdSummary(seconds: number | null, t: TFunction): string {
@@ -120,6 +124,10 @@ export default function SettingsScreen(): React.ReactElement {
     void sendFeedback("feature");
   }, []);
 
+  const handleRateApp = useCallback(() => {
+    void openAppStoreReviewPage();
+  }, []);
+
   const handleSentryTest = useCallback(() => {
     throw new Error(`Horae Sentry test crash @ ${new Date().toISOString()}`);
   }, []);
@@ -147,6 +155,12 @@ export default function SettingsScreen(): React.ReactElement {
       // i18n-ignore-next-line: debug-only tool
       Alert.alert("Seed failed", message);
     }
+  }, []);
+
+  const handleResetReviewPrompt = useCallback(async () => {
+    await resetReviewPromptState();
+    // i18n-ignore-next-line: debug-only tool
+    Alert.alert("Review prompt reset", "Stop a timer to see it again (needs 10+ entries across 3+ days).");
   }, []);
 
   const notificationSummary = useMemo(
@@ -256,6 +270,15 @@ export default function SettingsScreen(): React.ReactElement {
 
         <Text style={styles.sectionLabel}>{t("settings.sectionHelp")}</Text>
         <SettingRow
+          title={t("settings.rateApp")}
+          description={t("settings.rateAppSummary")}
+          onPress={handleRateApp}
+          iconBackground={colors.surfaceContainer}
+          iconChildren={
+            <Feather name="star" size={20} color={colors.primary} />
+          }
+        />
+        <SettingRow
           title={t("settings.reportBug")}
           onPress={handleReportBug}
           iconBackground={colors.surfaceContainer}
@@ -290,6 +313,14 @@ export default function SettingsScreen(): React.ReactElement {
               iconBackground={colors.surfaceContainer}
               iconChildren={
                 <Feather name="play" size={20} color={colors.primary} />
+              }
+            />
+            <SettingRow
+              title="Reset review prompt"
+              onPress={handleResetReviewPrompt}
+              iconBackground={colors.surfaceContainer}
+              iconChildren={
+                <Feather name="star" size={20} color={colors.primary} />
               }
             />
           </>

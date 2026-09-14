@@ -211,3 +211,29 @@ export async function deleteEntry(entryId: string): Promise<void> {
   );
 }
 
+
+/**
+ * Usage stats gating the "Enjoying Horae?" review prompt. Imported entries
+ * are excluded so restoring a backup doesn't make a brand-new install look
+ * like a long-time user. Active days are bucketed by UTC date — close
+ * enough for a rough engagement threshold.
+ */
+export async function getReviewEligibilityStats(): Promise<{
+  completedEntries: number;
+  activeDays: number;
+}> {
+  const row = await db.getOptional<{ completed_entries: number; active_days: number }>(
+    `SELECT
+       COUNT(*) AS completed_entries,
+       COUNT(DISTINCT substr(started_at, 1, 10)) AS active_days
+     FROM time_entries
+     WHERE ended_at IS NOT NULL
+       AND deleted_at IS NULL
+       AND source IS NOT ?`,
+    [TIME_ENTRY_SOURCES.import]
+  );
+  return {
+    completedEntries: row?.completed_entries ?? 0,
+    activeDays: row?.active_days ?? 0,
+  };
+}
