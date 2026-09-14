@@ -208,7 +208,14 @@ function DeltaRow({ row, showDivider }: DeltaRowProps): React.ReactElement {
       </View>
 
       <View style={[styles.chip, { backgroundColor: chip.bg }]}>
-        <Text style={[styles.chipText, { color: chip.fg }]} numberOfLines={1}>
+        {/* Localized durations ("−2 h 12 min") outgrow the fixed chip; shrink
+            rather than truncate so every row keeps the same column widths. */}
+        <Text
+          style={[styles.chipText, { color: chip.fg }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.7}
+        >
           {chip.text}
         </Text>
       </View>
@@ -253,6 +260,8 @@ function BarLine({
           valueStrong ? styles.valueTextStrong : styles.valueTextMuted,
         ]}
         numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.7}
       >
         {valueText}
       </Text>

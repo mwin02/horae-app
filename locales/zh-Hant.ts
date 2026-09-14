@@ -333,6 +333,7 @@ const zhHant: Translation = {
     topActivities: "常用活動",
     addTagsOptional: "加上標籤（選填）",
     start: "開始活動",
+    noMatches: "沒有符合的活動",
   },
   manageActivities: {
     title: "管理活動",

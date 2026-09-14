@@ -331,6 +331,7 @@ const zhHans: Translation = {
     topActivities: "常用活动",
     addTagsOptional: "添加标签（可选）",
     start: "开始活动",
+    noMatches: "没有匹配的活动",
   },
   manageActivities: {
     title: "管理活动",

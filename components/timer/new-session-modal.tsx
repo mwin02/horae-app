@@ -8,6 +8,7 @@ import { RADIUS, SPACING, TYPOGRAPHY, type ThemeColors } from "@/constants/theme
 import { useTheme, useThemedStyles } from "@/hooks/useTheme";
 import type { CategoryWithActivities } from "@/db/models";
 import { useTags } from "@/hooks/useTags";
+import { foldForSearch } from "@/lib/i18n/format";
 import {
   useQuickStartActivities,
   type QuickStartActivity,
@@ -88,12 +89,12 @@ export function NewSessionModal({
   // Flat activity list ordered by favorites first, then all-time usage
   // (from useQuickStartActivities), filtered by the selected category + search.
   const filteredActivities = useMemo((): QuickStartActivity[] => {
-    const query = searchQuery.toLowerCase().trim();
+    const query = foldForSearch(searchQuery.trim());
     return allActivities.filter((activity) => {
       if (selectedCategoryId && activity.categoryId !== selectedCategoryId) {
         return false;
       }
-      if (query && !activity.name.toLowerCase().includes(query)) return false;
+      if (query && !foldForSearch(activity.name).includes(query)) return false;
       return true;
     });
   }, [allActivities, selectedCategoryId, searchQuery]);
@@ -234,6 +235,11 @@ export function NewSessionModal({
             contentContainerStyle={styles.activityListContent}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
+            ListEmptyComponent={
+              searchQuery.trim() ? (
+                <Text style={styles.emptyText}>{t("newSession.noMatches")}</Text>
+              ) : null
+            }
           />
 
           {/* Tags affordance */}
@@ -382,6 +388,12 @@ function makeStyles(c: ThemeColors) {
   },
   activityListContent: {
     gap: SPACING.sm,
+  },
+  emptyText: {
+    ...TYPOGRAPHY.bodySmall,
+    color: c.onSurfaceVariant,
+    textAlign: "center",
+    paddingVertical: SPACING.lg,
   },
   activityRow: {
     flexDirection: "row",
